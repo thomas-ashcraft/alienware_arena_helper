@@ -1,7 +1,7 @@
 ﻿// ==UserScript==
 // @name         Alienware Arena helper
 // @namespace    https://github.com/thomas-ashcraft
-// @version      0.4.0
+// @version      0.4.1
 // @description  Earn daily ARP easily
 // @author       Thomas Ashcraft
 // @match        *://*.alienwarearena.com/*
@@ -13,7 +13,7 @@
 
 (function() {
 	// You can configure options through the user interface. It is not recommended to edit the script for these purposes.
-	var version = "0.4.0";
+	var version = "0.4.1";
 	var DEBUG = false; // Developer option. Default: false
 
 	var status_message_delay_default	= 5000;
@@ -33,6 +33,7 @@
 
 	var url = window.location.href;
 	if(DEBUG) console.log("🐾 url: " + url);
+	var og_url = $('meta[property="og:url"]').attr("content");
 
 	var path = window.location.pathname;
 	path = path.replace(/\/+/g, "/");
@@ -533,6 +534,9 @@
 				}
 			}
 			$("#giveaway-flash-message").after('<div class="well well-sm"><b>' + keys_left + '</b> keys left for <b>' + user_country + '</b> country</div>');
+			setTimeout(function() {
+				$('<div><b>' + keys_left + '</b> keys left for <b>' + user_country + '</b> country <span class="fa fa-fw fa-key"></span></div>').appendTo(".awah-arp-status");
+			}, 1);
 		}
 	}
 
@@ -594,13 +598,18 @@
 	switch (true) {
 		case /.*\/ucf\/show\/.*/.test(path):
 			if(DEBUG) console.log("SWITCH: Content");
-			if (/.*\/boards\/this-or-that\/.*/.test(path)) {
-				if(DEBUG) console.log("SWITCH: This or That");
-				this_or_that_btn();
-			}
-			if (/^\/ucf\/show\/.*\/Giveaway\/.*$/.test(path)) {
-				if(DEBUG) console.log("SWITCH: Giveaway");
-				show_available_keys();
+			// <meta property="og:url" content="https://eu.alienwarearena.com/ucf/show/1592462/boards/contest-and-giveaways-global/Giveaway/rising-storm-2-vietnam-closed-beta-key-giveaway" />
+			switch (true) {
+				case /.*\/boards\/this-or-that\/.*/.test(path):
+				case /.*\/boards\/this-or-that\/.*/.test(og_url):
+					if(DEBUG) console.log("SWITCH: This or That");
+					this_or_that_btn();
+					break;
+				case /^\/ucf\/show\/.*\/Giveaway\//.test(path):
+				case /\/ucf\/show\/.*\/Giveaway\//.test(og_url):
+					if(DEBUG) console.log("SWITCH: Giveaway");
+					show_available_keys();
+					break;
 			}
 			votes_content_btn();
 			break;
