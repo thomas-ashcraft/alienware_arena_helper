@@ -1,7 +1,7 @@
 ﻿// ==UserScript==
 // @name         Alienware Arena helper
 // @namespace    https://github.com/thomas-ashcraft
-// @version      0.3.9
+// @version      0.4.0
 // @description  Earn daily ARP easily
 // @author       Thomas Ashcraft
 // @match        *://*.alienwarearena.com/*
@@ -13,7 +13,7 @@
 
 (function() {
 	// You can configure options through the user interface. It is not recommended to edit the script for these purposes.
-	var version = "0.3.9";
+	var version = "0.4.0";
 	var DEBUG = false; // Developer option. Default: false
 
 	var status_message_delay_default	= 5000;
@@ -40,19 +40,21 @@
 
 	// Embed style
 	var helper_style = `
-		#background {}
 		.awah-btn-tots {background-color: #f05000;}
 		.awah-btn-cons,
 		.awah-btn-cons:hover {color: gold;}
-		.awah-arp-pts {float: right; clear: both; width: 100%}
-		.awah-arp-status {float: right; clear: both; white-space: nowrap; border-bottom: 1px solid #1c1e22;}
-		.awah-arp-status > span {float: right; clear: both; position: relative; animation: awah-slide-from-bottom 0.25s ease-out 1 forwards;}
-		#arp-toast .toast-header {overflow: visible !important;}
-		.awah-ui-overlay {float: right; clear: both; font-size: smaller !important; pointer-events: none; position: absolute; bottom: 102%; right: 0; min-width: 100%; padding: inherit; text-shadow: 2px 2px 2px rgb(0, 0, 0), -1px -1px 2px rgb(0, 0, 0), 5px 5px 4px rgb(0, 0, 0), -4px -4px 4px rgb(0, 0, 0); text-align: right; background: rgba(0, 0, 0, 0) linear-gradient(to right bottom, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0) 50%, rgba(0, 0, 0, 0.85) 85%, rgba(0, 0, 0, 0.85) 100%) no-repeat scroll 0 0;}
 		.awah-grey {color: #767676;}
 		.awah-casper-out {animation: awah-casper-out 0.6s ease-in !important;}
-		.awah-arp-pts > span {clear: both; float: right; width: 100%; background-position: 50% 50%; background-repeat: no-repeat; background-size: 100% 12px;}
-		.awah-arp-pts > span::after {content: ""; display: block; height: 0; clear: both;}
+		[data-awah-tooltip]:after {content: attr(data-awah-tooltip); padding: 4px 8px; color: white; position: absolute; left: 0; top: 0%; opacity: 0; font-weight: normal; text-transform: none; font-size: smaller; white-space: pre; box-shadow: 0px 0px 3px 0px #54bbdb; background-color: #0e0e0e; transition: opacity 0.25s ease-out, top 0.25s ease-out; z-index: 1000;}
+		[data-awah-tooltip]:hover:after {top: -115%; opacity: 1;}
+
+		#arp-toast .toast-header {overflow: visible !important;}
+		.awah-ui-overlay {/* float: right; */ clear: both; font-size: smaller !important; pointer-events: none; position: absolute; bottom: 102%; right: 0; min-width: 100%; padding: inherit; text-shadow: 2px 2px 2px rgb(0, 0, 0), -1px -1px 2px rgb(0, 0, 0), 5px 5px 4px rgb(0, 0, 0), -4px -4px 4px rgb(0, 0, 0); text-align: right; background: rgba(0, 0, 0, 0) linear-gradient(to right bottom, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0) 50%, rgba(0, 0, 0, 0.85) 85%, rgba(0, 0, 0, 0.85) 100%) no-repeat scroll 0 0;}
+		.awah-arp-status {float: right; clear: both; white-space: nowrap; border-bottom: 1px solid #1c1e22;}
+		.awah-arp-status > div {/* float: right; */ clear: both; position: relative; animation: awah-slide-from-bottom 0.25s ease-out 1 forwards;}
+		.awah-arp-pts {/* float: right; */ clear: both; width: 100%}
+		.awah-arp-pts > div {clear: both; /* float: right; */ width: 100%; background-position: 50% 50%; background-repeat: no-repeat; background-size: 100% 12px;}
+		.awah-arp-pts > div::after {content: ""; display: block; height: 0; clear: both;}
 
 		.awah-options-btn {float: left; padding-left: 16px; cursor: pointer;}
 		.awah-options-btn:hover {text-shadow: 0px 0px 3px rgba(75, 201, 239, 1), 0px 0px 12px rgba(75, 201, 239, 1); animation: awah-breathing-text-neon 2s ease 0s infinite alternate;}
@@ -60,12 +62,13 @@
 		.awah-options-title {font-size: 16px; padding: 11px 0;}
 		.awah-option {border-bottom: 1px solid #1c1e22; margin: 11px 0;}
 		.awah-option::after {content: ""; display: block; height: 0; clear: both;}
-		.awah-option label {width: 100%; margin: 0;}
+		.awah-option label {width: 100%; margin: 0; position: relative;}
 		.awah-opt-title {float: left; /* line-height: 38px; */}
 		.awah-opt-input {float: right; width: 24%; text-align: right; padding: 0 5px; height: auto; background: transparent; color: white; border-width: 0px 0px 1px 0px;}
 		.awah-opt-desc {float: right; font-size: smaller;}
 		#awah_restore_default {width: 100%;}
-		input.awah-opt-input[type="checkbox"] {display: none;}
+		input.awah-opt-input[type="checkbox"] {/* display: none; */ position: absolute; right: 0; opacity: 0;}
+		input.awah-opt-input[type="checkbox"]:focus + div {border-color: #66afe9; outline: 0; -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075), 0 0 8px rgba(102, 175, 233, .6); box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075), 0 0 8px rgba(102, 175, 233, .6);}
 		.awah-opt-input[type="checkbox"] + div {transition: 0.25s all ease; position: relative; overflow: hidden;}
 		.awah-opt-input[type="checkbox"] + div > div {transition: 0.25s all ease; background-color: #428bca; width: 24px; position: absolute; left: 0;}
 		input.awah-opt-input[type="checkbox"]:checked + div {background-color: rgb(66, 139, 202, 0.4);}
@@ -78,7 +81,7 @@
 
 		.account-settings-steam div.steam {background-color: #171a21; border-radius: 100px;}
 
-		div.tile-content.awah-giveaway-taken a.Giveaway::before {content: attr(awahlabel); font-family: inherit; font-weight: 700; white-space: pre; overflow: hidden; width: 100%; height: 100%; text-shadow: 2px 2px 2px rgb(0, 0, 0), -1px -1px 2px rgb(0, 0, 0), 5px 5px 4px rgb(0, 0, 0), -4px -4px 4px rgb(0, 0, 0); background-color: rgba(0, 0, 0, 0); background-image: repeating-linear-gradient(135deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 0.35%, rgba(0,0,0,1) 0.35%, rgba(0,0,0,1) 0.7%);}
+		div.tile-content.awah-giveaway-taken a.Giveaway::before {content: attr(awahlabel); font-family: inherit; font-weight: 700; white-space: pre; overflow: hidden; width: 100%; height: 100%; text-shadow: 2px 2px 2px rgb(0, 0, 0), -1px -1px 2px rgb(0, 0, 0), 5px 5px 4px rgb(0, 0, 0), -4px -4px 4px rgb(0, 0, 0); background-color: rgba(0, 0, 0, 0); background-image: repeating-linear-gradient(rgba(0,0,0,0) 0px, rgba(0,0,0,0) 1px, rgba(0,0,0,1) 1px, rgba(0,0,0,1) 2px);}
 		div.tile-content.awah-giveaway-taken:not(:hover) {opacity: 0.3; transition: opacity 0.25s ease-in-out;}
 
 		.awah-progress-bar-back {background-color: rgb(40, 37, 36); height: 12px;}
@@ -117,19 +120,19 @@
 	votes_content_processing = false;
 	votes_content_gathering = false;
 	content_to_vote = [];
-	ucontent_to_vote = [];
+	voting_down = false;
 	var options_save_apply_timer;
 	var tot_add_votes = getRandomInt(tot_add_votes_min, tot_add_votes_max);
 
 	// initialize UI
 	setTimeout(function() {
-		$("div.toast-header").append('<div class="awah-ui-overlay"><span class="awah-arp-status awah-grey"></span><span class="awah-arp-pts"><span class="awah-arp-pts-con"></span><span class="awah-arp-pts-tot"></span></span></div>');
+		$("div.toast-header").append('<div class="awah-ui-overlay"><div class="awah-arp-status awah-grey"></div><div class="awah-arp-pts"><div class="awah-arp-pts-con"></div><div class="awah-arp-pts-tot"></div></div></div>');
 		if (votes_content_cur < votes_content_max) {
-			$('<span class="awah-con-queue" style="display: none;">votes queue: <span class="awah-con-queue-length">' + content_to_vote.length + '</span></span>').appendTo(".awah-arp-status");
+			$('<div class="awah-con-queue" style="display: none;">votes queue: <span class="awah-con-queue-length">' + content_to_vote.length + '</span> <span class="fa fa-fw fa-upload"></span></div>').appendTo(".awah-arp-status");
 		}
 		arp_pts_status_update();
 		$("div.toast-body > p.text-center").css({ "float": "right", "padding-right": "16px" });
-		$("div.toast-body").append('<p class="awah-options-btn"><span class="fa fa-cog"></span> HELPER OPTIONS</p>');
+		$("div.toast-body").append('<p class="awah-options-btn"><span class="fa fa-fw fa-cog"></span> HELPER OPTIONS</p>');
 		$("div.toast-body").prepend('<div class="awah-options-overlay" style="display: none; bottom: -102%;"><div class="awah-option"><span class="awah-opt-desc awah-grey">AWA helper v<b>' + version + '</b></span></div>' +
 			'<div class="awah-option">' +
 			'<label><span class="awah-opt-title">actions_delay_min</span><input id="awah_actions_delay_min" class="form-control awah-opt-input" type="text" value="' + actions_delay_min + '"></label>' +
@@ -161,11 +164,12 @@
 			}
 		}, false);
 
-		$("input.awah-opt-input").on("input", function() {
-			if($(this).prop('type') == 'text') {
-				this.value=this.value.replace(/[^\d]/,'');
-				this.value=this.value.slice(0, 5);
-			}
+		$('input.awah-opt-input[type="text"]').on("input", function() {
+			this.value=this.value.replace(/[^\d]/,'');
+			this.value=this.value.slice(0, 5);
+		});
+
+		$("input.awah-opt-input").on("change", function() {
 			clearTimeout(options_save_apply_timer);
 			options_save_apply_timer = setTimeout(function() {
 				options_save_apply();
@@ -179,7 +183,7 @@
 			$("#awah_tot_add_votes_max").val(tot_add_votes_max_default);
 			$("#awah_show_key_on_marked_giveaways").prop("checked", (show_key_on_marked_giveaways_default === "true"));// true);
 			$("#awah_status_message_delay").val(status_message_delay_default);
-			$('<span>Default options settings restored!</span>').appendTo(".awah-arp-status")
+			$('<div>Default options settings restored!</div>').appendTo(".awah-arp-status")
 				.delay(status_message_delay).queue(function() { $(this).addClass("awah-casper-out"); });
 			options_save_apply();
 		});
@@ -218,11 +222,11 @@
 			localStorage.setItem('awah_tot_add_votes_max', tot_add_votes_max);
 			localStorage.setItem('awah_show_key_on_marked_giveaways', show_key_on_marked_giveaways.toString());
 			localStorage.setItem('awah_status_message_delay', status_message_delay);
-			$('<span>Settings saved! <span class="fa fa-floppy-o"></span></span>').appendTo(".awah-arp-status")
+			$('<div>Settings saved! <span class="fa fa-fw fa-floppy-o"></span></div>').appendTo(".awah-arp-status")
 				.delay(status_message_delay).queue(function() { $(this).addClass("awah-casper-out"); });
 		} catch (e) {
 			if (e == QUOTA_EXCEEDED_ERR) {
-				$('<span>localStorage quota exceeded! <span class="fa fa-exclamation-triangle"></span></span>').appendTo(".awah-arp-status")
+				$('<div>localStorage quota exceeded! <span class="fa fa-fw fa-exclamation-triangle"></span></div>').appendTo(".awah-arp-status")
 					.delay(status_message_delay).queue(function() { $(this).addClass("awah-casper-out"); });
 			}
 		}
@@ -241,11 +245,11 @@
 			if (data.votedForContent === false) {
 				votes_content_cur--;
 			}
-			if (!votes_content_processing && !votes_content_gathering && 6 == 9) {
-				$('<span>' + data.message + '</span>').appendTo(".awah-arp-status")
+			if (!votes_content_processing && !votes_content_gathering) {
+				$('<div>' + data.message + '</div>').appendTo(".awah-arp-status")
 					.delay(status_message_delay).queue(function() { $(this).addClass("awah-casper-out"); });
-				if (typeof data.voteTotal !== 'undefined') {
-					$('<span>up: ' + data.upVotes + ' | down: ' + data.downVotes + ' | total: ' + data.voteTotal + '</span>').appendTo(".awah-arp-status")
+				if (typeof data.upVotes !== 'undefined') {
+					$('<div>up: ' + data.upVotes + ' | down: ' + data.downVotes + (typeof data.voteTotal !== 'undefined' ? ' | total: ' + data.voteTotal : '') + '</div>').appendTo(".awah-arp-status")
 						.delay(status_message_delay).queue(function() { $(this).addClass("awah-casper-out"); });
 				}
 			}
@@ -254,8 +258,8 @@
 	});
 
 	function arp_pts_status_update() {
-		$(".awah-arp-pts-con").text("CON: " + votes_content_cur + " / " + votes_content_max);
-		$(".awah-arp-pts-tot").text("TOT: " + votes_tot_cur  + " / " + votes_tot_max);
+		$(".awah-arp-pts-con").html("CON: " + votes_content_cur + " / " + votes_content_max);
+		$(".awah-arp-pts-tot").html("TOT: " + votes_tot_cur  + " / " + votes_tot_max);
 		if (votes_content_cur >= votes_content_max) {
 			$(".awah-arp-pts-con").addClass("awah-grey");
 		}
@@ -290,7 +294,7 @@
 
 		awah_day_remains = Math.floor(awah_day_remains / 1000);
 
-		$(".toast-body table:first tbody").append('<tr><td><span class="fa fa-clock-o"></span> Daily reset</td><td class="text-center awah-daily-reset-timer">hh:mm:ss</td><td class="pull-right"></td></tr>');
+		$(".toast-body table:first tbody").append('<tr><td><span class="fa fa-fw fa-clock-o"></span> Daily reset</td><td class="text-center awah-daily-reset-timer">hh:mm:ss</td><td class="pull-right"></td></tr>');
 
 		awah_day_remains_interval = setInterval(function() {
 			awah_day_remains--;
@@ -304,7 +308,7 @@
 			if (secs < 10) secs = "0" + secs;
 			$(".awah-daily-reset-timer").text(hours + ":" + mins + ":" + secs);
 
-			if (awah_day_remains < 1000) {
+			if (awah_day_remains < 1) {
 				clearInterval(awah_day_remains_interval);
 			}
 		}, 1000);
@@ -315,24 +319,29 @@
 		if (!$("a.btn-show-vote").hasClass("hidden")) {
 			$("a.btn-show-vote").click(); //turn page into voting mode
 		}
-		$('<span>Additional This or That votes: ' + tot_add_votes + '</span>').appendTo(".awah-arp-status")
-			.delay(status_message_delay).queue(function() { $(this).addClass("awah-casper-out"); });
+		var status_message = $('<div>Additional random TOT votes: ' + tot_add_votes + ' <span class="fa fa-fw fa-plus-square"></span></div>');
+		status_message.appendTo(".awah-arp-status");
 		//create catch event to click again
 		// settings.url == /this-or-that/1516182/create-match
 		// where "1516182" is a topic ID
 		$(document).ajaxComplete(function(event, xhr, settings) {
-			if (settings.url.indexOf("create-match") >=0 && votes_tot_cur < (votes_tot_max + tot_add_votes)) {
-				setTimeout(function() {
-					var tot_choice = getRandomInt(0, 1);
-					$("div.vote-container a.expand").each(function(index) {
-						if (index == tot_choice) {
-							$(this).trigger("mouseover").delay(1000).queue(function() { $(this).click(); });
-						}
-					});
-				}, (1000 + getRandomInt(actions_delay_min, actions_delay_max)));
+			if (settings.url.indexOf("create-match") >=0) {
+				if (votes_tot_cur < (votes_tot_max + tot_add_votes)) {
+					setTimeout(function() {
+						var tot_choice = getRandomInt(0, 1);
+						$("div.vote-container a.expand").each(function(index) {
+							if (index == tot_choice) {
+								$(this).trigger("mouseover").delay(1000).queue(function() { $(this).click(); });
+							}
+						});
+					}, (1000 + getRandomInt(actions_delay_min, actions_delay_max)));
+				} else {
+					status_message.delay(status_message_delay).queue(function() { $(this).addClass("awah-casper-out"); });
+					$('<div>This or That voting complete <span class="fa fa-fw fa-check-square"></span></div>').appendTo(".awah-arp-status")
+						.delay(status_message_delay).queue(function() { $(this).addClass("awah-casper-out"); });
+				}
 			}
 		});
-		//$("div.vote-container a.expand").filter(":first").click(); //click to launch spam loop
 		setTimeout(function() {
 		var tot_choice = getRandomInt(0, 1);
 			$("div.vote-container a.expand").each(function(index) {
@@ -364,7 +373,7 @@
 		$(".awah-con-queue-length").text(content_to_vote.length);
 		//var url    = "/forums/post/up-vote/replaceMe";
 		//url        = url.replace('replaceMe', postId);
-		var postId = url.replace("/forums/post/up-vote/", "");
+		var postId = url.replace("/forums/post/" + (voting_down ? 'down' : 'up') + "-vote/", "");
 
 		$.ajax({
 			url: url,
@@ -374,12 +383,12 @@
                     $('.post-vote-count[data-post-id="'+postId+'"]').html(data['voteTotal']);
 
                     if (data.votedForContent) {
-                        $('#post-'+postId+' .post-up-vote .fa-arrow-up').css('color', 'gold');
+                        $('#post-'+postId+' .post-' + (voting_down ? 'down' : 'up') + '-vote .fa-arrow-' + (voting_down ? 'down' : 'up')).css('color', 'gold');
                     } else {
-                        $('#post-'+postId+' .post-up-vote .fa-arrow-up').css('color', '#c8c8c8');
+                        $('#post-'+postId+' .post-' + (voting_down ? 'down' : 'up') + '-vote .fa-arrow-' + (voting_down ? 'down' : 'up')).css('color', '#c8c8c8');
                     }
 
-                    $('#post-'+postId+' .post-down-vote .fa-arrow-down').css('color', '#c8c8c8');
+                    $('#post-'+postId+' .post-' + (voting_down ? 'up' : 'down') + '-vote .fa-arrow-' + (voting_down ? 'up' : 'down')).css('color', '#c8c8c8');
                 }
 				if (content_to_vote.length > 0 && votes_content_cur < votes_content_max) {
 					setTimeout(function() {
@@ -398,7 +407,7 @@
 				}
 			},
 			error: function(data){
-				$('<span>Some vote error!</span>').appendTo(".awah-arp-status")
+				$('<div>Some vote error!</div>').appendTo(".awah-arp-status")
 					.delay(status_message_delay).queue(function() { $(this).addClass("awah-casper-out"); });
 				if (content_to_vote.length > 0) {
 					votes_content_make();
@@ -414,17 +423,16 @@
 
 		$(".awah-con-queue").show();
 
-		// TODO: filter to avoid arrow-down arleady clicked comments
-		$("i.fa-arrow-up:not([style='color: gold;'])").each(function( index ) {
+		$("div.ucf-comments div.media.post:not(:has(i[class*='fa-arrow'][style='color: gold;']))").each(function( index ) {
 			if ((votes_content_cur + content_to_vote.length) < votes_content_max) {
-				var url = "/forums/post/up-vote/" + $(this).parent().attr('data-post-id');
+				var url = "/forums/post/" + (voting_down ? 'down' : 'up') + "-vote/" + $(this).attr('data-post-id');
 				content_to_vote.push(url);
 				$(".awah-con-queue-length").text(content_to_vote.length);
 				arp_pts_status_update();
 			}
 			if ((votes_content_cur + content_to_vote.length) >= votes_content_max) {
 				votes_content_gathering = false;
-				$('<span>Enough votes!</span>').appendTo(".awah-arp-status")
+				$('<div>Enough votes!</div>').appendTo(".awah-arp-status")
 					.delay(status_message_delay).queue(function() { $(this).addClass("awah-casper-out"); });
 				return false;
 			}
@@ -443,19 +451,19 @@
 		//$('.pagination li a').on('click'
 		//e.preventDefault();
 		//$ele         = $(this);
-		var status_message = $('<span>Getting to the next page <span class="fa fa-circle-o-notch fa-spin"></span></span>');
-		status_message.appendTo(".awah-arp-status");
 		var href     = $("ul.pagination > li.next:not(.disabled) > a").filter(":first").attr('href');
 		var parts    = href.split('/');
 		var page     = parts.pop();
 		var entityId = parts.pop();
 
 		if (href) {
+			var status_message = $('<div>Getting to the next page <span class="fa fa-fw fa-circle-o-notch fa-spin"></span></div>');
+			status_message.appendTo(".awah-arp-status");
 			$.ajax({
 				url: href,
 				type: 'get',
 				success: function(data) {
-					status_message.html('<span>Getting to the next page <span class="fa fa-check-circle"></span></span>');
+					status_message.html('<div>Getting to the next page <span class="fa fa-fw fa-check-circle"></span></div>');
 					status_message.delay(status_message_delay).queue(function() { $(this).addClass("awah-casper-out"); });
 					$('#reply-wrapper').empty();
 					$('#reply-wrapper').append(data);
@@ -463,7 +471,7 @@
 					votes_content_gather();
 				},
 				error: function(data) {
-					status_message.html('<span>Getting to the next page <span class="fa fa-exclamation-triangle"></span></span>');
+					status_message.html('<div>Getting to the next page <span class="fa fa-fw fa-exclamation-triangle"></span></div>');
 					status_message.delay(status_message_delay).queue(function() { $(this).addClass("awah-casper-out"); });
 					$(".awah-btn-cons").removeClass("hidden");
 				}
@@ -474,11 +482,27 @@
 	}
 
 	function votes_content_btn() {
-		$('<a class="btn btn-default awah-btn-cons" href="javascript:void(0);">' +
-			'<i class="fa fa-arrow-up" style="color: gold;"></i> <span class="hidden-xs">Make CON votes</span></a>').appendTo(".btn-group-sm");
-		$(".awah-btn-cons").on("click", function() {
+		$('<a class="btn btn-default awah-btn-cons awah-up" href="javascript:void(0);" data-awah-tooltip="Make CON votes">' +
+			'<i class="fa fa-arrow-up" style="color: gold;"></i> <span class="hidden-xs">UP-votes</span></a>' +
+			'<a class="btn btn-default awah-btn-cons awah-down" href="javascript:void(0);" data-awah-tooltip="Make CON votes">' +
+			'<i class="fa fa-arrow-down" style="color: gold;"></i> <span class="hidden-xs">DOWN-votes</span></a>').appendTo(".btn-group-sm");
+		$(".awah-btn-cons.awah-up").on("click", function() {
 			$(".awah-btn-cons").addClass("hidden");
-			votes_content_gather(); //new algorithm
+			voting_down = false;
+			votes_content_gather(); //start algorithm
+		});
+		$(".awah-btn-cons.awah-down").on("click", function() {
+			$(".awah-btn-cons").addClass("hidden");
+			voting_down = true;
+			votes_content_gather(); //start algorithm
+		});
+
+		if(DEBUG) $('<a class="btn btn-default awah-btn-test" href="javascript:void(0);">' +
+ 			'<i class="fa fa-terminal"></i> <span class="hidden-xs">Make test</span></a>').appendTo(".btn-group-sm");
+ 		if(DEBUG) $(".awah-btn-test").on("click", function() {
+ 			votes_content_cur = getRandomInt(30, 45);
+ 			//votes_tot_cur = 2;
+ 			arp_pts_status_update();
 		});
 	}
 
@@ -488,10 +512,11 @@
 			// fix profileSteamId
 			profileSteamId = $('a[href^="steam://friends/message/"]').prop("href").replace(/steam:\/\/friends\/message\//, "");
 
-			$(".profile-social-links").append('<li data-steam-enabled="true"><span class="fa fa-steam-square" style=""></span> <a href="//steamcommunity.com/profiles/' + profileSteamId + '" target="_blank">Visit Steam Profile</a></li>');
+			$(".profile-social-links").append('<li data-steam-enabled="true"><span class="fa fa-fw fa-steam-square" style=""></span> <a href="//steamcommunity.com/profiles/' + profileSteamId + '" target="_blank">Visit Steam Profile</a></li>');
 		}
 	}
 
+	// GIVEAWAY functions
 	function show_available_keys() {
 		//output prependTo(".content-container");
 		//div#get-key-actions span.key-count
@@ -511,11 +536,11 @@
 		}
 	}
 
-	// GIVEAWAY functions
 	function get_entered_giveaways() {
 		// optionally get https://eu.alienwarearena.com/account/me/giveaways
+		// optionally GET https://eu.alienwarearena.com/giveaways/keys
 		var any_giveaway_href = $('a[href*="/Giveaway/"]:last').prop("href");
-		var status_message = $('<span>Getting your giveaways info <span class="fa fa-circle-o-notch fa-spin"></span></span>');
+		var status_message = $('<div>Getting your giveaways info <span class="fa fa-fw fa-circle-o-notch fa-spin"></span></div>');
 		setTimeout(function() {
 			status_message.appendTo(".awah-arp-status");
 		}, 1);
@@ -523,7 +548,7 @@
 			url: any_giveaway_href,
 			type: 'get',
 			success: function(data) {
-				status_message.html('<span>Getting your giveaways info <span class="fa fa-check-circle"></span></span>');
+				status_message.html('<div>Getting your giveaways info <span class="fa fa-fw fa-check-circle"></span></div>');
 				status_message.delay(status_message_delay).queue(function() { $(this).addClass("awah-casper-out"); });
 				var awahdata = /var giveawayKeys.*\[({.*})\];/.exec(data);
 				awahdata = awahdata[1];
@@ -546,7 +571,7 @@
 				}, false);
 			},
 			error: function(data) {
-				status_message.html('<span>Getting your giveaways info <span class="fa fa-exclamation-triangle"></span></span>');
+				status_message.html('<div>Getting your giveaways info <span class="fa fa-fw fa-exclamation-triangle"></span></div>');
 				status_message.delay(status_message_delay).queue(function() { $(this).addClass("awah-casper-out"); });
 				//$(".awah-btn-cons").removeClass("hidden");
 			}
