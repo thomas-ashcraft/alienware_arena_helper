@@ -1,7 +1,7 @@
 ﻿// ==UserScript==
 // @name         Alienware Arena helper
 // @namespace    https://github.com/thomas-ashcraft
-// @version      0.4.1
+// @version      0.4.2
 // @description  Earn daily ARP easily
 // @author       Thomas Ashcraft
 // @match        *://*.alienwarearena.com/*
@@ -13,7 +13,7 @@
 
 (function() {
 	// You can configure options through the user interface. It is not recommended to edit the script for these purposes.
-	var version = "0.4.1";
+	var version = "0.4.2";
 	var DEBUG = false; // Developer option. Default: false
 
 	var status_message_delay_default	= 5000;
@@ -41,7 +41,7 @@
 
 	// Embed style
 	var helper_style = `
-		.awah-btn-tots {background-color: #f05000;}
+		.awah-btn-tots {}
 		.awah-btn-cons,
 		.awah-btn-cons:hover {color: gold;}
 		.awah-grey {color: #767676;}
@@ -50,15 +50,15 @@
 		[data-awah-tooltip]:hover:after {top: -115%; opacity: 1;}
 
 		#arp-toast .toast-header {overflow: visible !important;}
-		.awah-ui-overlay {/* float: right; */ clear: both; font-size: smaller !important; pointer-events: none; position: absolute; bottom: 102%; right: 0; min-width: 100%; padding: inherit; text-shadow: 2px 2px 2px rgb(0, 0, 0), -1px -1px 2px rgb(0, 0, 0), 5px 5px 4px rgb(0, 0, 0), -4px -4px 4px rgb(0, 0, 0); text-align: right; background: rgba(0, 0, 0, 0) linear-gradient(to right bottom, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0) 50%, rgba(0, 0, 0, 0.85) 85%, rgba(0, 0, 0, 0.85) 100%) no-repeat scroll 0 0;}
+		.awah-ui-overlay {clear: both; font-size: smaller !important; pointer-events: none; position: absolute; bottom: 102%; right: 0; min-width: 100%; padding: inherit; text-shadow: 2px 2px 2px rgb(0, 0, 0), -1px -1px 2px rgb(0, 0, 0), 2px 2px 5px rgb(0, 0, 0), -1px -1px 5px rgb(0, 0, 0), 0px 0px 10px rgb(0, 0, 0); text-align: right; background: rgba(0, 0, 0, 0) linear-gradient(to right bottom, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0) 50%, rgba(0, 0, 0, 0.85) 85%, rgba(0, 0, 0, 0.85) 100%) no-repeat scroll 0 0;}
 		.awah-arp-status {float: right; clear: both; white-space: nowrap; border-bottom: 1px solid #1c1e22;}
-		.awah-arp-status > div {/* float: right; */ clear: both; position: relative; animation: awah-slide-from-bottom 0.25s ease-out 1 forwards;}
-		.awah-arp-pts {/* float: right; */ clear: both; width: 100%}
-		.awah-arp-pts > div {clear: both; /* float: right; */ width: 100%; background-position: 50% 50%; background-repeat: no-repeat; background-size: 100% 12px;}
+		.awah-arp-status > div {clear: both; position: relative; animation: awah-slide-from-bottom 0.25s ease-out 1 forwards;}
+		.awah-arp-pts {clear: both; width: 100%}
+		.awah-arp-pts > div {clear: both; width: 100%; background-position: 50% 50%; background-repeat: no-repeat; background-size: 100% 12px;}
 		.awah-arp-pts > div::after {content: ""; display: block; height: 0; clear: both;}
 
-		.awah-options-btn {float: left; padding-left: 16px; cursor: pointer;}
-		.awah-options-btn:hover {text-shadow: 0px 0px 3px rgba(75, 201, 239, 1), 0px 0px 12px rgba(75, 201, 239, 1); animation: awah-breathing-text-neon 2s ease 0s infinite alternate;}
+		.awah-options-btn {float: left; padding-left: 16px; cursor: pointer; transition: text-shadow 0.25s ease-in-out;}
+		.awah-options-btn:hover {text-shadow: 0px 0px 3px rgba(75, 201, 239, 1), 0px 0px 12px rgba(75, 201, 239, 1); /* animation: awah-breathing-text-neon 2s ease 0s infinite alternate; */}
 		.awah-options-overlay {overflow: auto; float: left; clear: both; position: absolute; bottom: 0; right: calc(100% + 1px); height: 100%; width: 100%; padding: 0 11px; text-shadow: 2px 2px 2px rgb(0, 0, 0), -1px -1px 2px rgb(0, 0, 0); text-align: right; background: rgba(0, 0, 0, 0.85) repeat scroll 0 0; box-shadow: 0px 0px 3px 0px #54bbdb;}
 		.awah-options-title {font-size: 16px; padding: 11px 0;}
 		.awah-option {border-bottom: 1px solid #1c1e22; margin: 11px 0;}
@@ -71,9 +71,9 @@
 		input.awah-opt-input[type="checkbox"] {/* display: none; */ position: absolute; right: 0; opacity: 0;}
 		input.awah-opt-input[type="checkbox"]:focus + div {border-color: #66afe9; outline: 0; -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075), 0 0 8px rgba(102, 175, 233, .6); box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075), 0 0 8px rgba(102, 175, 233, .6);}
 		.awah-opt-input[type="checkbox"] + div {transition: 0.25s all ease; position: relative; overflow: hidden;}
-		.awah-opt-input[type="checkbox"] + div > div {transition: 0.25s all ease; background-color: #428bca; width: 24px; position: absolute; left: 0;}
+		.awah-opt-input[type="checkbox"] + div > div {transition: 0.25s all ease; background-color: #428bca; width: 50%; position: absolute; left: 0;}
 		input.awah-opt-input[type="checkbox"]:checked + div {background-color: rgb(66, 139, 202, 0.4);}
-		input.awah-opt-input[type="checkbox"]:checked + div > div {left: calc(100% - 24px);}
+		input.awah-opt-input[type="checkbox"]:checked + div > div {left: calc(100% - 50%);}
 		.awah-opt-input[type="checkbox"] + div > div::before {content: 'ON'; position: absolute; right: 120%;}
 		.awah-opt-input[type="checkbox"] + div > div::after {content: 'OFF'; color: #767676; position: absolute; left: 120%;}
 
@@ -82,7 +82,7 @@
 
 		.account-settings-steam div.steam {background-color: #171a21; border-radius: 100px;}
 
-		div.tile-content.awah-giveaway-taken a.Giveaway::before {content: attr(awahlabel); font-family: inherit; font-weight: 700; white-space: pre; overflow: hidden; width: 100%; height: 100%; text-shadow: 2px 2px 2px rgb(0, 0, 0), -1px -1px 2px rgb(0, 0, 0), 5px 5px 4px rgb(0, 0, 0), -4px -4px 4px rgb(0, 0, 0); background-color: rgba(0, 0, 0, 0); background-image: repeating-linear-gradient(rgba(0,0,0,0) 0px, rgba(0,0,0,0) 1px, rgba(0,0,0,1) 1px, rgba(0,0,0,1) 2px);}
+		div.tile-content.awah-giveaway-taken a.Giveaway::before {content: attr(awahlabel); font-family: inherit; font-weight: 700; white-space: pre; overflow: hidden; width: 100%; height: 100%; text-shadow: 2px 2px 2px rgb(0, 0, 0), -1px -1px 2px rgb(0, 0, 0), 2px 2px 5px rgb(0, 0, 0), -1px -1px 5px rgb(0, 0, 0), 0px 0px 10px rgb(0, 0, 0); background-color: rgba(0, 0, 0, 0); background-image: repeating-linear-gradient(rgba(0,0,0,0) 0px, rgba(0,0,0,0) 1px, rgba(0,0,0,1) 1px, rgba(0,0,0,1) 2px);}
 		div.tile-content.awah-giveaway-taken:not(:hover) {opacity: 0.3; transition: opacity 0.25s ease-in-out;}
 
 		.awah-progress-bar-back {background-color: rgb(40, 37, 36); height: 12px;}
@@ -381,7 +381,7 @@
 			type: 'post',
 			success: function(data){
 				if (data.success) {
-                    $('.post-vote-count[data-post-id="'+postId+'"]').html(data['voteTotal']);
+                    $('.post-vote-count[data-post-id="'+postId+'"]').html(data.voteTotal);
 
                     if (data.votedForContent) {
                         $('#post-'+postId+' .post-' + (voting_down ? 'down' : 'up') + '-vote .fa-arrow-' + (voting_down ? 'down' : 'up')).css('color', 'gold');
@@ -541,44 +541,28 @@
 	}
 
 	function get_entered_giveaways() {
-		// optionally get https://eu.alienwarearena.com/account/me/giveaways
-		// optionally GET https://eu.alienwarearena.com/giveaways/keys
-		var any_giveaway_href = $('a[href*="/Giveaway/"]:last').prop("href");
 		var status_message = $('<div>Getting your giveaways info <span class="fa fa-fw fa-circle-o-notch fa-spin"></span></div>');
 		setTimeout(function() {
 			status_message.appendTo(".awah-arp-status");
 		}, 1);
-		$.ajax({
-			url: any_giveaway_href,
-			type: 'get',
-			success: function(data) {
-				status_message.html('<div>Getting your giveaways info <span class="fa fa-fw fa-check-circle"></span></div>');
-				status_message.delay(status_message_delay).queue(function() { $(this).addClass("awah-casper-out"); });
-				var awahdata = /var giveawayKeys.*\[({.*})\];/.exec(data);
-				awahdata = awahdata[1];
-				awahdata = awahdata.replace(/},{/g, "}awahsplitmark,{");
-				awahdata = awahdata.split("awahsplitmark,");
-				var awahGiveawayKeys = [];
-				$.each(awahdata, function( index, value ) {
-					//awahGiveawayKeys.push(JSON.parse(value));
-					var parsed_value = JSON.parse(value);
-					awahGiveawayKeys[parsed_value.giveaway_id] = parsed_value;
-				});
-				awahdata = null;
-				if(DEBUG) console.log(awahGiveawayKeys);
-				// sometimes first giveaways page loaded before event registered !
-				mark_entered_giveaways(awahGiveawayKeys);
-				document.addEventListener('animationstart', function(event) {
-					if (event.animationName == "awah-new-tile-chunk-appears") {
-						mark_entered_giveaways(awahGiveawayKeys);
-					}
-				}, false);
-			},
-			error: function(data) {
-				status_message.html('<div>Getting your giveaways info <span class="fa fa-fw fa-exclamation-triangle"></span></div>');
-				status_message.delay(status_message_delay).queue(function() { $(this).addClass("awah-casper-out"); });
-				//$(".awah-btn-cons").removeClass("hidden");
-			}
+
+		$.getJSON("/giveaways/keys", function(data) {
+			status_message.html('<div>Getting your giveaways info <span class="fa fa-fw fa-check-circle"></span></div>');
+			status_message.delay(status_message_delay).queue(function() { $(this).addClass("awah-casper-out"); });
+			var awahGiveawayKeys = [];
+			$.each(data, function(index, value) {
+				awahGiveawayKeys[value.giveaway_id] = value;
+			});
+			if(DEBUG) console.log("awahGiveawayKeys", awahGiveawayKeys);
+			mark_entered_giveaways(awahGiveawayKeys); // sometimes first giveaways page loaded before event registered
+			document.addEventListener('animationstart', function(event) {
+				if (event.animationName == "awah-new-tile-chunk-appears") {
+					mark_entered_giveaways(awahGiveawayKeys);
+				}
+			}, false);
+		}).fail(function() {
+			status_message.html('<div>Getting your giveaways info <span class="fa fa-fw fa-exclamation-triangle"></span></div>');
+			status_message.delay(status_message_delay).queue(function() { $(this).addClass("awah-casper-out"); });
 		});
 	}
 
