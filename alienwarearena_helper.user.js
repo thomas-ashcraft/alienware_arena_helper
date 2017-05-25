@@ -1,7 +1,7 @@
 ﻿// ==UserScript==
 // @name         Alienware Arena helper
 // @namespace    https://github.com/thomas-ashcraft
-// @version      0.4.2
+// @version      0.4.3
 // @description  Earn daily ARP easily
 // @author       Thomas Ashcraft
 // @match        *://*.alienwarearena.com/*
@@ -13,7 +13,7 @@
 
 (function() {
 	// You can configure options through the user interface. It is not recommended to edit the script for these purposes.
-	var version = "0.4.2";
+	var version = "0.4.3";
 	var DEBUG = false; // Developer option. Default: false
 
 	var status_message_delay_default	= 5000;
@@ -33,7 +33,6 @@
 
 	var url = window.location.href;
 	if(DEBUG) console.log("🐾 url: " + url);
-	var og_url = $('meta[property="og:url"]').attr("content");
 
 	var path = window.location.pathname;
 	path = path.replace(/\/+/g, "/");
@@ -45,7 +44,7 @@
 		.awah-btn-cons,
 		.awah-btn-cons:hover {color: gold;}
 		.awah-grey {color: #767676;}
-		.awah-casper-out {animation: awah-casper-out 0.6s ease-in !important;}
+		.awah-casper-out {overflow: hidden !important; animation: awah-casper-out 0.6s ease-in !important;}
 		[data-awah-tooltip]:after {content: attr(data-awah-tooltip); padding: 4px 8px; color: white; position: absolute; left: 0; top: 0%; opacity: 0; font-weight: normal; text-transform: none; font-size: smaller; white-space: pre; box-shadow: 0px 0px 3px 0px #54bbdb; background-color: #0e0e0e; transition: opacity 0.25s ease-out, top 0.25s ease-out; z-index: 1000;}
 		[data-awah-tooltip]:hover:after {top: -115%; opacity: 1;}
 
@@ -82,8 +81,8 @@
 
 		.account-settings-steam div.steam {background-color: #171a21; border-radius: 100px;}
 
-		div.tile-content.awah-giveaway-taken a.Giveaway::before {content: attr(awahlabel); font-family: inherit; font-weight: 700; white-space: pre; overflow: hidden; width: 100%; height: 100%; text-shadow: 2px 2px 2px rgb(0, 0, 0), -1px -1px 2px rgb(0, 0, 0), 2px 2px 5px rgb(0, 0, 0), -1px -1px 5px rgb(0, 0, 0), 0px 0px 10px rgb(0, 0, 0); background-color: rgba(0, 0, 0, 0); background-image: repeating-linear-gradient(rgba(0,0,0,0) 0px, rgba(0,0,0,0) 1px, rgba(0,0,0,1) 1px, rgba(0,0,0,1) 2px);}
-		div.tile-content.awah-giveaway-taken:not(:hover) {opacity: 0.3; transition: opacity 0.25s ease-in-out;}
+		div.tile-content.awah-giveaway-taken a.Giveaway::before {content: attr(awahlabel); font-family: inherit; font-weight: 700; white-space: pre; overflow: hidden; width: 100%; height: 100%; text-shadow: 2px 2px 2px rgb(0, 0, 0), -1px -1px 2px rgb(0, 0, 0), 2px 2px 5px rgb(0, 0, 0), -1px -1px 5px rgb(0, 0, 0), 0px 0px 10px rgb(0, 0, 0); background-color: rgba(0, 0, 0, 0); background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACAQMAAABIeJ9nAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAABlBMVEUAAAAAAAClZ7nPAAAAAXRSTlMAQObYZgAAAAFiS0dEAIgFHUgAAAAJcEhZcwAACxIAAAsSAdLdfvwAAAAMSURBVAjXY2hgYAAAAYQAgSjdetcAAAAASUVORK5CYII=');}
+		div.tile-content.awah-giveaway-taken:not(:hover) {opacity: 0.2; transition: opacity 0.25s ease-in-out;}
 
 		.awah-progress-bar-back {background-color: rgb(40, 37, 36); height: 12px;}
 		.awah-progress-bar-front {background-color: #00a0f0;}
@@ -95,8 +94,8 @@
 			to {opacity: 1; bottom: 0px;}
 		}
 		@keyframes awah-casper-out {
-			from {filter: blur(0px);}
-			to {filter: blur(20px);}
+			0%		{filter: blur(0px); max-height: 50px;}
+			100%	{filter: blur(15px); max-height: 0px;}
 		}
 		@keyframes awah-breathing-text-neon {
 			from {text-shadow: 0px 0px 3px rgba(75, 201, 239, 0.25), 0px 0px 12px rgba(75, 201, 239, 0.25);}
@@ -484,9 +483,9 @@
 
 	function votes_content_btn() {
 		$('<a class="btn btn-default awah-btn-cons awah-up" href="javascript:void(0);" data-awah-tooltip="Make CON votes">' +
-			'<i class="fa fa-arrow-up" style="color: gold;"></i> <span class="hidden-xs">UP-votes</span></a>' +
+			'<i class="fa fa-arrow-up"></i> <span class="hidden-xs">UP-votes</span></a>' +
 			'<a class="btn btn-default awah-btn-cons awah-down" href="javascript:void(0);" data-awah-tooltip="Make CON votes">' +
-			'<i class="fa fa-arrow-down" style="color: gold;"></i> <span class="hidden-xs">DOWN-votes</span></a>').appendTo(".btn-group-sm");
+			'<i class="fa fa-arrow-down"></i> <span class="hidden-xs">DOWN-votes</span></a>').appendTo(".btn-group-sm");
 		$(".awah-btn-cons.awah-up").on("click", function() {
 			$(".awah-btn-cons").addClass("hidden");
 			voting_down = false;
@@ -583,6 +582,7 @@
 		case /.*\/ucf\/show\/.*/.test(path):
 			if(DEBUG) console.log("SWITCH: Content");
 			// <meta property="og:url" content="https://eu.alienwarearena.com/ucf/show/1592462/boards/contest-and-giveaways-global/Giveaway/rising-storm-2-vietnam-closed-beta-key-giveaway" />
+			var og_url = $('meta[property="og:url"]').attr("content");
 			switch (true) {
 				case /.*\/boards\/this-or-that\/.*/.test(path):
 				case /.*\/boards\/this-or-that\/.*/.test(og_url):
