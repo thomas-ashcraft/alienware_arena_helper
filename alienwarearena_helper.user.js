@@ -1,7 +1,7 @@
 ﻿// ==UserScript==
 // @name         Alienware Arena helper
 // @namespace    https://github.com/thomas-ashcraft
-// @version      0.4.3
+// @version      0.4.4
 // @description  Earn daily ARP easily
 // @author       Thomas Ashcraft
 // @match        *://*.alienwarearena.com/*
@@ -13,20 +13,20 @@
 
 (function() {
 	// You can configure options through the user interface. It is not recommended to edit the script for these purposes.
-	var version = "0.4.3";
+	var version = "0.4.4";
 	var DEBUG = false; // Developer option. Default: false
 
 	var status_message_delay_default	= 5000;
 	var actions_delay_min_default		= 1000;
 	var actions_delay_max_default		= 5000;
-	var tot_add_votes_min_default		= 3;
-	var tot_add_votes_max_default		= 7;
+	// var tot_add_votes_min_default		= 3;
+	// var tot_add_votes_max_default		= 7;
 	var show_key_on_marked_giveaways_default = "true";
 
 	var actions_delay_min		= parseInt(localStorage.getItem('awah_actions_delay_min'), 10) || actions_delay_min_default;
 	var actions_delay_max		= parseInt(localStorage.getItem('awah_actions_delay_max'), 10) || actions_delay_max_default;
-	var tot_add_votes_min		= parseInt(localStorage.getItem('awah_tot_add_votes_min'), 10) || tot_add_votes_min_default;
-	var tot_add_votes_max		= parseInt(localStorage.getItem('awah_tot_add_votes_max'), 10) || tot_add_votes_max_default;
+	// var tot_add_votes_min		= parseInt(localStorage.getItem('awah_tot_add_votes_min'), 10) || tot_add_votes_min_default;
+	// var tot_add_votes_max		= parseInt(localStorage.getItem('awah_tot_add_votes_max'), 10) || tot_add_votes_max_default;
 	var show_key_on_marked_giveaways	= localStorage.getItem('awah_show_key_on_marked_giveaways') || show_key_on_marked_giveaways_default;
 	show_key_on_marked_giveaways = (show_key_on_marked_giveaways === "true");
 	var status_message_delay	= parseInt(localStorage.getItem('awah_status_message_delay'), 10) || status_message_delay_default;
@@ -45,8 +45,12 @@
 		.awah-btn-cons:hover {color: gold;}
 		.awah-grey {color: #767676;}
 		.awah-casper-out {overflow: hidden !important; animation: awah-casper-out 0.6s ease-in !important;}
-		[data-awah-tooltip]:after {content: attr(data-awah-tooltip); padding: 4px 8px; color: white; position: absolute; left: 0; top: 0%; opacity: 0; font-weight: normal; text-transform: none; font-size: smaller; white-space: pre; box-shadow: 0px 0px 3px 0px #54bbdb; background-color: #0e0e0e; transition: opacity 0.25s ease-out, top 0.25s ease-out; z-index: 1000;}
+		[data-awah-tooltip]:after {content: attr(data-awah-tooltip); pointer-events: none; padding: 4px 8px; color: white; position: absolute; left: 0; top: 0%; opacity: 0; font-weight: normal; text-transform: none; font-size: smaller; white-space: pre; box-shadow: 0px 0px 3px 0px #54bbdb; background-color: #0e0e0e; transition: opacity 0.25s ease-out, top 0.25s ease-out; z-index: 1000;}
 		[data-awah-tooltip]:hover:after {top: -115%; opacity: 1;}
+
+		.awah-grp-con {position: absolute; left: 0%; bottom: 100%; text-align: center; color: white; width: 100%; min-width: 170px; background-color: rgba(0, 0, 0, 0.8); padding: 4px;}
+		.awah-voting-direction-panel > label {display: block; margin: 0; font-weight: normal; position: relative;}
+		.awah-grp-con input[type="radio"] {display: none;}
 
 		#arp-toast .toast-header {overflow: visible !important;}
 		.awah-ui-overlay {clear: both; font-size: smaller !important; pointer-events: none; position: absolute; bottom: 102%; right: 0; min-width: 100%; padding: inherit; text-shadow: 2px 2px 2px rgb(0, 0, 0), -1px -1px 2px rgb(0, 0, 0), 2px 2px 5px rgb(0, 0, 0), -1px -1px 5px rgb(0, 0, 0), 0px 0px 10px rgb(0, 0, 0); text-align: right; background: rgba(0, 0, 0, 0) linear-gradient(to right bottom, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0) 50%, rgba(0, 0, 0, 0.85) 85%, rgba(0, 0, 0, 0.85) 100%) no-repeat scroll 0 0;}
@@ -68,7 +72,7 @@
 		.awah-opt-desc {float: right; font-size: smaller;}
 		#awah_restore_default {width: 100%;}
 		input.awah-opt-input[type="checkbox"] {/* display: none; */ position: absolute; right: 0; opacity: 0;}
-		input.awah-opt-input[type="checkbox"]:focus + div {border-color: #66afe9; outline: 0; -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075), 0 0 8px rgba(102, 175, 233, .6); box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075), 0 0 8px rgba(102, 175, 233, .6);}
+		input.awah-opt-input[type="checkbox"]:focus + div {border-color: #66afe9; outline: 0; -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(102, 175, 233, 0.6); box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(102, 175, 233, 0.6);}
 		.awah-opt-input[type="checkbox"] + div {transition: 0.25s all ease; position: relative; overflow: hidden;}
 		.awah-opt-input[type="checkbox"] + div > div {transition: 0.25s all ease; background-color: #428bca; width: 50%; position: absolute; left: 0;}
 		input.awah-opt-input[type="checkbox"]:checked + div {background-color: rgb(66, 139, 202, 0.4);}
@@ -110,11 +114,12 @@
 	document.head.appendChild(document.createElement('style')).innerHTML=helper_style.replace(/([\s\S]*?return;){2}([\s\S]*)}/,'$2');
 
 	// ARP points initial readings
-	var pm_counter = /Vote on Content(?:.|\n)*>(\d+) of (\d+)<\/td>(?:.|\n)*Vote on This or That(?:.|\n)*>(\d+) of (\d+)<\/td>/.exec($("head").html());
+	// var pm_counter = /Vote on Content(?:.|\n)*>(\d+) of (\d+)<\/td>(?:.|\n)*Vote on This or That(?:.|\n)*>(\d+) of (\d+)<\/td>/.exec($("head").html());
+	var pm_counter = /Vote on Content(?:.|\n)*>(\d+) of (\d+)<\/td>/.exec($("head").html());
 	votes_content_cur = parseInt(pm_counter[1], 10);
 	votes_content_max = parseInt(pm_counter[2], 10);
-	votes_tot_cur = parseInt(pm_counter[3], 10);
-	votes_tot_max = parseInt(pm_counter[4], 10);
+	// votes_tot_cur = parseInt(pm_counter[3], 10);
+	// votes_tot_max = parseInt(pm_counter[4], 10);
 	votes_content_promised = 0;
 	votes_content_action = false;
 	votes_content_processing = false;
@@ -122,11 +127,11 @@
 	content_to_vote = [];
 	voting_down = false;
 	var options_save_apply_timer;
-	var tot_add_votes = getRandomInt(tot_add_votes_min, tot_add_votes_max);
+	// var tot_add_votes = getRandomInt(tot_add_votes_min, tot_add_votes_max);
 
 	// initialize UI
 	setTimeout(function() {
-		$("div.toast-header").append('<div class="awah-ui-overlay"><div class="awah-arp-status awah-grey"></div><div class="awah-arp-pts"><div class="awah-arp-pts-con"></div><div class="awah-arp-pts-tot"></div></div></div>');
+		$("div.toast-header").append('<div class="awah-ui-overlay"><div class="awah-arp-status awah-grey"></div><div class="awah-arp-pts"><div class="awah-arp-pts-con"></div></div></div>');
 		if (votes_content_cur < votes_content_max) {
 			$('<div class="awah-con-queue" style="display: none;">votes queue: <span class="awah-con-queue-length">' + content_to_vote.length + '</span> <span class="fa fa-fw fa-upload"></span></div>').appendTo(".awah-arp-status");
 		}
@@ -139,10 +144,10 @@
 			'<label><span class="awah-opt-title">actions_delay_max</span><input id="awah_actions_delay_max" class="form-control awah-opt-input" type="text" value="' + actions_delay_max + '"></label>' +
 			'<span class="awah-opt-desc awah-grey">Minimum and maximum random delay time between net actions. (in milliseconds)<br>Default minimum: ' + actions_delay_min_default + ' || Default maximum: ' + actions_delay_max_default + '</span></div>' +
 
-			'<div class="awah-option">' +
-			'<label><span class="awah-opt-title">tot_add_votes_min</span><input id="awah_tot_add_votes_min" class="form-control awah-opt-input" type="text" value="' + tot_add_votes_min + '"></label>' +
-			'<label><span class="awah-opt-title">tot_add_votes_max</span><input id="awah_tot_add_votes_max" class="form-control awah-opt-input" type="text" value="' + tot_add_votes_max + '"></label>' +
-			'<span class="awah-opt-desc awah-grey">Minimum and maximum random additional "This or That" votes.<br>Default minimum: ' + tot_add_votes_min_default + ' || Default maximum: ' + tot_add_votes_max_default + '</span></div>' +
+			// '<div class="awah-option">' +
+			// '<label><span class="awah-opt-title">tot_add_votes_min</span><input id="awah_tot_add_votes_min" class="form-control awah-opt-input" type="text" value="' + tot_add_votes_min + '"></label>' +
+			// '<label><span class="awah-opt-title">tot_add_votes_max</span><input id="awah_tot_add_votes_max" class="form-control awah-opt-input" type="text" value="' + tot_add_votes_max + '"></label>' +
+			// '<span class="awah-opt-desc awah-grey">Minimum and maximum random additional "This or That" votes.<br>Default minimum: ' + tot_add_votes_min_default + ' || Default maximum: ' + tot_add_votes_max_default + '</span></div>' +
 
 			'<div class="awah-option">' +
 			'<label><span class="awah-opt-title">show_key_on_marked_giveaways</span><input id="awah_show_key_on_marked_giveaways" class="form-control awah-opt-input" type="checkbox" ' + (show_key_on_marked_giveaways ? 'checked' : '') + '><div class="form-control awah-opt-input"><div>&nbsp;</div>&nbsp;</div></label>' +
@@ -179,8 +184,8 @@
 		$("#awah_restore_default").on("click", function() {
 			$("#awah_actions_delay_min").val(actions_delay_min_default);
 			$("#awah_actions_delay_max").val(actions_delay_max_default);
-			$("#awah_tot_add_votes_min").val(tot_add_votes_min_default);
-			$("#awah_tot_add_votes_max").val(tot_add_votes_max_default);
+			// $("#awah_tot_add_votes_min").val(tot_add_votes_min_default);
+			// $("#awah_tot_add_votes_max").val(tot_add_votes_max_default);
 			$("#awah_show_key_on_marked_giveaways").prop("checked", (show_key_on_marked_giveaways_default === "true"));// true);
 			$("#awah_status_message_delay").val(status_message_delay_default);
 			$('<div>Default options settings restored!</div>').appendTo(".awah-arp-status")
@@ -205,8 +210,8 @@
 	function options_save_apply() {
 		actions_delay_min = parseInt($("#awah_actions_delay_min").val(), 10);
 		actions_delay_max = parseInt($("#awah_actions_delay_max").val(), 10);
-		tot_add_votes_min = parseInt($("#awah_tot_add_votes_min").val(), 10);
-		tot_add_votes_max = parseInt($("#awah_tot_add_votes_max").val(), 10);
+		// tot_add_votes_min = parseInt($("#awah_tot_add_votes_min").val(), 10);
+		// tot_add_votes_max = parseInt($("#awah_tot_add_votes_max").val(), 10);
 		show_key_on_marked_giveaways = $("#awah_show_key_on_marked_giveaways").prop("checked");
 		if (path == "/ucf/Giveaway") {
 			awahTemp = $('<div class="tile-chunk"></div>');
@@ -218,8 +223,8 @@
 			//localStorage.setItem('ключ', 'значение');
 			localStorage.setItem('awah_actions_delay_min', actions_delay_min);
 			localStorage.setItem('awah_actions_delay_max', actions_delay_max);
-			localStorage.setItem('awah_tot_add_votes_min', tot_add_votes_min);
-			localStorage.setItem('awah_tot_add_votes_max', tot_add_votes_max);
+			// localStorage.setItem('awah_tot_add_votes_min', tot_add_votes_min);
+			// localStorage.setItem('awah_tot_add_votes_max', tot_add_votes_max);
 			localStorage.setItem('awah_show_key_on_marked_giveaways', show_key_on_marked_giveaways.toString());
 			localStorage.setItem('awah_status_message_delay', status_message_delay);
 			$('<div>Settings saved! <span class="fa fa-fw fa-floppy-o"></span></div>').appendTo(".awah-arp-status")
@@ -235,7 +240,7 @@
 	// ARP points watchdog
 	$(document).ajaxComplete(function(event, xhr, settings) {
 		if (settings.url.indexOf("this-or-that/vote") >=0) {
-			votes_tot_cur++;
+			// votes_tot_cur++;
 			arp_pts_status_update();
 		} else if (settings.url.indexOf("vote") >=0) {
 			data = JSON.parse(xhr.responseText);
@@ -259,13 +264,13 @@
 
 	function arp_pts_status_update() {
 		$(".awah-arp-pts-con").html("CON: " + votes_content_cur + " / " + votes_content_max);
-		$(".awah-arp-pts-tot").html("TOT: " + votes_tot_cur  + " / " + votes_tot_max);
+		// $(".awah-arp-pts-tot").html("TOT: " + votes_tot_cur  + " / " + votes_tot_max);
 		if (votes_content_cur >= votes_content_max) {
 			$(".awah-arp-pts-con").addClass("awah-grey");
 		}
-		if (votes_tot_cur >= votes_tot_max) {
-			$(".awah-arp-pts-tot").addClass("awah-grey");
-		}
+		// if (votes_tot_cur >= votes_tot_max) {
+		// 	$(".awah-arp-pts-tot").addClass("awah-grey");
+		// }
 		if (votes_content_gathering || votes_content_processing) {
 			$(".awah-arp-pts-con").css("background-image", "linear-gradient(90deg, rgb(0, 160, 240) " +
 				((votes_content_cur / votes_content_max) * 100) +
@@ -497,6 +502,8 @@
 			votes_content_gather(); //start algorithm
 		});
 
+		//$('<div class="awah-grp-con"><div style="writing-mode: vertical-lr;float: left;" class="awah-grey">VOTING</div><div style="writing-mode: vertical-lr;float: right;" class="awah-grey">SEARCH</div><div style="float: left;" class="awah-voting-direction-panel"><label><input name="awah-voting-direction" value="up" type="radio">UP</label><label><input name="awah-voting-direction" value="random" type="radio">RANDOM</label><label><input name="awah-voting-direction" value="down" type="radio">DOWN</label></div><div style="padding-top: 5%;" class="awah-gathering-direction-panel"><label><input name="awah-voting-direction" value="back" type="radio">&lt;&lt;</label><label><input name="awah-voting-direction" value="fwd" type="radio">&gt;&gt;</label></div></div>').appendTo(".awah-btn-cons.awah-up");
+
 		if(DEBUG) $('<a class="btn btn-default awah-btn-test" href="javascript:void(0);">' +
  			'<i class="fa fa-terminal"></i> <span class="hidden-xs">Make test</span></a>').appendTo(".btn-group-sm");
  		if(DEBUG) $(".awah-btn-test").on("click", function() {
@@ -540,6 +547,8 @@
 	}
 
 	function get_entered_giveaways() {
+		document.head.appendChild(document.createElement('style')).innerHTML=".tile-content:not(.awah-giveaway-taken) {box-shadow: 0px 0px 2px 1px rgb(0,160,240);}";
+
 		var status_message = $('<div>Getting your giveaways info <span class="fa fa-fw fa-circle-o-notch fa-spin"></span></div>');
 		setTimeout(function() {
 			status_message.appendTo(".awah-arp-status");
@@ -587,7 +596,7 @@
 				case /.*\/boards\/this-or-that\/.*/.test(path):
 				case /.*\/boards\/this-or-that\/.*/.test(og_url):
 					if(DEBUG) console.log("SWITCH: This or That");
-					this_or_that_btn();
+					// this_or_that_btn();
 					break;
 				case /^\/ucf\/show\/.*\/Giveaway\//.test(path):
 				case /\/ucf\/show\/.*\/Giveaway\//.test(og_url):
