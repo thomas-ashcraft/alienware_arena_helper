@@ -136,6 +136,8 @@
 		$("div.toast-header").append('<div class="awah-ui-overlay"><div class="awah-arp-status awah-grey"></div><div class="awah-arp-pts"><div class="awah-arp-pts-con"></div></div></div>');
 		if (votes_content_cur < votes_content_max) {
 			$('<div class="awah-con-queue" style="display: none;">votes queue: <span class="awah-con-queue-length">' + content_to_vote.length + '</span> <span class="fa fa-fw fa-upload"></span></div>').appendTo(".awah-arp-status");
+			$('<div class="awah-con-check-queue" style="display: none;">content to check: <span class="awah-con-check-queue-length">' + content_to_check.length + '</span> <span class="fa fa-fw fa-search"></span></div>').appendTo(".awah-arp-status");
+			$('<div class="awah-con-votes-queue" style="display: none;">content to vote: <span class="awah-con-votes-queue-length">' + content_to_vote.length + '</span> <span class="fa fa-fw fa-upload"></span></div>').appendTo(".awah-arp-status");
 		}
 		arp_pts_status_update();
 		$("div.toast-body > p.text-center").css({ "float": "right", "padding-right": "16px" });
@@ -207,6 +209,9 @@
 				});
 			}
 		});
+
+		$('<span>Alienware Arena helper v<b>' + version + ' BETA</b></span>').appendTo(".awah-arp-status")
+			.delay(status_message_delay).queue(function() { $(this).addClass("awah-casper-out"); });
 	}, 1);
 
 	function options_save_apply() {
@@ -240,27 +245,34 @@
 	}
 
 	// ARP points watchdog
-	$(document).ajaxComplete(function(event, xhr, settings) {
-		if (settings.url.indexOf("this-or-that/vote") >=0) {
-			// votes_tot_cur++;
-			arp_pts_status_update();
-		} else if (settings.url.indexOf("vote") >=0) {
-			data = JSON.parse(xhr.responseText);
-			if (data.votedForContent) {
-				votes_content_cur++;
-			}
-			if (data.votedForContent === false) {
-				votes_content_cur--;
-			}
-			if (!votes_content_processing && !votes_content_gathering) {
-				$('<div>' + data.message + '</div>').appendTo(".awah-arp-status")
-					.delay(status_message_delay).queue(function() { $(this).addClass("awah-casper-out"); });
-				if (typeof data.upVotes !== 'undefined') {
-					$('<div>up: ' + data.upVotes + ' | down: ' + data.downVotes + (typeof data.voteTotal !== 'undefined' ? ' | total: ' + data.voteTotal : '') + '</div>').appendTo(".awah-arp-status")
-						.delay(status_message_delay).queue(function() { $(this).addClass("awah-casper-out"); });
+	$.ajaxPrefilter(function(options, originalOptions, jqXHR) {
+		if (options.url.indexOf("vote") >= 0) {
+			var originalSuccess = options.success;
+			options.success = function(data) {
+				/* ajaxBeforeSuccess functionality */
+				if (DEBUG) console.log("ajaxBeforeSuccess hook", "options.url", options.url);
+				if (data.votedForContent) {
+					votes_content_cur++;
 				}
-			}
-			arp_pts_status_update();
+				if (data.votedForContent === false) {
+					votes_content_cur--;
+				}
+				if (!votes_content_processing && !votes_content_gathering) {
+					$('<div>' + data.message + '</div>').appendTo(".awah-arp-status")
+						.delay(status_message_delay).queue(function() {
+							$(this).addClass("awah-casper-out");
+						});
+					if (typeof data.upVotes !== 'undefined') {
+						$('<div>up: ' + data.upVotes + ' | down: ' + data.downVotes + (typeof data.voteTotal !== 'undefined' ? ' | total: ' + data.voteTotal : '') + '</div>').appendTo(".awah-arp-status")
+							.delay(status_message_delay).queue(function() { $(this).addClass("awah-casper-out"); });
+					}
+				}
+				arp_pts_status_update();
+				/* ajaxBeforeSuccess functionality END */
+				if (typeof originalSuccess === "function") {
+					originalSuccess(data);
+				}
+			};
 		}
 	});
 
@@ -274,13 +286,19 @@
 		// 	$(".awah-arp-pts-tot").addClass("awah-grey");
 		// }
 		if (votes_content_gathering || votes_content_processing) {
-			$(".awah-arp-pts-con").css("background-image", "linear-gradient(90deg, rgb(0, 160, 240) " +
+			$(".awah-con-check-queue-length").text(content_to_check.length);
+			$(".awah-con-votes-queue-length").text(content_to_vote.length);
+			var progress_bar_background = "linear-gradient(90deg, rgb(0, 160, 240) " +
 				((votes_content_cur / votes_content_max) * 100) +
 				"%, rgba(0, 160, 240, 0.2) 0%, rgba(0, 160, 240, 0.2) " +
-				((((votes_content_cur + content_to_vote.length) / votes_content_max) * 100) - 1) +
-				"%, rgb(0, 160, 240) " +
 				(((votes_content_cur + content_to_vote.length) / votes_content_max) * 100) +
-				"%, rgb(40, 37, 36) 0%)");
+				"%, rgb(255, 255, 255) 0%, rgb(255, 255, 255) " +
+				((((votes_content_cur + content_to_vote.length) / votes_content_max) * 100) + 1 ) +
+				"%, rgba(0, 160, 240, 0.2) 0%, rgba(0, 160, 240, 0.2) " +
+				(((votes_content_cur + content_to_vote.length + content_to_check.length) / votes_content_max) * 100) +
+				"%, rgb(40, 37, 36) 0%)";
+			progress_bar_background = progress_bar_background.replace(/(\d{3}|\d{3}\.\d{1,})%/g,'100%'); // values greater than 100% can cause incorrect rendering
+			$(".awah-arp-pts-con").css("background-image", progress_bar_background);
 		}
 	}
 
@@ -377,7 +395,9 @@
 		if (DEBUG) console.log("content_to_vote", content_to_vote);
 
 		var id = content_to_vote.shift();
-		$(".awah-con-queue-length").text(content_to_vote.length);
+		// $(".awah-con-check-queue-length").text(content_to_check.length);
+		// $(".awah-con-votes-queue-length").text(content_to_vote.length);
+		arp_pts_status_update();
 		var url = "/ucf/vote/" + (voting_down ? 'down' : 'up') + "/" + id;
 
 		$.ajax({
@@ -387,23 +407,24 @@
 			.done(function(data) {
 				if (data.success) {
 					// yay!
+					if (DEBUG) console.log("[AWAH] vote success", "votes_content_cur", votes_content_cur);
 				}
 				if (content_to_vote.length > 0 && votes_content_cur < votes_content_max) {
 					setTimeout(function() {
 						votes_content_apply(); // recursion!
 					}, getRandomInt(actions_delay_min, actions_delay_max));
 				} else if (content_to_vote.length < 1 && votes_content_cur < votes_content_max) {
+					// TODO: one more IF to check content_to_check and reroute script to the votes_content_is_voted() instead of beginning
 					votes_content_processing = false;
 					setTimeout(function() {
 						votes_content_get_page(); // to the beginning!
 					}, getRandomInt(actions_delay_min, actions_delay_max));
 				} else {
-					arp_pts_status_update(); // just in case
+					arp_pts_status_update(); // just in case TODO: is this really needed?
 					votes_content_processing = false;
 					if (!votes_content_gathering) {
-						$(".awah-con-queue").delay(status_message_delay).queue(function() {
-							$(this).addClass("awah-casper-out");
-						});
+						$(".awah-con-check-queue").delay(status_message_delay).queue(function() { $(this).addClass("awah-casper-out"); });
+						$(".awah-con-votes-queue").delay(status_message_delay).queue(function() { $(this).addClass("awah-casper-out"); });
 						setTimeout(function() {
 							$(".awah-arp-pts-con").css("background-image", "");
 						}, status_message_delay);
@@ -421,6 +442,9 @@
 				} else {
 					votes_content_processing = false;
 				}
+			})
+			.always(function() {
+				arp_pts_status_update();
 			});
 	}
 
@@ -433,7 +457,7 @@
 				if (votedOnContent) {
 					votedOnContent = JSON.parse(votedOnContent[1]);
 				} else {
-					console.log("[AWAH] Failed to get status of ", id);
+					console.log("[AWAH] Failed to parse status of ", id);
 					if (content_to_check.length > 0) {
 						setTimeout(function() {
 							votes_content_is_voted(); // recursion!
@@ -504,35 +528,46 @@
 						votes_content_get_page(); // to the beginning!
 					}, getRandomInt(actions_delay_min, actions_delay_max));
 				}
+			})
+			.always(function() {
+				arp_pts_status_update();
 			});
 	}
 
 	function votes_content_get_page() {
 		votes_content_gathering = true;
 		// TODO: link to content id retreive are various for other site sections!
-		votes_content_get_page_r = $.get("https://eu.alienwarearena.com/esi/featured-tile-data/Image/" + content_page, function(response) {
-			if (response.data.length == 0) {
-				//more = false;
-				return; // why the hell i leave that here?
-			}
-			content_page++;
-			content_to_check.push(...response.data);
-			if (DEBUG) console.log("content_to_check", content_to_check);
-			if (content_to_check.length >= (votes_content_max - votes_content_cur)) {
-				if (DEBUG) console.log("Enough content_to_check", content_to_check.length);
-				setTimeout(function() {
-					votes_content_is_voted(); // go to the next block!
-				}, getRandomInt(actions_delay_min, actions_delay_max));
-			} else {
-				if (DEBUG) console.log("MOAR content_to_check", content_to_check.length);
-				setTimeout(function() {
-					votes_content_get_page(); // recursion!
-				}, getRandomInt(actions_delay_min, actions_delay_max));
-			}
-		});
+		$.get("https://eu.alienwarearena.com/esi/featured-tile-data/Image/" + content_page)
+			.done(function(response) {
+				if (response.data.length == 0) {
+					//more = false;
+					return; // TODO: why the hell i leave that here?
+				}
+				content_page++;
+				content_to_check.push(...response.data);
+				if (DEBUG) console.log("content_to_check", content_to_check);
+				if (content_to_check.length >= (votes_content_max - votes_content_cur)) {
+					if (DEBUG) console.log("Enough content_to_check", content_to_check.length);
+					setTimeout(function() {
+						votes_content_is_voted(); // go to the next block!
+					}, getRandomInt(actions_delay_min, actions_delay_max));
+				} else {
+					if (DEBUG) console.log("MOAR content_to_check", content_to_check.length);
+					setTimeout(function() {
+						votes_content_get_page(); // recursion!
+					}, getRandomInt(actions_delay_min, actions_delay_max));
+				}
+			})
+			.always(function() {
+				arp_pts_status_update();
+			});
+			// TODO: .fail
 	}
 
 	function votes_content_algorithm() {
+		$(".awah-con-check-queue").show();
+		$(".awah-con-votes-queue").show();
+		// TODO: avoid focus from button
 		// TODO: maybe here we should detect site section
 		votes_content_get_page();
 	}
@@ -551,6 +586,17 @@
 			$(".awah-btn-cons").addClass("hiddeno");
 			voting_down = true;
 			votes_content_algorithm(); //start algorithm
+		});
+		if(DEBUG) $('<a class="btn btn-default awah-btn-test" href="javascript:void(0);">' +
+			 '<i class="fa fa-terminal"></i> <span class="hidden-xs">Make test</span></a>').insertAfter("div:has(.panel-default) > a:last-of-type");
+		 if(DEBUG) $(".awah-btn-test").on("click", function() {
+			 votes_content_cur = getRandomInt(5, 15);
+			 votes_content_gathering = true;
+			 content_to_check = new Array(votes_content_cur);
+			 content_to_vote = new Array(votes_content_cur);
+			 arp_pts_status_update();
+			 content_to_check = new Array();
+			 content_to_vote = new Array();
 		});
 	}
 
