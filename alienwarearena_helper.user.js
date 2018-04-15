@@ -14,19 +14,17 @@
 (function() {
 	// You can configure options through the user interface. It is not recommended to edit the script for these purposes.
 	var version = "0.5.0";
-	var DEBUG = true; // Developer option. Default: false
+	var DEBUG = false; // Developer option. Default: false
 
 	var status_message_delay_default	= 5000;
 	var actions_delay_min_default		= 1000;
 	var actions_delay_max_default		= 5000;
-	// var tot_add_votes_min_default		= 3;
-	// var tot_add_votes_max_default		= 7;
 	var show_key_on_marked_giveaways_default = "true";
 
 	var actions_delay_min		= parseInt(localStorage.getItem('awah_actions_delay_min'), 10) || actions_delay_min_default;
 	var actions_delay_max		= parseInt(localStorage.getItem('awah_actions_delay_max'), 10) || actions_delay_max_default;
-	// var tot_add_votes_min		= parseInt(localStorage.getItem('awah_tot_add_votes_min'), 10) || tot_add_votes_min_default;
-	// var tot_add_votes_max		= parseInt(localStorage.getItem('awah_tot_add_votes_max'), 10) || tot_add_votes_max_default;
+	localStorage.removeItem('awah_tot_add_votes_min'); // fix legacy
+	localStorage.removeItem('awah_tot_add_votes_max'); // fix legacy
 	var show_key_on_marked_giveaways	= localStorage.getItem('awah_show_key_on_marked_giveaways') || show_key_on_marked_giveaways_default;
 	show_key_on_marked_giveaways = (show_key_on_marked_giveaways === "true");
 	var status_message_delay	= parseInt(localStorage.getItem('awah_status_message_delay'), 10) || status_message_delay_default;
@@ -40,7 +38,6 @@
 
 	// Embed style
 	var helper_style = `
-		.awah-btn-tots {}
 		.awah-btn-cons,
 		.awah-btn-cons:hover {color: gold;}
 		.list-group-item > .awah-btn-cons {width: 50%;}
@@ -120,29 +117,22 @@
 	document.head.appendChild(document.createElement('style')).innerHTML=helper_style.replace(/([\s\S]*?return;){2}([\s\S]*)}/,'$2');
 
 	// ARP points initial readings
-	// var pm_counter = /Vote on Content(?:.|\n)*>(\d+) of (\d+)<\/td>(?:.|\n)*Vote on This or That(?:.|\n)*>(\d+) of (\d+)<\/td>/.exec($("head").html());
 	var pm_counter = /Vote on Content(?:.|\n)*>(\d+) of (\d+)<\/td>/.exec($("head").html());
 	votes_content_cur = parseInt(pm_counter[1], 10);
 	votes_content_max = parseInt(pm_counter[2], 10);
-	// votes_tot_cur = parseInt(pm_counter[3], 10);
-	// votes_tot_max = parseInt(pm_counter[4], 10);
 	votes_content_promised = 0;
 	votes_content_action = false;
-	votes_content_processing = false;
-	votes_content_gathering = false;
 	votes_content_url = '';
 	var content_to_vote = [];
 	var content_to_check = [];
 	var content_page = 1;
 	var voting_down = false;
 	var options_save_apply_timer;
-	// var tot_add_votes = getRandomInt(tot_add_votes_min, tot_add_votes_max);
 
 	// initialize UI
 	setTimeout(function() {
 		$("div.toast-header").append('<div class="awah-ui-overlay"><div class="awah-arp-status awah-grey"></div><div class="awah-arp-pts"><div class="awah-arp-pts-con"></div></div></div>');
 		if (votes_content_cur < votes_content_max) {
-			$('<div class="awah-con-queue" style="display: none;">votes queue: <span class="awah-con-queue-length">' + content_to_vote.length + '</span> <span class="fa fa-fw fa-upload"></span></div>').appendTo(".awah-arp-status");
 			$('<div class="awah-con-check-queue" style="display: none;">content to check: <span class="awah-con-check-queue-length">' + content_to_check.length + '</span> <span class="fa fa-fw fa-search"></span></div>').appendTo(".awah-arp-status");
 			$('<div class="awah-con-votes-queue" style="display: none;">content to vote: <span class="awah-con-votes-queue-length">' + content_to_vote.length + '</span> <span class="fa fa-fw fa-upload"></span></div>').appendTo(".awah-arp-status");
 		}
@@ -154,11 +144,6 @@
 			'<label><span class="awah-opt-title">actions_delay_min</span><input id="awah_actions_delay_min" class="form-control awah-opt-input" type="text" value="' + actions_delay_min + '"></label>' +
 			'<label><span class="awah-opt-title">actions_delay_max</span><input id="awah_actions_delay_max" class="form-control awah-opt-input" type="text" value="' + actions_delay_max + '"></label>' +
 			'<span class="awah-opt-desc awah-grey">Minimum and maximum random delay time between net actions. (in milliseconds)<br>Default minimum: ' + actions_delay_min_default + ' || Default maximum: ' + actions_delay_max_default + '</span></div>' +
-
-			// '<div class="awah-option">' +
-			// '<label><span class="awah-opt-title">tot_add_votes_min</span><input id="awah_tot_add_votes_min" class="form-control awah-opt-input" type="text" value="' + tot_add_votes_min + '"></label>' +
-			// '<label><span class="awah-opt-title">tot_add_votes_max</span><input id="awah_tot_add_votes_max" class="form-control awah-opt-input" type="text" value="' + tot_add_votes_max + '"></label>' +
-			// '<span class="awah-opt-desc awah-grey">Minimum and maximum random additional "This or That" votes.<br>Default minimum: ' + tot_add_votes_min_default + ' || Default maximum: ' + tot_add_votes_max_default + '</span></div>' +
 
 			'<div class="awah-option">' +
 			'<label><span class="awah-opt-title">show_key_on_marked_giveaways</span><input id="awah_show_key_on_marked_giveaways" class="form-control awah-opt-input" type="checkbox" ' + (show_key_on_marked_giveaways ? 'checked' : '') + '><div class="form-control awah-opt-input"><div>&nbsp;</div>&nbsp;</div></label>' +
@@ -195,8 +180,6 @@
 		$("#awah_restore_default").on("click", function() {
 			$("#awah_actions_delay_min").val(actions_delay_min_default);
 			$("#awah_actions_delay_max").val(actions_delay_max_default);
-			// $("#awah_tot_add_votes_min").val(tot_add_votes_min_default);
-			// $("#awah_tot_add_votes_max").val(tot_add_votes_max_default);
 			$("#awah_show_key_on_marked_giveaways").prop("checked", (show_key_on_marked_giveaways_default === "true"));// true);
 			$("#awah_status_message_delay").val(status_message_delay_default);
 			$('<div>Default options settings restored!</div>').appendTo(".awah-arp-status")
@@ -217,15 +200,13 @@
 			}
 		});
 
-		$('<span>Alienware Arena helper v<b>' + version + ' BETA</b></span>').appendTo(".awah-arp-status")
+		$('<span>Alienware Arena helper v<b>' + version + '</b></span>').appendTo(".awah-arp-status")
 			.delay(status_message_delay).queue(function() { $(this).addClass("awah-casper-out"); });
 	}, 1);
 
 	function options_save_apply() {
 		actions_delay_min = parseInt($("#awah_actions_delay_min").val(), 10);
 		actions_delay_max = parseInt($("#awah_actions_delay_max").val(), 10);
-		// tot_add_votes_min = parseInt($("#awah_tot_add_votes_min").val(), 10);
-		// tot_add_votes_max = parseInt($("#awah_tot_add_votes_max").val(), 10);
 		show_key_on_marked_giveaways = $("#awah_show_key_on_marked_giveaways").prop("checked");
 		if (path == "/ucf/Giveaway") {
 			awahTemp = $('<div class="tile-chunk"></div>');
@@ -234,18 +215,15 @@
 		status_message_delay = parseInt($("#awah_status_message_delay").val(), 10);
 
 		try {
-			//localStorage.setItem('ключ', 'значение');
 			localStorage.setItem('awah_actions_delay_min', actions_delay_min);
 			localStorage.setItem('awah_actions_delay_max', actions_delay_max);
-			// localStorage.setItem('awah_tot_add_votes_min', tot_add_votes_min);
-			// localStorage.setItem('awah_tot_add_votes_max', tot_add_votes_max);
 			localStorage.setItem('awah_show_key_on_marked_giveaways', show_key_on_marked_giveaways.toString());
 			localStorage.setItem('awah_status_message_delay', status_message_delay);
 			$('<div>Settings saved! <span class="fa fa-fw fa-floppy-o"></span></div>').appendTo(".awah-arp-status")
 				.delay(status_message_delay).queue(function() { $(this).addClass("awah-casper-out"); });
 		} catch (e) {
 			if (e == QUOTA_EXCEEDED_ERR) {
-				$('<div>localStorage quota exceeded! <span class="fa fa-fw fa-exclamation-triangle"></span></div>').appendTo(".awah-arp-status")
+				$('<div>localStorage quota exceeded! Try to clear browser\'s cache <span class="fa fa-fw fa-exclamation-triangle"></span></div>').appendTo(".awah-arp-status")
 					.delay(status_message_delay).queue(function() { $(this).addClass("awah-casper-out"); });
 			}
 		}
@@ -257,14 +235,13 @@
 			var originalSuccess = options.success;
 			options.success = function(data) {
 				/* ajaxBeforeSuccess functionality */
-				if (DEBUG) console.log("ajaxBeforeSuccess hook", "options.url", options.url);
 				if (data.votedForContent) {
 					votes_content_cur++;
 				}
 				if (data.votedForContent === false) {
 					votes_content_cur--;
 				}
-				if (!votes_content_processing && !votes_content_gathering) {
+				if (!votes_content_action) {
 					$('<div>' + data.message + '</div>').appendTo(".awah-arp-status")
 						.delay(status_message_delay).queue(function() {
 							$(this).addClass("awah-casper-out");
@@ -285,14 +262,10 @@
 
 	function arp_pts_status_update() {
 		$(".awah-arp-pts-con").html("CON: " + votes_content_cur + " / " + votes_content_max);
-		// $(".awah-arp-pts-tot").html("TOT: " + votes_tot_cur  + " / " + votes_tot_max);
 		if (votes_content_cur >= votes_content_max) {
 			$(".awah-arp-pts-con").addClass("awah-grey");
 		}
-		// if (votes_tot_cur >= votes_tot_max) {
-		// 	$(".awah-arp-pts-tot").addClass("awah-grey");
-		// }
-		if (votes_content_gathering || votes_content_processing) {
+		if (votes_content_action) {
 			$(".awah-con-check-queue-length").text(content_to_check.length);
 			$(".awah-con-votes-queue-length").text(content_to_vote.length);
 			var progress_bar_background = "linear-gradient(90deg, rgb(0, 160, 240) " +
@@ -346,65 +319,10 @@
 		}, 1000);
 	}
 
-	// TOT votes section
-	function this_or_that_spam() {
-		if (!$("a.btn-show-vote").hasClass("hidden")) {
-			$("a.btn-show-vote").click(); //turn page into voting mode
-		}
-		var status_message = $('<div>Additional random TOT votes: ' + tot_add_votes + ' <span class="fa fa-fw fa-plus-square"></span></div>');
-		status_message.appendTo(".awah-arp-status");
-		//create catch event to click again
-		// settings.url == /this-or-that/1516182/create-match
-		// where "1516182" is a topic ID
-		$(document).ajaxComplete(function(event, xhr, settings) {
-			if (settings.url.indexOf("create-match") >=0) {
-				if (votes_tot_cur < (votes_tot_max + tot_add_votes)) {
-					setTimeout(function() {
-						var tot_choice = getRandomInt(0, 1);
-						$("div.vote-container a.expand").each(function(index) {
-							if (index == tot_choice) {
-								$(this).trigger("mouseover").delay(1000).queue(function() { $(this).click(); });
-							}
-						});
-					}, (1000 + getRandomInt(actions_delay_min, actions_delay_max)));
-				} else {
-					status_message.delay(status_message_delay).queue(function() { $(this).addClass("awah-casper-out"); });
-					$('<div>This or That voting complete <span class="fa fa-fw fa-check-square"></span></div>').appendTo(".awah-arp-status")
-						.delay(status_message_delay).queue(function() { $(this).addClass("awah-casper-out"); });
-				}
-			}
-		});
-		setTimeout(function() {
-		var tot_choice = getRandomInt(0, 1);
-			$("div.vote-container a.expand").each(function(index) {
-				if (index == tot_choice) {
-					$(this).trigger("mouseover").delay(1000).queue(function() { $(this).click(); });
-				}
-			});
-		}, getRandomInt(actions_delay_min, actions_delay_max));
-	}
-
-	function this_or_that_btn() {
-		$('<a class="btn btn-warning text-uppercase awah-btn-tots" href="javascript:void(0);">' +
-			'<i class="fa fa-thumbs-up"></i> <span class="hidden-xs">Make TOT votes</span></a>').appendTo(".btn-group-sm");
-		$(".awah-btn-tots").on("click", function() {
-			$(".awah-btn-tots").addClass("hidden");
-			this_or_that_spam(); //show must go on
-			setTimeout(function() {
-				scrl($('.this-or-that-container'));
-			}, 1);
-		});
-	}
-
 	// CON votes section
 	function votes_content_apply() {
-		votes_content_processing = true;
-		if (DEBUG) console.log("content_to_vote", content_to_vote);
-
 		var id = content_to_vote.shift();
-		// $(".awah-con-check-queue-length").text(content_to_check.length);
-		// $(".awah-con-votes-queue-length").text(content_to_vote.length);
-		arp_pts_status_update();
+		// arp_pts_status_update();
 		var url = "/ucf/vote/" + (voting_down ? 'down' : 'up') + "/" + id;
 
 		$.ajax({
@@ -414,7 +332,6 @@
 			.done(function(data) {
 				if (data.success) {
 					// yay!
-					if (DEBUG) console.log("[AWAH] vote success", "votes_content_cur", votes_content_cur);
 				}
 				if (content_to_vote.length > 0 && votes_content_cur < votes_content_max) {
 					setTimeout(function() {
@@ -422,21 +339,18 @@
 					}, getRandomInt(actions_delay_min, actions_delay_max));
 				} else if (content_to_vote.length < 1 && votes_content_cur < votes_content_max) {
 					// TODO: one more IF to check content_to_check and reroute script to the votes_content_is_voted() instead of beginning
-					votes_content_processing = false;
 					setTimeout(function() {
 						votes_content_get_page(); // to the beginning!
 					}, getRandomInt(actions_delay_min, actions_delay_max));
 				} else {
-					arp_pts_status_update(); // just in case TODO: is this really needed?
-					votes_content_processing = false;
-					if (!votes_content_gathering) {
-						$(".awah-con-check-queue").delay(status_message_delay).queue(function() { $(this).addClass("awah-casper-out"); });
-						$(".awah-con-votes-queue").delay(status_message_delay).queue(function() { $(this).addClass("awah-casper-out"); });
-						setTimeout(function() {
-							$(".awah-arp-pts-con").css("background-image", "");
-						}, status_message_delay);
-						//$(".awah-arp-pts-con").delay(status_message_delay).queue(function() { $(this).css("background-image", ""); });
-					}
+					// arp_pts_status_update(); // just in case TODO: is this really needed?
+					votes_content_action = false;
+					$(".awah-con-check-queue").delay(status_message_delay).queue(function() { $(this).addClass("awah-casper-out"); });
+					$(".awah-con-votes-queue").delay(status_message_delay).queue(function() { $(this).addClass("awah-casper-out"); });
+					setTimeout(function() {
+						$(".awah-arp-pts-con").css("background-image", "");
+					}, status_message_delay);
+					//$(".awah-arp-pts-con").delay(status_message_delay).queue(function() { $(this).css("background-image", ""); });
 				}
 			})
 			.fail(function(data) {
@@ -447,7 +361,7 @@
 				if (content_to_vote.length > 0) {
 					votes_content_apply();
 				} else {
-					votes_content_processing = false;
+					votes_content_action = false;
 				}
 			})
 			.always(function() {
@@ -464,14 +378,14 @@
 				if (votedOnContent) {
 					votedOnContent = JSON.parse(votedOnContent[1]);
 				} else {
-					console.log("[AWAH] Failed to parse status of ", id);
+					$('<div>Failed to parse status of ' + id + '! <span class="fa fa-fw fa-exclamation-triangle"></span></div>').appendTo(".awah-arp-status")
+						.delay(status_message_delay).queue(function() { $(this).addClass("awah-casper-out"); });
 					if (content_to_check.length > 0) {
 						setTimeout(function() {
 							votes_content_is_voted(); // recursion!
 						}, getRandomInt(actions_delay_min, actions_delay_max));
 					} else if (content_to_vote.length > 0) {
 						setTimeout(function() {
-							votes_content_gathering = false;
 							votes_content_apply(); // go to the next block!
 						}, getRandomInt(actions_delay_min, actions_delay_max));
 					} else {
@@ -485,7 +399,6 @@
 					content_to_vote.push(id);
 					if (content_to_vote.length >= (votes_content_max - votes_content_cur)) {
 						setTimeout(function() {
-							votes_content_gathering = false;
 							votes_content_apply(); // go to the next block!
 						}, getRandomInt(actions_delay_min, actions_delay_max));
 					} else if (content_to_check.length > 0) {
@@ -495,7 +408,6 @@
 					} else if (content_to_vote.length > 0) {
 						// actually that 'if' does not needed
 						setTimeout(function() {
-							votes_content_gathering = false;
 							votes_content_apply(); // go to the next block!
 						}, getRandomInt(actions_delay_min, actions_delay_max));
 					}
@@ -509,7 +421,6 @@
 						}, getRandomInt(actions_delay_min, actions_delay_max));
 					} else if (content_to_vote.length > 0) {
 						setTimeout(function() {
-							votes_content_gathering = false;
 							votes_content_apply(); // go to the next block!
 						}, getRandomInt(actions_delay_min, actions_delay_max));
 					} else {
@@ -520,14 +431,14 @@
 				}
 			})
 			.fail(function() {
-				console.log("[AWAH] Failed to get status of ", id);
+				$('<div>Failed to get status of ' + id + '! <span class="fa fa-fw fa-exclamation-triangle"></span></div>').appendTo(".awah-arp-status")
+					.delay(status_message_delay).queue(function() { $(this).addClass("awah-casper-out"); });
 				if (content_to_check.length > 0) {
 					setTimeout(function() {
 						votes_content_is_voted(); // recursion!
 					}, getRandomInt(actions_delay_min, actions_delay_max));
 				} else if (content_to_vote.length > 0) {
 					setTimeout(function() {
-						votes_content_gathering = false;
 						votes_content_apply(); // go to the next block!
 					}, getRandomInt(actions_delay_min, actions_delay_max));
 				} else {
@@ -541,8 +452,7 @@
 			});
 	}
 
-	function votes_content_get_page() {
-		votes_content_gathering = true;
+	function votes_content_get_page(fail_counter = 0) {
 		$.get(votes_content_url + content_page)
 			.done(function(response) {
 				if (response.data.length == 0) {
@@ -553,32 +463,49 @@
 				content_to_check.push(...response.data);
 				if (DEBUG) console.log("content_to_check", content_to_check);
 				if (content_to_check.length >= (votes_content_max - votes_content_cur)) {
-					if (DEBUG) console.log("Enough content_to_check", content_to_check.length);
+					$('<div>Enough content to check <span class="fa fa-fw fa-check-circle"></span></div>').appendTo(".awah-arp-status")
+						.delay(status_message_delay).queue(function() { $(this).addClass("awah-casper-out"); });
 					setTimeout(function() {
 						votes_content_is_voted(); // go to the next block!
 					}, getRandomInt(actions_delay_min, actions_delay_max));
 				} else {
-					if (DEBUG) console.log("MOAR content_to_check", content_to_check.length);
+					$('<div>Need more content to check <span class="fa fa-fw fa-circle-o-notch fa-spin"></span></div>').appendTo(".awah-arp-status")
+						.delay(status_message_delay).queue(function() { $(this).addClass("awah-casper-out"); });
 					setTimeout(function() {
 						votes_content_get_page(); // recursion!
 					}, getRandomInt(actions_delay_min, actions_delay_max));
 				}
 			})
+			.fail(function() {
+				fail_counter++;
+				if (fail_counter < 5) {
+					$('<div>Failed to get content page! Trying again' + (fail_counter > 1  ? ' (' + fail_counter + ')' : '...') + ' <span class="fa fa-fw fa-exclamation-triangle"></span></div>').appendTo(".awah-arp-status")
+						.delay(status_message_delay).queue(function() { $(this).addClass("awah-casper-out"); });
+					votes_content_get_page(fail_counter); // recursion!
+				} else {
+					$('<div>Failed to get content page after ' + fail_counter + ' tries! Voting stopped! <span class="fa fa-fw fa-exclamation-triangle"></span></div>').appendTo(".awah-arp-status")
+						.delay(status_message_delay).queue(function() { $(this).addClass("awah-casper-out"); });
+					votes_content_action = false;
+					if (DEBUG) console.log("votes_content_url", votes_content_url, "content_page", content_page);
+				}
+			})
 			.always(function() {
 				arp_pts_status_update();
 			});
-			// TODO: .fail
 	}
 
 	function votes_content_algorithm() {
 		$(".awah-con-check-queue").show();
 		$(".awah-con-votes-queue").show();
-		// TODO: avoid focus from button
-		// TODO: maybe here we should detect site section
+		votes_content_action = true;
 		votes_content_get_page();
 	}
 
 	function votes_content_register_buttons() {
+		if (votes_content_cur >= votes_content_max) {
+			$(".awah-btn-cons").addClass("disabled");
+			return;
+		}
 		$(".awah-btn-cons").on("click", function() {
 			$(".awah-btn-cons").addClass("disabled");
 			if ($(this).data('awah-voting-direction') == "up") {
@@ -589,7 +516,8 @@
 			if ($(this).data('awah-content-url') != "") {
 				votes_content_url = $(this).data('awah-content-url');
 			} else {
-				console.log("[AWAH] content url is not provided! Automated voting is not possible!");
+				$('<div>No content URL specified! Voting is impossible! <span class="fa fa-fw fa-exclamation-triangle"></span></div>').appendTo(".awah-arp-status")
+					.delay(status_message_delay).queue(function() { $(this).addClass("awah-casper-out"); });
 				return;
 			}
 			votes_content_algorithm(); //start algorithm
@@ -602,7 +530,7 @@
 			'<div class="list-group">' +
 
 			'<div class="list-group-item">' +
-			'<div class="list-group-item-heading" data-awah-tooltip="The ones you see right here">Vote for featured ' + content_type + '</div>' +
+			'<div class="list-group-item-heading" data-awah-tooltip="The ones you see right here">Vote for featured ' + content_type + (content_type != 'News'  ? 's' : '') + '</div>' +
 			'<a class="btn btn-default awah-btn-cons" href="javascript:void(0);" data-awah-tooltip="Make CON votes" data-awah-voting-direction="up" ' +
 			'data-awah-content-url="/esi/featured-tile-data/' + content_type + '/">' +
 			'<i class="fa fa-arrow-up"></i> <span class="hidden-xs">UP-votes</span></a>' +
@@ -612,7 +540,7 @@
 			'</div>' +
 
 			'<div class="list-group-item"' + (content_type == 'News' ? 'style="display: none;"' : '') + '>' +
-			'<div class="list-group-item-heading" data-awah-tooltip="Every ' + content_type + ' which uploaded to the Alienware Arena.\nExcluding ones that moved to \'featured\' list.\nSorting from fresh ones to old ones.">Vote for newly uploaded ' + content_type + '</div>' +
+			'<div class="list-group-item-heading" data-awah-tooltip="Every ' + content_type + ' which uploaded to the Alienware Arena.\nExcluding ones that moved to \'featured\' list.\nSorting from fresh ones to old ones.">Vote for newly uploaded ' + content_type + (content_type != 'News'  ? 's' : '') + '</div>' +
 			'<a class="btn btn-default awah-btn-cons" href="javascript:void(0);" data-awah-tooltip="Make CON votes" data-awah-voting-direction="up" ' +
 			'data-awah-content-url="/esi/tile-data/' + content_type + '/">' +
 			'<i class="fa fa-arrow-up"></i> <span class="hidden-xs">UP-votes</span></a>' +
@@ -629,10 +557,11 @@
 			'<i class="fa fa-terminal"></i> <span class="hidden-xs">Make test</span></a></div>').appendTo(".awah-panel > .list-group");
 		if(DEBUG) $(".awah-btn-test").on("click", function() {
 			votes_content_cur = getRandomInt(5, 15);
-			votes_content_gathering = true;
+			votes_content_action = true;
 			content_to_check = new Array(votes_content_cur);
 			content_to_vote = new Array(votes_content_cur);
 			arp_pts_status_update();
+			votes_content_action = false;
 			content_to_check = new Array();
 			content_to_vote = new Array();
 		});
@@ -649,149 +578,6 @@
 			'</div>' +
 			'</li>').appendTo(".list-profile-actions");
 		votes_content_register_buttons();
-	}
-
-	function votes_content_make() {
-		//$('.post-up-vote') on click
-		//var postId = $(this).data('post-id');
-		votes_content_processing = true;
-		var url = content_to_vote.shift();
-		$(".awah-con-queue-length").text(content_to_vote.length);
-		//var url    = "/forums/post/up-vote/replaceMe";
-		//url        = url.replace('replaceMe', postId);
-		var postId = url.replace("/forums/post/" + (voting_down ? 'down' : 'up') + "-vote/", "");
-
-		$.ajax({
-			url: url,
-			type: 'post',
-			success: function(data){
-				if (data.success) {
-					$('.post-vote-count[data-post-id="'+postId+'"]').html(data.voteTotal);
-
-					if (data.votedForContent) {
-						$('#post-'+postId+' .post-' + (voting_down ? 'down' : 'up') + '-vote .fa-arrow-' + (voting_down ? 'down' : 'up')).css('color', 'gold');
-					} else {
-						$('#post-'+postId+' .post-' + (voting_down ? 'down' : 'up') + '-vote .fa-arrow-' + (voting_down ? 'down' : 'up')).css('color', '#c8c8c8');
-					}
-
-					$('#post-'+postId+' .post-' + (voting_down ? 'up' : 'down') + '-vote .fa-arrow-' + (voting_down ? 'up' : 'down')).css('color', '#c8c8c8');
-				}
-				if (content_to_vote.length > 0 && votes_content_cur < votes_content_max) {
-					setTimeout(function() {
-						votes_content_make();
-					}, getRandomInt(actions_delay_min, actions_delay_max));
-				} else {
-					arp_pts_status_update(); // just in case
-					votes_content_processing = false;
-					if (!votes_content_gathering) {
-						$(".awah-con-queue").delay(status_message_delay).queue(function() { $(this).addClass("awah-casper-out"); });
-						setTimeout(function() {
-							$(".awah-arp-pts-con").css("background-image", "");
-						}, status_message_delay);
-						//$(".awah-arp-pts-con").delay(status_message_delay).queue(function() { $(this).css("background-image", ""); });
-					}
-				}
-			},
-			error: function(data){
-				$('<div>Some vote error!</div>').appendTo(".awah-arp-status")
-					.delay(status_message_delay).queue(function() { $(this).addClass("awah-casper-out"); });
-				if (content_to_vote.length > 0) {
-					votes_content_make();
-				} else {
-					votes_content_processing = false;
-				}
-			},
-		});
-	}
-
-	function votes_content_gather() {
-		votes_content_gathering = true;
-
-		$(".awah-con-queue").show();
-
-		$("div.ucf-comments div.media.post:not(:has(i[class*='fa-arrow'][style='color: gold;']))").each(function( index ) {
-			if ((votes_content_cur + content_to_vote.length) < votes_content_max) {
-				var url = "/forums/post/" + (voting_down ? 'down' : 'up') + "-vote/" + $(this).attr('data-post-id');
-				content_to_vote.push(url);
-				$(".awah-con-queue-length").text(content_to_vote.length);
-				arp_pts_status_update();
-			}
-			if ((votes_content_cur + content_to_vote.length) >= votes_content_max) {
-				votes_content_gathering = false;
-				$('<div>Enough votes!</div>').appendTo(".awah-arp-status")
-					.delay(status_message_delay).queue(function() { $(this).addClass("awah-casper-out"); });
-				return false;
-			}
-		});
-		if (content_to_vote.length > 0 && !votes_content_processing) {
-			votes_content_make();
-		}
-		if (votes_content_gathering) {
-			setTimeout(function() {
-				votes_content_get_next_page();
-			}, getRandomInt(actions_delay_min, actions_delay_max));
-		}
-	}
-
-	function votes_content_get_next_page() {
-		//$('.pagination li a').on('click'
-		//e.preventDefault();
-		//$ele         = $(this);
-		var href     = $("ul.pagination > li.next:not(.disabled) > a").filter(":first").attr('href');
-		var parts    = href.split('/');
-		var page     = parts.pop();
-		var entityId = parts.pop();
-
-		if (href) {
-			var status_message = $('<div>Getting to the next page <span class="fa fa-fw fa-circle-o-notch fa-spin"></span></div>');
-			status_message.appendTo(".awah-arp-status");
-			$.ajax({
-				url: href,
-				type: 'get',
-				success: function(data) {
-					status_message.html('<div>Getting to the next page <span class="fa fa-fw fa-check-circle"></span></div>');
-					status_message.delay(status_message_delay).queue(function() { $(this).addClass("awah-casper-out"); });
-					$('#reply-wrapper').empty();
-					$('#reply-wrapper').append(data);
-					$('.ucf-comments .timeago').timeago();
-					votes_content_gather();
-				},
-				error: function(data) {
-					status_message.html('<div>Getting to the next page <span class="fa fa-fw fa-exclamation-triangle"></span></div>');
-					status_message.delay(status_message_delay).queue(function() { $(this).addClass("awah-casper-out"); });
-					$(".awah-btn-cons").removeClass("hidden");
-				}
-			});
-		} else {
-			votes_content_gathering = false;
-		}
-	}
-
-	function votes_content_btn() {
-		$('<a class="btn btn-default awah-btn-cons awah-up" href="javascript:void(0);" data-awah-tooltip="Make CON votes">' +
-			'<i class="fa fa-arrow-up"></i> <span class="hidden-xs">UP-votes</span></a>' +
-			'<a class="btn btn-default awah-btn-cons awah-down" href="javascript:void(0);" data-awah-tooltip="Make CON votes">' +
-			'<i class="fa fa-arrow-down"></i> <span class="hidden-xs">DOWN-votes</span></a>').appendTo(".btn-group-sm");
-		$(".awah-btn-cons.awah-up").on("click", function() {
-			$(".awah-btn-cons").addClass("hidden");
-			voting_down = false;
-			votes_content_gather(); //start algorithm
-		});
-		$(".awah-btn-cons.awah-down").on("click", function() {
-			$(".awah-btn-cons").addClass("hidden");
-			voting_down = true;
-			votes_content_gather(); //start algorithm
-		});
-
-		//$('<div class="awah-grp-con"><div style="writing-mode: vertical-lr;float: left;" class="awah-grey">VOTING</div><div style="writing-mode: vertical-lr;float: right;" class="awah-grey">SEARCH</div><div style="float: left;" class="awah-voting-direction-panel"><label><input name="awah-voting-direction" value="up" type="radio">UP</label><label><input name="awah-voting-direction" value="random" type="radio">RANDOM</label><label><input name="awah-voting-direction" value="down" type="radio">DOWN</label></div><div style="padding-top: 5%;" class="awah-gathering-direction-panel"><label><input name="awah-voting-direction" value="back" type="radio">&lt;&lt;</label><label><input name="awah-voting-direction" value="fwd" type="radio">&gt;&gt;</label></div></div>').appendTo(".awah-btn-cons.awah-up");
-
-		if(DEBUG) $('<a class="btn btn-default awah-btn-test" href="javascript:void(0);">' +
-			 '<i class="fa fa-terminal"></i> <span class="hidden-xs">Make test</span></a>').appendTo(".btn-group-sm");
-		 if(DEBUG) $(".awah-btn-test").on("click", function() {
-			 votes_content_cur = getRandomInt(30, 45);
-			 //votes_tot_cur = 2;
-			 arp_pts_status_update();
-		});
 	}
 
 	// USER profile functions
@@ -882,7 +668,6 @@
 					show_available_keys();
 					break;
 			}
-			votes_content_btn();
 			break;
 		case /^\/ucf\/Giveaway$/.test(path):
 			if(DEBUG) console.log("SWITCH: Giveaways list");
