@@ -6,6 +6,7 @@
 // @author       Thomas Ashcraft
 // @match        *://*.alienwarearena.com/*
 // @match        *://*.alienwarearena.com//*
+// @license      GPL-2.0+; http://www.gnu.org/licenses/gpl-2.0.txt
 // @icon         https://www.alienwarearena.com/favicon.ico
 // @grant        none
 // @noframes
