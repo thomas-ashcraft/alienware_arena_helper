@@ -1,7 +1,7 @@
 ﻿// ==UserScript==
 // @name         Alienware Arena helper
 // @namespace    https://github.com/thomas-ashcraft
-// @version      0.5.1
+// @version      0.5.2
 // @description  Earn daily ARP easily
 // @author       Thomas Ashcraft
 // @match        *://*.alienwarearena.com/*
@@ -14,7 +14,7 @@
 
 (function() {
 	// You can configure options through the user interface. It is not recommended to edit the script for these purposes.
-	var version = "0.5.1";
+	var version = "0.5.2";
 	var DEBUG = false; // Developer option. Default: false
 
 	var status_message_delay_default	= 5000;
@@ -26,13 +26,27 @@
 	var actions_delay_max		= parseInt(localStorage.getItem('awah_actions_delay_max'), 10) || actions_delay_max_default;
 	localStorage.removeItem('awah_tot_add_votes_min'); // fix legacy
 	localStorage.removeItem('awah_tot_add_votes_max'); // fix legacy
-	var show_key_on_marked_giveaways	= localStorage.getItem('awah_show_key_on_marked_giveaways') || show_key_on_marked_giveaways_default;
+	var show_key_on_marked_giveaways = localStorage.getItem('awah_show_key_on_marked_giveaways') || show_key_on_marked_giveaways_default;
 	show_key_on_marked_giveaways = (show_key_on_marked_giveaways === "true");
-	var status_message_delay	= parseInt(localStorage.getItem('awah_status_message_delay'), 10) || status_message_delay_default;
+	var status_message_delay = parseInt(localStorage.getItem('awah_status_message_delay'), 10) || status_message_delay_default;
+	var votedContentCache = new Set(JSON.parse(localStorage.getItem('awahVotedContentCache')));
+	if (DEBUG) console.log("votedContentCache", votedContentCache.size, votedContentCache);
 
 	var url = window.location.href;
 	var path = window.location.pathname;
 	path = path.replace(/\/+/g, "/");
+
+	// ARP points initial readings
+	var pm_counter = /Vote on Content(?:.|\n)*>(\d+) of (\d+)<\/td>/.exec($("head").html());
+	var votes_content_cur = parseInt(pm_counter[1], 10);
+	var votes_content_max = parseInt(pm_counter[2], 10);
+	var votes_content_action = false;
+	var votes_content_url = '';
+	var content_to_vote = [];
+	var content_to_check = [];
+	var content_page = 1;
+	var voting_down = false;
+	var options_save_apply_timer;
 
 	// Embed style
 	var helper_style = `
@@ -71,7 +85,7 @@
 		.awah-opt-title {float: left; /* line-height: 38px; */}
 		.awah-opt-input {float: right; width: 24%; text-align: right; padding: 0 5px; height: auto; background: transparent; color: white; border-width: 0px 0px 1px 0px;}
 		.awah-opt-desc {float: right; font-size: smaller;}
-		#awah_restore_default {width: 100%;}
+		.awah-option > .btn-danger {width: 100%;}
 		input.awah-opt-input[type="checkbox"] {/* display: none; */ position: absolute; right: 0; opacity: 0;}
 		input.awah-opt-input[type="checkbox"]:focus + div {border-color: #66afe9; outline: 0; -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(102, 175, 233, 0.6); box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(102, 175, 233, 0.6);}
 		.awah-opt-input[type="checkbox"] + div {transition: 0.25s all ease; position: relative; overflow: hidden;}
@@ -111,19 +125,6 @@
 		`;
 	document.head.appendChild(document.createElement('style')).innerHTML=helper_style.replace(/([\s\S]*?return;){2}([\s\S]*)}/,'$2');
 
-	// ARP points initial readings
-	var pm_counter = /Vote on Content(?:.|\n)*>(\d+) of (\d+)<\/td>/.exec($("head").html());
-	votes_content_cur = parseInt(pm_counter[1], 10);
-	votes_content_max = parseInt(pm_counter[2], 10);
-	votes_content_promised = 0;
-	votes_content_action = false;
-	votes_content_url = '';
-	var content_to_vote = [];
-	var content_to_check = [];
-	var content_page = 1;
-	var voting_down = false;
-	var options_save_apply_timer;
-
 	function newStatusMessage(statusMessageText) {
 		var statusMessageObj = $('<div>' + statusMessageText + '</div>');
 		statusMessageObj.appendTo(".awah-arp-status")
@@ -159,7 +160,11 @@
 
 			'<div class="awah-option">' +
 			'<button id="awah_restore_default" class="btn btn-danger"><span class="fa fa-exclamation-triangle"></span> Restore default</button>' +
-			'<span class="awah-opt-desc awah-grey">Restore default settings</span></div>' +
+			'<span class="awah-opt-desc awah-grey">Restore default settings.</span></div>' +
+
+			'<div class="awah-option">' +
+			'<button id="awah_clear_voted_content_cache" class="btn btn-danger"><span class="fa fa-exclamation-triangle"></span> Clear voted content cache</button>' +
+			'<span class="awah-opt-desc awah-grey">Use only in case of emergency.</span></div>' +
 			'</div>');
 		show_daily_reset_timer();
 
@@ -184,14 +189,19 @@
 		$("#awah_restore_default").on("click", function() {
 			$("#awah_actions_delay_min").val(actions_delay_min_default);
 			$("#awah_actions_delay_max").val(actions_delay_max_default);
-			$("#awah_show_key_on_marked_giveaways").prop("checked", (show_key_on_marked_giveaways_default === "true"));// true);
+			$("#awah_show_key_on_marked_giveaways").prop("checked", (show_key_on_marked_giveaways_default === "true"));
 			$("#awah_status_message_delay").val(status_message_delay_default);
 			newStatusMessage('Default options settings restored!');
 			options_save_apply();
 		});
 
+		$("#awah_clear_voted_content_cache").on("click", function() {
+			votedContentCache.clear();
+			saveVotedContentCache();
+			newStatusMessage('Voted content cache cleared!');
+		});
+
 		$(".awah-options-btn").on("click", function() {
-			//$( ".block" ).animate({ left: "+=100px" }, 2000 );
 			var awah_options = $(".awah-options-overlay");
 			if(awah_options.css('display') == 'none') {
 				awah_options.show();
@@ -227,7 +237,17 @@
 			newStatusMessage('Settings saved! <span class="fa fa-fw fa-floppy-o"></span>');
 		} catch (e) {
 			if (e == QUOTA_EXCEEDED_ERR) {
-				newStatusMessage('localStorage quota exceeded! Try to clear browser\'s cache <span class="fa fa-fw fa-exclamation-triangle"></span>');
+				newStatusMessage('localStorage quota exceeded! <span class="fa fa-fw fa-exclamation-triangle"></span>');
+			}
+		}
+	}
+
+	function saveVotedContentCache() {
+		try {
+			localStorage.setItem('awahVotedContentCache', JSON.stringify([...votedContentCache]));
+		} catch (e) {
+			if (e == QUOTA_EXCEEDED_ERR) {
+				newStatusMessage('localStorage quota exceeded! <span class="fa fa-fw fa-exclamation-triangle"></span>');
 			}
 		}
 	}
@@ -238,11 +258,18 @@
 			var originalSuccess = options.success;
 			options.success = function(data) {
 				/* ajaxBeforeSuccess functionality */
-				if (data.votedForContent) {
+				var contentId = parseInt(this.url.replace(/\/ucf\/vote\/(?:up|down)\/(\d*)/g, "$1"), 10);
+				if (data.votedForContent === true) {
 					votes_content_cur++;
-				}
-				if (data.votedForContent === false) {
+					votedContentCache.add(contentId);
+					saveVotedContentCache();
+				} else if (data.votedForContent === false) {
 					votes_content_cur--;
+					votedContentCache.delete(contentId);
+					saveVotedContentCache();
+				} else if (data.message.indexOf("already voted") >= 0) {
+					votedContentCache.add(contentId);
+					saveVotedContentCache();
 				}
 				if (!votes_content_action) {
 					newStatusMessage(data.message);
@@ -261,7 +288,7 @@
 
 	function arp_pts_status_update() {
 		$(".awah-arp-pts-con").html("CON: " + votes_content_cur + " / " + votes_content_max);
-		if (votes_content_cur >= votes_content_max) {
+		if (votes_content_cur >= votes_content_max && !votes_content_action) {
 			$(".awah-arp-pts-con").addClass("awah-grey");
 		}
 		if (votes_content_action) {
@@ -320,8 +347,8 @@
 
 	// CON votes section
 	function votes_content_apply() {
-		var id = content_to_vote.shift();
-		var url = "/ucf/vote/" + (voting_down ? 'down' : 'up') + "/" + id;
+		var contentId = content_to_vote.shift();
+		var url = "/ucf/vote/" + (voting_down ? 'down' : 'up') + "/" + contentId;
 
 		$.ajax({
 				url: url,
@@ -349,39 +376,37 @@
 					}
 				} else {
 					votes_content_action = false;
-					$(".awah-con-check-queue").delay(status_message_delay).queue(function() {
-						$(this).addClass("awah-casper-out").dequeue();
-					});
-					$(".awah-con-votes-queue").delay(status_message_delay).queue(function() {
-						$(this).addClass("awah-casper-out").dequeue();
-					});
-					setTimeout(() => $(".awah-arp-pts-con").css("background-image", ""), status_message_delay);
+					setTimeout(() => {
+						$(".awah-con-check-queue").addClass("awah-casper-out");
+						$(".awah-con-votes-queue").addClass("awah-casper-out");
+						$(".awah-arp-pts-con").css("background-image", "");
+						$(".awah-arp-pts-con").addClass("awah-grey");
+					}, status_message_delay);
 				}
 			});
 	}
 
 	function votes_content_is_voted() {
-		var content_item = content_to_check.shift();
-		var id = content_item.id;
-		$.get("/ucf/show/" + id)
+		var contentItem = content_to_check.shift();
+		var contentId = contentItem.id;
+		$.get("/ucf/show/" + contentId)
 			.done(function(response) {
 				var votedOnContent = /var votedOnContent = (.+);/.exec(response);
 				if (votedOnContent) {
 					votedOnContent = JSON.parse(votedOnContent[1]);
 					if (DEBUG) console.log("votedOnContent", votedOnContent);
 					if (votedOnContent.downVote === false && votedOnContent.upVote === false) {
-						content_to_vote.push(id);
+						content_to_vote.push(contentId);
 					} else if (votedOnContent.downVote === true || votedOnContent.upVote === true) {
-						// TODO: cache functions
-						// check if cache has this id ()
-						// add this id to cache ()
+						votedContentCache.add(contentId);
+						saveVotedContentCache();
 					}
 				} else {
-					newStatusMessage('Failed to parse status of ' + id + '! <span class="fa fa-fw fa-exclamation-triangle"></span>');
+					newStatusMessage('Failed to parse status of ' + contentId + '! <span class="fa fa-fw fa-exclamation-triangle"></span>');
 				}
 			})
 			.fail(function() {
-				newStatusMessage('Failed to get status of ' + id + '! <span class="fa fa-fw fa-exclamation-triangle"></span>');
+				newStatusMessage('Failed to get status of ' + contentId + '! <span class="fa fa-fw fa-exclamation-triangle"></span>');
 			})
 			.always(function() {
 				arp_pts_status_update();
@@ -398,25 +423,35 @@
 	}
 
 	function votes_content_get_page(fail_counter = 0) {
+		var statusMessage = newStatusMessage(`Getting page ${content_page} <span class="fa fa-fw fa-circle-o-notch fa-spin"></span>`);
+		statusMessage.clearQueue();
 		$.get(votes_content_url + content_page)
 			.done(function(response) {
+				statusMessage.children("span").attr('class', 'fa fa-fw fa-check-circle');
+				statusMessage.delay(status_message_delay).queue(function() {
+						$(this).addClass("awah-casper-out");
+					});
 				if (response.data.length == 0) {
 					//more = false;
 					return; // TODO: make proper action stopping for "data.length == 0" case
 				}
 				content_page++;
 				content_to_check.push(...response.data);
+				content_to_check = content_to_check.filter(f => !votedContentCache.has(f.id));
 				if (DEBUG) console.log("content_to_check", content_to_check);
 				if (content_to_check.length >= (votes_content_max - votes_content_cur)) {
 					newStatusMessage('Enough content to check <span class="fa fa-fw fa-check-circle"></span>');
 					setTimeout(() => votes_content_is_voted(), getRandomInt(actions_delay_min, actions_delay_max)); // go to the next block!
 				} else {
-					newStatusMessage('Need more content to check <span class="fa fa-fw fa-circle-o-notch fa-spin"></span>');
 					setTimeout(() => votes_content_get_page(), getRandomInt(actions_delay_min, actions_delay_max)); // recursion!
 				}
 			})
 			.fail(function() {
 				fail_counter++;
+				statusMessage.children("span").attr('class', 'fa fa-fw fa-exclamation-triangle');
+				statusMessage.delay(status_message_delay).queue(function() {
+						$(this).addClass("awah-casper-out");
+					});
 				if (fail_counter < 5) {
 					newStatusMessage('Failed to get content page! Trying again' + (fail_counter > 1  ? ' (' + fail_counter + ')' : '...') + ' <span class="fa fa-fw fa-exclamation-triangle"></span>');
 					votes_content_get_page(fail_counter); // recursion!
