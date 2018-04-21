@@ -2,23 +2,27 @@
 
 Helps you to easily earn daily ARP and improves site with usable features
 
-### Requirements
+## Features
 
-First you need to install "Tampermonkey" into your browser.
+* Automatic voting.
+* Counting daily content votes on the fly.
+* Mark taken giveaways.
+* Visible counter of available keys in giveaways.
+* Visible Daily ARP reset timer.
+* Button to simply open users Steam profiles without adding to friends.
 
-* [Firefox](https://addons.mozilla.org/ru/firefox/addon/tampermonkey/)
-* [Chrome](https://chrome.google.com/webstore/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo?hl=ru&gl=RU) (and Yandex.browser)
-* [Opera](https://addons.opera.com/ru/extensions/details/tampermonkey-beta/?display=en)
+## Installing
+
+1. First you need to install "Tampermonkey" into your browser.
+  * [Firefox](https://addons.mozilla.org/ru/firefox/addon/tampermonkey/)
+  * [Chrome](https://chrome.google.com/webstore/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo?hl=ru&gl=RU) (and Yandex.browser)
+  * [Opera](https://addons.opera.com/ru/extensions/details/tampermonkey-beta/?display=en)
+2. Then click [here](https://github.com/thomas-ashcraft/alienware_arena_helper/raw/master/alienwarearena_helper.user.js).
+3. And finally click "Install" button in the appeared window.
 
 >Greasemonkey 4.0+ is not supported (see [that issue](https://github.com/greasemonkey/greasemonkey/issues/2700)).
 
-### Installing
-
-1. Make sure that you have "Tampermonkey" installed. See the requirements above.
-2. Click [here](https://github.com/thomas-ashcraft/alienware_arena_helper/raw/master/alienwarearena_helper.user.js).
-3. Click "Install" button in the appeared window.
-
-### Screenshots
+## Screenshots
 
 Featured images page
 ![Alienware Arena helper screenshot Featured images](https://user-images.githubusercontent.com/6583664/38822279-a8a99000-41ab-11e8-8708-85d73328049c.png)
