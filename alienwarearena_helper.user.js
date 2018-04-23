@@ -1,7 +1,7 @@
 ﻿// ==UserScript==
 // @name         Alienware Arena helper
 // @namespace    https://github.com/thomas-ashcraft
-// @version      0.5.2
+// @version      0.5.3
 // @description  Earn daily ARP easily
 // @author       Thomas Ashcraft
 // @match        *://*.alienwarearena.com/*
@@ -14,7 +14,7 @@
 
 (function() {
 	// You can configure options through the user interface. It is not recommended to edit the script for these purposes.
-	var version = "0.5.2";
+	var version = "0.5.3";
 	var DEBUG = false; // Developer option. Default: false
 
 	var status_message_delay_default	= 5000;
@@ -30,7 +30,6 @@
 	show_key_on_marked_giveaways = (show_key_on_marked_giveaways === "true");
 	var status_message_delay = parseInt(localStorage.getItem('awah_status_message_delay'), 10) || status_message_delay_default;
 	var votedContentCache = new Set(JSON.parse(localStorage.getItem('awahVotedContentCache')));
-	if (DEBUG) console.log("votedContentCache", votedContentCache.size, votedContentCache);
 
 	var url = window.location.href;
 	var path = window.location.pathname;
@@ -50,19 +49,19 @@
 
 	// Embed style
 	var helper_style = `
+		/* script buttons */
 		.awah-btn-cons,
 		.awah-btn-cons:hover {color: gold;}
 		.list-group-item > .awah-btn-cons {width: 50%;}
 		.list-profile-actions > li > .awah-btn-cons {width: 50%; border-color: rgba(0, 0, 0, .6);}
 		.awah-btn-cons.disabled::before {content: ''; width: 100%; height: 100%; position: absolute; top: 0; left: 0; background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACAQMAAABIeJ9nAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAABlBMVEUAAAAAAAClZ7nPAAAAAXRSTlMAQObYZgAAAAFiS0dEAIgFHUgAAAAJcEhZcwAACxIAAAsSAdLdfvwAAAAMSURBVAjXY2hgYAAAAYQAgSjdetcAAAAASUVORK5CYII=');}
+		.awah-panel {margin: 20px 0;}
 
-		.awah-grey {color: #767676;}
-		.awah-casper-out {overflow: hidden !important; animation: awah-casper-out 0.6s ease-in !important;}
 		[data-awah-tooltip] {position: relative;}
 		[data-awah-tooltip]:after {content: attr(data-awah-tooltip); pointer-events: none; padding: 4px 8px; color: white; position: absolute; left: 0; bottom: 0%; opacity: 0; font-weight: normal; text-transform: none; font-size: smaller; white-space: pre; box-shadow: 0px 0px 3px 0px #54bbdb; background-color: #0e0e0e; transition: opacity 0.25s ease-out, bottom 0.25s ease-out; z-index: 1000;}
 		[data-awah-tooltip]:hover:after {bottom: 115%; opacity: 1;}
-		.awah-panel {margin: 20px 0;}
 
+		/* script GUI */
 		#arp-toast .toast-header {overflow: visible !important;}
 		.awah-ui-overlay {clear: both; font-size: smaller !important; pointer-events: none; position: absolute; bottom: 102%; right: 0; min-width: 100%; padding: inherit; text-shadow: 2px 2px 2px rgb(0, 0, 0), -1px -1px 2px rgb(0, 0, 0), 2px 2px 5px rgb(0, 0, 0), -1px -1px 5px rgb(0, 0, 0), 0px 0px 10px rgb(0, 0, 0); text-align: right; background: rgba(0, 0, 0, 0) linear-gradient(to right bottom, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0) 50%, rgba(0, 0, 0, 0.85) 85%, rgba(0, 0, 0, 0.85) 100%) no-repeat scroll 0 0;}
 		.awah-arp-status {float: right; clear: both; white-space: nowrap; border-bottom: 1px solid #1c1e22;}
@@ -70,10 +69,13 @@
 		.awah-arp-pts {clear: both; width: 100%}
 		.awah-arp-pts > div {clear: both; width: 100%; background-position: 50% 50%; background-repeat: no-repeat; background-size: 100% 12px;}
 		.awah-arp-pts > div::after {content: ""; display: block; height: 0; clear: both;}
+		.awah-grey {color: #767676;}
+		.awah-casper-out {overflow: hidden !important; animation: awah-casper-out 0.6s ease-in !important;}
 
 		.awah-daily-reset-timer {min-width: 22%;}
 		.toast-body table tbody > :nth-child(2n) {background: #090909}
 
+		/* script options */
 		.awah-options-btn {float: left; padding-left: 16px; cursor: pointer; transition: text-shadow 0.25s ease-in-out;}
 		.awah-options-btn:hover {text-shadow: 0px 0px 3px rgba(75, 201, 239, 1), 0px 0px 12px rgba(75, 201, 239, 1); /* animation: awah-breathing-text-neon 2s ease 0s infinite alternate; */}
 		.awah-options-overlay {overflow: auto; float: left; clear: both; position: absolute; bottom: 0; right: calc(100% + 1px); height: 100%; width: 100%; padding: 0 11px; text-shadow: 2px 2px 2px rgb(0, 0, 0), -1px -1px 2px rgb(0, 0, 0); text-align: right; background: rgba(0, 0, 0, 0.85) repeat scroll 0 0; box-shadow: 0px 0px 3px 0px #54bbdb;}
@@ -83,7 +85,7 @@
 		.awah-option label {width: 100%; margin: 0; position: relative;}
 		.awah-option > * {clear: both;}
 		.awah-opt-title {float: left; /* line-height: 38px; */}
-		.awah-opt-input {float: right; width: 24%; text-align: right; padding: 0 5px; height: auto; background: transparent; color: white; border-width: 0px 0px 1px 0px;}
+		.awah-opt-input {float: right; width: 24%; text-align: right; padding: 0 5px; height: auto; background: transparent; color: white; border-width: 0px 1px 1px 0px;}
 		.awah-opt-desc {float: right; font-size: smaller;}
 		.awah-option > .btn-danger {width: 100%;}
 		input.awah-opt-input[type="checkbox"] {/* display: none; */ position: absolute; right: 0; opacity: 0;}
@@ -95,19 +97,24 @@
 		.awah-opt-input[type="checkbox"] + div > div::before {content: 'ON'; position: absolute; right: 120%;}
 		.awah-opt-input[type="checkbox"] + div > div::after {content: 'OFF'; color: #767676; position: absolute; left: 120%;}
 
-		.account-settings-steam div.steam {background-color: #171a21; border-radius: 100px;}
-
+		/* Giveaways page */
 		div.tile-content.awah-giveaway-taken a.Giveaway::before {content: attr(awahlabel); font-family: inherit; font-weight: 700; white-space: pre; overflow: hidden; width: 100%; height: 100%; text-shadow: 2px 2px 2px rgb(0, 0, 0), -1px -1px 2px rgb(0, 0, 0), 2px 2px 5px rgb(0, 0, 0), -1px -1px 5px rgb(0, 0, 0), 0px 0px 10px rgb(0, 0, 0); background-color: rgba(0, 0, 0, 0); background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACAQMAAABIeJ9nAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAABlBMVEUAAAAAAAClZ7nPAAAAAXRSTlMAQObYZgAAAAFiS0dEAIgFHUgAAAAJcEhZcwAACxIAAAsSAdLdfvwAAAAMSURBVAjXY2hgYAAAAYQAgSjdetcAAAAASUVORK5CYII=');}
 		div.tile-content.awah-giveaway-taken:not(:hover) {opacity: 0.2; transition: opacity 0.25s ease-in-out;}
 
-		.awah-progress-bar-back {background-color: rgb(40, 37, 36); height: 12px;}
-		.awah-progress-bar-front {background-color: #00a0f0;}
-		.awah-progress-bar-simple {background-image: linear-gradient(90deg, #00a0f0 38%, rgb(40, 37, 36) 0%, rgb(40, 37, 36) 68%, rgba(40, 37, 36, 0) 0%);}
-		.awah-progress-bar {background-image: linear-gradient(90deg, rgb(0, 160, 240) 38%, rgba(0, 160, 240, 0.2) 0%, rgba(0, 160, 240, 0.2) 47%, rgb(0, 160, 240) 48%, rgb(40, 37, 36) 0%);}
+		/* comments */
+		.insignia-label::before {
+			content: attr(data-arp-level);
+			font-size: 10px;
+			width: 35px; /* 30 for master */
+			line-height: 30px; /* 26 for master */
+			position: absolute;
+			text-align: center;
+			pointer-events: none;
+		}
 
 		@keyframes awah-slide-from-bottom {
-			from {opacity: 0.5; bottom: -90px;}
-			to {opacity: 1; bottom: 0px;}
+			from {opacity: 0.5; bottom: -90px; max-height: 0px;}
+			to {opacity: 1; bottom: 0px; max-height: 50px;}
 		}
 		@keyframes awah-casper-out {
 			0%		{filter: blur(0px); max-height: 50px;}
@@ -163,6 +170,7 @@
 			'<span class="awah-opt-desc awah-grey">Restore default settings.</span></div>' +
 
 			'<div class="awah-option">' +
+			'<label><span class="awah-opt-title">Voted content cahed</span><span id="awah_voted_content_cache_size" class="form-control awah-opt-input">' + votedContentCache.size + '</span></label>' +
 			'<button id="awah_clear_voted_content_cache" class="btn btn-danger"><span class="fa fa-exclamation-triangle"></span> Clear voted content cache</button>' +
 			'<span class="awah-opt-desc awah-grey">Use only in case of emergency.</span></div>' +
 			'</div>');
@@ -245,6 +253,7 @@
 	function saveVotedContentCache() {
 		try {
 			localStorage.setItem('awahVotedContentCache', JSON.stringify([...votedContentCache]));
+			$("#awah_voted_content_cache_size").text(votedContentCache.size);
 		} catch (e) {
 			if (e == QUOTA_EXCEEDED_ERR) {
 				newStatusMessage('localStorage quota exceeded! <span class="fa fa-fw fa-exclamation-triangle"></span>');
@@ -502,20 +511,20 @@
 
 			'<div class="list-group-item">' +
 			'<div class="list-group-item-heading" data-awah-tooltip="The ones you see right here">Vote for featured ' + content_type + (content_type != 'News'  ? 's' : '') + '</div>' +
-			'<a class="btn btn-default awah-btn-cons" href="javascript:void(0);" data-awah-tooltip="Make CON votes" data-awah-voting-direction="up" ' +
+			'<a class="btn btn-default awah-btn-cons" href="javascript:void(0);" data-awah-tooltip="Automatic voting" data-awah-voting-direction="up" ' +
 			'data-awah-content-url="/esi/featured-tile-data/' + content_type + '/">' +
 			'<i class="fa fa-arrow-up"></i> <span class="hidden-xs">UP-votes</span></a>' +
-			'<a class="btn btn-default awah-btn-cons" href="javascript:void(0);" data-awah-tooltip="Make CON votes" data-awah-voting-direction="down" ' +
+			'<a class="btn btn-default awah-btn-cons" href="javascript:void(0);" data-awah-tooltip="Automatic voting" data-awah-voting-direction="down" ' +
 			'data-awah-content-url="/esi/featured-tile-data/' + content_type + '/">' +
 			'<i class="fa fa-arrow-down"></i> <span class="hidden-xs">DOWN-votes</span></a>' +
 			'</div>' +
 
 			'<div class="list-group-item"' + (content_type == 'News' ? 'style="display: none;"' : '') + '>' +
 			'<div class="list-group-item-heading" data-awah-tooltip="Every ' + content_type + ' which uploaded to the Alienware Arena.\nExcluding ones that moved to \'featured\' list.\nSorting from fresh ones to old ones.">Vote for newly uploaded ' + content_type + (content_type != 'News'  ? 's' : '') + '</div>' +
-			'<a class="btn btn-default awah-btn-cons" href="javascript:void(0);" data-awah-tooltip="Make CON votes" data-awah-voting-direction="up" ' +
+			'<a class="btn btn-default awah-btn-cons" href="javascript:void(0);" data-awah-tooltip="Automatic voting" data-awah-voting-direction="up" ' +
 			'data-awah-content-url="/esi/tile-data/' + content_type + '/">' +
 			'<i class="fa fa-arrow-up"></i> <span class="hidden-xs">UP-votes</span></a>' +
-			'<a class="btn btn-default awah-btn-cons" href="javascript:void(0);" data-awah-tooltip="Make CON votes" data-awah-voting-direction="down" ' +
+			'<a class="btn btn-default awah-btn-cons" href="javascript:void(0);" data-awah-tooltip="Automatic voting" data-awah-voting-direction="down" ' +
 			'data-awah-content-url="/esi/tile-data/' + content_type + '/">' +
 			'<i class="fa fa-arrow-down"></i> <span class="hidden-xs">DOWN-votes</span></a>' +
 			'</div>' +
@@ -540,10 +549,10 @@
 
 	function votes_content_btn_profile() {
 		$('<li>' +
-			'<a class="btn btn-default awah-btn-cons" href="javascript:void(0);" data-awah-tooltip="Make CON votes" data-awah-voting-direction="up" ' +
+			'<a class="btn btn-default awah-btn-cons" href="javascript:void(0);" data-awah-tooltip="Automatic voting" data-awah-voting-direction="up" ' +
 			'data-awah-content-url="/esi/recent-activity-data/user/' + profileData.profile.id + '/">' +
 			'<i class="fa fa-arrow-up"></i> <span class="hidden-xs">UP-votes</span></a>' +
-			'<a class="btn btn-default awah-btn-cons" href="javascript:void(0);" data-awah-tooltip="Make CON votes" data-awah-voting-direction="down" ' +
+			'<a class="btn btn-default awah-btn-cons" href="javascript:void(0);" data-awah-tooltip="Automatic voting" data-awah-voting-direction="down" ' +
 			'data-awah-content-url="/esi/recent-activity-data/user/' + profileData.profile.id + '/">' +
 			'<i class="fa fa-arrow-down"></i> <span class="hidden-xs">DOWN-votes</span></a>' +
 			'</div>' +
@@ -628,47 +637,85 @@
 		});
 	}
 
+	function showUserLevelAtInsignias() {
+		function parseUserLevelData() {
+			$("div.user-profile-small").each(function(i) {
+				$(this).parent().next().find(".insignia-label").attr("data-arp-level", $(this).attr("data-arp-level"));
+			});
+
+			// master insignias size fix
+			$(".prestige-label").prevAll(".insignia-label").children("img").css({
+				"position": "relative",
+				"left": "2px",
+				"top": "2px"
+			});
+
+			// master insignias size fix - alternative variant with using big images
+			/* $(".username.text-prestiged").prev(".insignia-label").children("img").each(function(i) {
+				$(this).css("width", "35px");
+				$(this).attr("src", $(this).attr("src").replace(/\/sm/, '/lg'));
+			}); */
+		}
+		parseUserLevelData();
+		$.ajaxPrefilter(function(options, originalOptions, jqXHR) {
+			if (options.url.indexOf("ucf/comments/") >= 0) {
+				var originalSuccess = options.success;
+				options.success = function(data) {
+					/* ajaxBeforeSuccess functionality */
+					var contentId = parseInt(this.url.replace(/\/ucf\/comments\/(\d*)/g, "$1"), 10);
+					//parseUserLevelData();
+					setTimeout(() => parseUserLevelData(), 1);
+					/* ajaxBeforeSuccess functionality END */
+					if (typeof originalSuccess === "function") {
+						originalSuccess(data);
+					}
+				};
+			}
+		});
+	}
+
 	switch (true) {
 		case /.*\/ucf\/show\/.*/.test(path):
-			if(DEBUG) console.log("SWITCH: Content");
+			if (DEBUG) console.log("SWITCH: Content");
 			// <meta property="og:url" content="https://eu.alienwarearena.com/ucf/show/1592462/boards/contest-and-giveaways-global/Giveaway/rising-storm-2-vietnam-closed-beta-key-giveaway" />
 			var og_url = $('meta[property="og:url"]').attr("content");
 			switch (true) {
 				case /.*\/boards\/this-or-that\/.*/.test(path):
 				case /.*\/boards\/this-or-that\/.*/.test(og_url):
-					if(DEBUG) console.log("SWITCH: This or That");
+					if (DEBUG) console.log("SWITCH: This or That");
 					// this_or_that_btn();
 					break;
 				case /^\/ucf\/show\/.*\/Giveaway\//.test(path):
 				case /\/ucf\/show\/.*\/Giveaway\//.test(og_url):
-					if(DEBUG) console.log("SWITCH: Giveaway");
+					if (DEBUG) console.log("SWITCH: Giveaway");
 					show_available_keys();
 					break;
 			}
+			showUserLevelAtInsignias();
 			break;
 		case /^\/ucf\/Giveaway$/.test(path):
-			if(DEBUG) console.log("SWITCH: Giveaways list");
+			if (DEBUG) console.log("SWITCH: Giveaways list");
 			get_entered_giveaways();
 			break;
 		case /^\/ucf\/Image$/.test(path):
-			if(DEBUG) console.log("SWITCH: Featured images page");
+			if (DEBUG) console.log("SWITCH: Featured images page");
 			votes_content_btn_featured('Image');
 			break;
 		case /^\/ucf\/Video$/.test(path):
-			if(DEBUG) console.log("SWITCH: Featured videos page");
+			if (DEBUG) console.log("SWITCH: Featured videos page");
 			votes_content_btn_featured('Video');
 			break;
 		case /^\/ucf\/News$/.test(path):
-			if(DEBUG) console.log("SWITCH: Featured news page");
+			if (DEBUG) console.log("SWITCH: Featured news page");
 			votes_content_btn_featured('News');
 			break;
 		case /^\/member\/.*$/.test(path):
-			if(DEBUG) console.log("SWITCH: user profile page");
+			if (DEBUG) console.log("SWITCH: user profile page");
 			votes_content_btn_profile();
 			show_user_steam_profile_link();
 			break;
 		case /\/$/.test(url):
-			if(DEBUG) console.log("SWITCH: main page");
+			if (DEBUG) console.log("SWITCH: main page");
 			break;
 	}
 

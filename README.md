@@ -10,6 +10,7 @@ Helps you to easily earn daily ARP and improves site with usable features
 * Visible counter of available keys in giveaways.
 * Visible Daily ARP reset timer.
 * Button to simply open users Steam profiles without adding to friends.
+* Show user level at insignias (in comments).
 
 ## Installing
 
