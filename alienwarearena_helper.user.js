@@ -1,7 +1,7 @@
 ﻿// ==UserScript==
 // @name         Alienware Arena helper
 // @namespace    https://github.com/thomas-ashcraft
-// @version      0.5.3
+// @version      0.5.4
 // @description  Earn daily ARP easily
 // @author       Thomas Ashcraft
 // @match        *://*.alienwarearena.com/*
@@ -14,7 +14,7 @@
 
 (function() {
 	// You can configure options through the user interface. It is not recommended to edit the script for these purposes.
-	var version = "0.5.3";
+	var version = "0.5.4";
 	var DEBUG = false; // Developer option. Default: false
 
 	var status_message_delay_default	= 5000;
@@ -67,7 +67,7 @@
 		.awah-arp-status {float: right; clear: both; white-space: nowrap; border-bottom: 1px solid #1c1e22;}
 		.awah-arp-status > div {clear: both; position: relative; animation: awah-slide-from-bottom 0.25s ease-out 1 forwards;}
 		.awah-arp-pts {clear: both; width: 100%}
-		.awah-arp-pts > div {clear: both; width: 100%; background-position: 50% 50%; background-repeat: no-repeat; background-size: 100% 12px;}
+		.awah-arp-pts > div {clear: both; width: 100%; background-position: 50% 50%; background-repeat: no-repeat; background-size: 100% 14px;}
 		.awah-arp-pts > div::after {content: ""; display: block; height: 0; clear: both;}
 		.awah-grey {color: #767676;}
 		.awah-casper-out {overflow: hidden !important; animation: awah-casper-out 0.6s ease-in !important;}
@@ -380,6 +380,7 @@
 						if (content_to_check.length > 0) {
 							setTimeout(() => votes_content_is_voted(), getRandomInt(actions_delay_min, actions_delay_max)); // to the check!
 						} else {
+							newStatusMessage('Going to look for more content <span class="fa fa-fw fa-eye"></span>');
 							setTimeout(() => votes_content_get_page(), getRandomInt(actions_delay_min, actions_delay_max)); // to the beginning!
 						}
 					}
@@ -419,59 +420,66 @@
 			})
 			.always(function() {
 				arp_pts_status_update();
-				if (content_to_vote.length >= (votes_content_max - votes_content_cur)) {
+				if (content_to_check.length == 0 && content_to_vote.length == 0) {
+					newStatusMessage('Going to look for more content <span class="fa fa-fw fa-eye"></span>');
+					setTimeout(() => votes_content_get_page(), getRandomInt(actions_delay_min, actions_delay_max)); // to the beginning!
+				} else if (content_to_vote.length >= (votes_content_max - votes_content_cur)) {
+					newStatusMessage('Going to vote <span class="fa fa-fw fa-forward"></span>');
 					setTimeout(() => votes_content_apply(), getRandomInt(actions_delay_min, actions_delay_max)); // go to the next block!
 				} else if (content_to_check.length > 0) {
 					setTimeout(() => votes_content_is_voted(), getRandomInt(actions_delay_min, actions_delay_max)); // recursion!
-				} else if (content_to_vote.length > 0) {
-					setTimeout(() => votes_content_apply(), getRandomInt(actions_delay_min, actions_delay_max)); // go to the next block!
-				} else {
-					setTimeout(() => votes_content_get_page(), getRandomInt(actions_delay_min, actions_delay_max)); // to the beginning!
 				}
 			});
 	}
 
-	function votes_content_get_page(fail_counter = 0) {
+	function votes_content_get_page(failCounter = 0) {
 		var statusMessage = newStatusMessage(`Getting page ${content_page} <span class="fa fa-fw fa-circle-o-notch fa-spin"></span>`);
 		statusMessage.clearQueue();
 		$.get(votes_content_url + content_page)
 			.done(function(response) {
+				failCounter = 0;
 				statusMessage.children("span").attr('class', 'fa fa-fw fa-check-circle');
 				statusMessage.delay(status_message_delay).queue(function() {
-						$(this).addClass("awah-casper-out");
-					});
+					$(this).addClass("awah-casper-out");
+				});
 				if (response.data.length == 0) {
-					//more = false;
-					return; // TODO: make proper action stopping for "data.length == 0" case
-				}
-				content_page++;
-				content_to_check.push(...response.data);
-				content_to_check = content_to_check.filter(f => !votedContentCache.has(f.id));
-				if (DEBUG) console.log("content_to_check", content_to_check);
-				if (content_to_check.length >= (votes_content_max - votes_content_cur)) {
-					newStatusMessage('Enough content to check <span class="fa fa-fw fa-check-circle"></span>');
-					setTimeout(() => votes_content_is_voted(), getRandomInt(actions_delay_min, actions_delay_max)); // go to the next block!
+					newStatusMessage(`No more content pages left in this section <span class="fa fa-fw fa-times-circle"></span>`);
 				} else {
-					setTimeout(() => votes_content_get_page(), getRandomInt(actions_delay_min, actions_delay_max)); // recursion!
+					content_page++;
+					content_to_check.push(...response.data);
+					content_to_check = content_to_check.filter(f => !votedContentCache.has(f.id));
+					if (DEBUG) console.log("content_to_check", content_to_check);
 				}
 			})
 			.fail(function() {
-				fail_counter++;
+				failCounter++;
 				statusMessage.children("span").attr('class', 'fa fa-fw fa-exclamation-triangle');
 				statusMessage.delay(status_message_delay).queue(function() {
-						$(this).addClass("awah-casper-out");
-					});
-				if (fail_counter < 5) {
-					newStatusMessage('Failed to get content page! Trying again' + (fail_counter > 1  ? ' (' + fail_counter + ')' : '...') + ' <span class="fa fa-fw fa-exclamation-triangle"></span>');
-					votes_content_get_page(fail_counter); // recursion!
-				} else {
-					newStatusMessage('Failed to get content page after ' + fail_counter + ' tries! Voting stopped! <span class="fa fa-fw fa-exclamation-triangle"></span>');
-					votes_content_action = false;
-					if (DEBUG) console.log("votes_content_url", votes_content_url, "content_page", content_page);
-				}
+					$(this).addClass("awah-casper-out");
+				});
 			})
-			.always(function() {
+			.always(function(response, textStatus) {
 				arp_pts_status_update();
+				// .fail
+				if (failCounter > 0 && failCounter < 5) {
+					newStatusMessage(`Failed to get content page! Trying again${failCounter > 1 ? ` (${failCounter})` : '...'} <span class="fa fa-fw fa-exclamation-triangle"></span>`);
+					setTimeout(() => votes_content_get_page(failCounter), getRandomInt(actions_delay_min, actions_delay_max)); // recursion!
+				} else {
+					if (failCounter > 0) {
+						newStatusMessage(`Failed to get content page after ${failCounter} tries! <span class="fa fa-fw fa-exclamation-triangle"></span>`);
+					}
+					// .done
+					if (content_to_check.length >= (votes_content_max - votes_content_cur) ||
+						((textStatus == "error" ? true : response.data.length == 0) && content_to_check.length > 0)) {
+						newStatusMessage('Going to check content <span class="fa fa-fw fa-forward"></span>');
+						setTimeout(() => votes_content_is_voted(), getRandomInt(actions_delay_min, actions_delay_max)); // go to the next block!
+					} else if (failCounter == 0 && (textStatus == "error" ? true : response.data.length > 0)) {
+						setTimeout(() => votes_content_get_page(), getRandomInt(actions_delay_min, actions_delay_max)); // recursion!
+					} else {
+						newStatusMessage(`Voting stopped!`);
+						votes_content_action = false;
+					}
+				}
 			});
 	}
 
@@ -718,14 +726,4 @@
 			if (DEBUG) console.log("SWITCH: main page");
 			break;
 	}
-
-	// Embed functions to be called directly from the UI in *-monkey installations
-	function embedFunction(s) {
-		if(DEBUG) console.log('🔀 embedding: ' + s.name);
-		document.body.appendChild(document.createElement('script')).innerHTML=s.toString().replace(/([\s\S]*?return;){2}([\s\S]*)}/,'$2');
-	}
-
-	// embed other functions used by UI after loading
-	embedFunction(scrl);
-
 }(window));
