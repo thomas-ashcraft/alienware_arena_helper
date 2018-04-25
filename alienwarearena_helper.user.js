@@ -168,8 +168,8 @@
 		actionsDelayMax = parseInt($("#awah_actions_delay_max").val(), 10);
 		showKeyOnMarkedGiveaways = $("#awah_show_key_on_marked_giveaways").prop("checked");
 		// trick to apply showKeyOnMarkedGiveaways on the fly
-		if (path == "/ucf/Giveaway") {
-			awahTemp = $('<div class="tile-chunk"></div>');
+		if (path === "/ucf/Giveaway") {
+			let awahTemp = $('<div class="tile-chunk"></div>');
 			awahTemp.appendTo(".awah-options-overlay").delay(250).queue(function() {
 				$(this).remove().dequeue();
 			});
@@ -177,26 +177,24 @@
 		statusMessageDelay = parseInt($("#awah_status_message_delay").val(), 10);
 
 		try {
-			localStorage.setItem('awah_actions_delay_min', actionsDelayMin);
-			localStorage.setItem('awah_actions_delay_max', actionsDelayMax);
-			localStorage.setItem('awah_show_key_on_marked_giveaways', showKeyOnMarkedGiveaways.toString());
-			localStorage.setItem('awah_status_message_delay', statusMessageDelay);
+			localStorage.setItem("awah_actions_delay_min", actionsDelayMin);
+			localStorage.setItem("awah_actions_delay_max", actionsDelayMax);
+			localStorage.setItem("awah_show_key_on_marked_giveaways", showKeyOnMarkedGiveaways.toString());
+			localStorage.setItem("awah_status_message_delay", statusMessageDelay);
 			newStatusMessage('Settings saved! <span class="fa fa-fw fa-floppy-o"></span>');
 		} catch (e) {
-			if (e == QUOTA_EXCEEDED_ERR) {
-				newStatusMessage('localStorage quota exceeded! <span class="fa fa-fw fa-exclamation-triangle"></span>');
-			}
+			newStatusMessage('localStorage quota exceeded! <span class="fa fa-fw fa-exclamation-triangle"></span>');
+			console.warn(e);
 		}
 	}
 
 	function saveVotedContentCache() {
 		try {
-			localStorage.setItem('awahVotedContentCache', JSON.stringify([...votedContentCache]));
+			localStorage.setItem("awahVotedContentCache", JSON.stringify([...votedContentCache]));
 			$("#awah_voted_content_cache_size").text(votedContentCache.size);
 		} catch (e) {
-			if (e == QUOTA_EXCEEDED_ERR) {
-				newStatusMessage('localStorage quota exceeded! <span class="fa fa-fw fa-exclamation-triangle"></span>');
-			}
+			newStatusMessage('localStorage quota exceeded! <span class="fa fa-fw fa-exclamation-triangle"></span>');
+			console.warn(e);
 		}
 	}
 
@@ -210,7 +208,7 @@
 
 		$(".toast-body table:eq(1) tbody").append('<tr><td><span class="fa fa-fw fa-clock-o"></span> Daily reset</td><td class="text-center awah-daily-reset-timer">hh:mm:ss</td><td class="pull-right"></td></tr>');
 
-		awahDayRemainsInterval = setInterval(function() {
+		var awahDayRemainsInterval = setInterval(function() {
 			awahDayRemains--;
 			//var secs = Math.floor(awahDayRemains / 1000);
 			var secs = awahDayRemains;
@@ -420,11 +418,11 @@
 			})
 			.always(function() {
 				pointsStatusUpdate();
-				if (contentToCheck.length == 0 && contentToVote.length == 0) {
+				if (contentToCheck.length === 0 && contentToVote.length === 0) {
 					newStatusMessage('Going to look for more content <span class="fa fa-fw fa-eye"></span>');
 					setTimeout(() => getVotingContentPage(), getRandomInt(actionsDelayMin, actionsDelayMax)); // to the beginning!
 				} else if (contentToVote.length >= (maximumContentVotes - currentContentVotes) ||
-					(contentToVote.length > 0 && contentToCheck.length == 0)) {
+					(contentToVote.length > 0 && contentToCheck.length === 0)) {
 					newStatusMessage('Going to vote <span class="fa fa-fw fa-forward"></span>');
 					setTimeout(() => applyContentVoting(), getRandomInt(actionsDelayMin, actionsDelayMax)); // go to the next block!
 				} else if (contentToCheck.length > 0) {
@@ -443,7 +441,7 @@
 				statusMessage.delay(statusMessageDelay).queue(function() {
 					$(this).addClass("awah-casper-out");
 				});
-				if (response.data.length == 0) {
+				if (response.data.length === 0) {
 					newStatusMessage(`No more content pages left in this section <span class="fa fa-fw fa-times-circle"></span>`);
 				} else {
 					contentGettingPage++;
@@ -471,10 +469,10 @@
 					}
 					// .done
 					if (contentToCheck.length >= (maximumContentVotes - currentContentVotes) ||
-						((textStatus == "error" ? true : response.data.length == 0) && contentToCheck.length > 0)) {
+						((textStatus === "error" ? true : response.data.length === 0) && contentToCheck.length > 0)) {
 						newStatusMessage('Going to check content <span class="fa fa-fw fa-forward"></span>');
 						setTimeout(() => checkVotingContent(), getRandomInt(actionsDelayMin, actionsDelayMax)); // go to the next block!
-					} else if (failCounter == 0 && (textStatus == "error" ? true : response.data.length > 0)) {
+					} else if (failCounter === 0 && (textStatus === "error" ? true : response.data.length > 0)) {
 						setTimeout(() => getVotingContentPage(), getRandomInt(actionsDelayMin, actionsDelayMax)); // recursion!
 					} else {
 						newStatusMessage(`Voting stopped!`);
@@ -498,12 +496,12 @@
 		}
 		$(".awah-btn-cons").on("click", function() {
 			$(".awah-btn-cons").addClass("disabled");
-			if ($(this).data('awah-voting-direction') == "up") {
+			if ($(this).data('awah-voting-direction') === "up") {
 				votingDown = false;
-			} else if ($(this).data('awah-voting-direction') == "down") {
+			} else if ($(this).data('awah-voting-direction') === "down") {
 				votingDown = true;
 			}
-			if ($(this).data('awah-content-url') != "") {
+			if ($(this).data('awah-content-url') !== "") {
 				contentVotingURL = $(this).data('awah-content-url');
 			} else {
 				newStatusMessage('No content URL specified! Voting is impossible! <span class="fa fa-fw fa-exclamation-triangle"></span>');
@@ -519,7 +517,7 @@
 			'<div class="list-group">' +
 
 			'<div class="list-group-item">' +
-			'<div class="list-group-item-heading" data-awah-tooltip="The ones you see right here">Vote for featured ' + content_type + (content_type != 'News'  ? 's' : '') + '</div>' +
+			'<div class="list-group-item-heading" data-awah-tooltip="The ones you see right here">Vote for featured ' + content_type + (content_type !== "News"  ? 's' : '') + '</div>' +
 			'<a class="btn btn-default awah-btn-cons" href="javascript:void(0);" data-awah-tooltip="Automatic voting" data-awah-voting-direction="up" ' +
 			'data-awah-content-url="/esi/featured-tile-data/' + content_type + '/">' +
 			'<i class="fa fa-arrow-up"></i> <span class="hidden-xs">UP-votes</span></a>' +
@@ -528,8 +526,8 @@
 			'<i class="fa fa-arrow-down"></i> <span class="hidden-xs">DOWN-votes</span></a>' +
 			'</div>' +
 
-			'<div class="list-group-item"' + (content_type == 'News' ? 'style="display: none;"' : '') + '>' +
-			'<div class="list-group-item-heading" data-awah-tooltip="Every ' + content_type + ' which uploaded to the Alienware Arena.\nExcluding ones that moved to \'featured\' list.\nSorting from fresh ones to old ones.">Vote for newly uploaded ' + content_type + (content_type != 'News'  ? 's' : '') + '</div>' +
+			'<div class="list-group-item"' + (content_type === "News" ? 'style="display: none;"' : '') + '>' +
+			'<div class="list-group-item-heading" data-awah-tooltip="Every ' + content_type + ' which uploaded to the Alienware Arena.\nExcluding ones that moved to \'featured\' list.\nSorting from fresh ones to old ones.">Vote for newly uploaded ' + content_type + (content_type !== "News"  ? 's' : '') + '</div>' +
 			'<a class="btn btn-default awah-btn-cons" href="javascript:void(0);" data-awah-tooltip="Automatic voting" data-awah-voting-direction="up" ' +
 			'data-awah-content-url="/esi/tile-data/' + content_type + '/">' +
 			'<i class="fa fa-arrow-up"></i> <span class="hidden-xs">UP-votes</span></a>' +
@@ -621,7 +619,7 @@
 			if (DEBUG) console.log("awahGiveawayKeys", awahGiveawayKeys);
 			markTakenGiveaways(awahGiveawayKeys); // sometimes first giveaways page loaded before event registered
 			document.addEventListener('animationstart', function(event) {
-				if (event.animationName == "awah-new-tile-chunk-appears") {
+				if (event.animationName === "awah-new-tile-chunk-appears") {
 					markTakenGiveaways(awahGiveawayKeys);
 				}
 			}, false);
