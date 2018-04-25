@@ -140,7 +140,7 @@
 		if (contentVotingInAction) {
 			$(".awah-con-check-queue-length").text(contentToCheck.length);
 			$(".awah-con-votes-queue-length").text(contentToVote.length);
-			var progress_bar_background = "linear-gradient(90deg, rgb(0, 160, 240) " +
+			var progressBarBackground = "linear-gradient(90deg, rgb(0, 160, 240) " +
 				((currentContentVotes / maximumContentVotes) * 100) +
 				"%, rgba(0, 160, 240, 0.2) 0%, rgba(0, 160, 240, 0.2) " +
 				(((currentContentVotes + contentToVote.length) / maximumContentVotes) * 100) +
@@ -149,8 +149,8 @@
 				"%, rgba(0, 160, 240, 0.2) 0%, rgba(0, 160, 240, 0.2) " +
 				(((currentContentVotes + contentToVote.length + contentToCheck.length) / maximumContentVotes) * 100) +
 				"%, rgb(40, 37, 36) 0%)";
-			progress_bar_background = progress_bar_background.replace(/(\d{3}|\d{3}\.\d{1,})%/g, "100%"); // values greater than 100% can cause incorrect rendering
-			$(".awah-arp-pts-con").css("background-image", progress_bar_background);
+			progressBarBackground = progressBarBackground.replace(/(\d{3}|\d{3}\.\d{1,})%/g, "100%"); // values greater than 100% can cause incorrect rendering
+			$(".awah-arp-pts-con").css("background-image", progressBarBackground);
 		}
 	}
 
@@ -161,6 +161,71 @@
 				$(this).addClass("awah-casper-out").dequeue();
 			});
 		return statusMessageObj;
+	}
+
+	function saveOptions() {
+		actionsDelayMin = parseInt($("#awah_actions_delay_min").val(), 10);
+		actionsDelayMax = parseInt($("#awah_actions_delay_max").val(), 10);
+		showKeyOnMarkedGiveaways = $("#awah_show_key_on_marked_giveaways").prop("checked");
+		// trick to apply showKeyOnMarkedGiveaways on the fly
+		if (path == "/ucf/Giveaway") {
+			awahTemp = $('<div class="tile-chunk"></div>');
+			awahTemp.appendTo(".awah-options-overlay").delay(250).queue(function() {
+				$(this).remove().dequeue();
+			});
+		}
+		statusMessageDelay = parseInt($("#awah_status_message_delay").val(), 10);
+
+		try {
+			localStorage.setItem('awah_actions_delay_min', actionsDelayMin);
+			localStorage.setItem('awah_actions_delay_max', actionsDelayMax);
+			localStorage.setItem('awah_show_key_on_marked_giveaways', showKeyOnMarkedGiveaways.toString());
+			localStorage.setItem('awah_status_message_delay', statusMessageDelay);
+			newStatusMessage('Settings saved! <span class="fa fa-fw fa-floppy-o"></span>');
+		} catch (e) {
+			if (e == QUOTA_EXCEEDED_ERR) {
+				newStatusMessage('localStorage quota exceeded! <span class="fa fa-fw fa-exclamation-triangle"></span>');
+			}
+		}
+	}
+
+	function saveVotedContentCache() {
+		try {
+			localStorage.setItem('awahVotedContentCache', JSON.stringify([...votedContentCache]));
+			$("#awah_voted_content_cache_size").text(votedContentCache.size);
+		} catch (e) {
+			if (e == QUOTA_EXCEEDED_ERR) {
+				newStatusMessage('localStorage quota exceeded! <span class="fa fa-fw fa-exclamation-triangle"></span>');
+			}
+		}
+	}
+
+	function showDailyResetTimer() {
+		var awahDateNow = new Date();
+		var awahDayEnd = new Date(awahDateNow.getTime());
+		awahDayEnd.setUTCHours(23,59,59,999);
+		var awahDayRemains = (awahDayEnd.getTime() - awahDateNow.getTime());
+
+		awahDayRemains = Math.floor(awahDayRemains / 1000);
+
+		$(".toast-body table:eq(1) tbody").append('<tr><td><span class="fa fa-fw fa-clock-o"></span> Daily reset</td><td class="text-center awah-daily-reset-timer">hh:mm:ss</td><td class="pull-right"></td></tr>');
+
+		awahDayRemainsInterval = setInterval(function() {
+			awahDayRemains--;
+			//var secs = Math.floor(awahDayRemains / 1000);
+			var secs = awahDayRemains;
+			var hours = Math.floor(secs / 3600);
+			secs -= hours * (3600);
+			var mins = Math.floor(secs / 60);
+			secs -= mins * (60);
+			if (mins < 10) mins = "0" + mins;
+			if (secs < 10) secs = "0" + secs;
+			$(".awah-daily-reset-timer").text(hours + ":" + mins + ":" + secs);
+
+			if (awahDayRemains < 1) {
+				clearInterval(awahDayRemainsInterval);
+			}
+		}, 1000);
 	}
 
 	// initialize UI
@@ -199,7 +264,7 @@
 		showDailyResetTimer();
 
 		document.addEventListener('animationend', function(event) {
-			if (event.animationName == "awah-casper-out") {
+			if (event.animationName === "awah-casper-out") {
 				$(event.target).remove();
 			}
 		}, false);
@@ -232,12 +297,12 @@
 		});
 
 		$(".awah-options-btn").on("click", function() {
-			var awah_options = $(".awah-options-overlay");
-			if(awah_options.css('display') == 'none') {
-				awah_options.show();
-				awah_options.stop().animate({bottom: "0%"}, 250);
+			var awahOptions = $(".awah-options-overlay");
+			if(awahOptions.css("display") === "none") {
+				awahOptions.show();
+				awahOptions.stop().animate({bottom: "0%"}, 250);
 			} else {
-				awah_options.stop().animate({bottom: "-102%"}, 250, function() {
+				awahOptions.stop().animate({bottom: "-102%"}, 250, function() {
 					$(this).hide();
 				});
 			}
@@ -245,43 +310,6 @@
 
 		newStatusMessage("Alienware Arena helper v<b>" + version + "</b></span>");
 	}, 1);
-
-	function saveOptions() {
-		actionsDelayMin = parseInt($("#awah_actions_delay_min").val(), 10);
-		actionsDelayMax = parseInt($("#awah_actions_delay_max").val(), 10);
-		showKeyOnMarkedGiveaways = $("#awah_show_key_on_marked_giveaways").prop("checked");
-		// trick to apply showKeyOnMarkedGiveaways on the fly
-		if (path == "/ucf/Giveaway") {
-			awahTemp = $('<div class="tile-chunk"></div>');
-			awahTemp.appendTo(".awah-options-overlay").delay(250).queue(function() {
-				$(this).remove().dequeue();
-			});
-		}
-		statusMessageDelay = parseInt($("#awah_status_message_delay").val(), 10);
-
-		try {
-			localStorage.setItem('awah_actions_delay_min', actionsDelayMin);
-			localStorage.setItem('awah_actions_delay_max', actionsDelayMax);
-			localStorage.setItem('awah_show_key_on_marked_giveaways', showKeyOnMarkedGiveaways.toString());
-			localStorage.setItem('awah_status_message_delay', statusMessageDelay);
-			newStatusMessage('Settings saved! <span class="fa fa-fw fa-floppy-o"></span>');
-		} catch (e) {
-			if (e == QUOTA_EXCEEDED_ERR) {
-				newStatusMessage('localStorage quota exceeded! <span class="fa fa-fw fa-exclamation-triangle"></span>');
-			}
-		}
-	}
-
-	function saveVotedContentCache() {
-		try {
-			localStorage.setItem('awahVotedContentCache', JSON.stringify([...votedContentCache]));
-			$("#awah_voted_content_cache_size").text(votedContentCache.size);
-		} catch (e) {
-			if (e == QUOTA_EXCEEDED_ERR) {
-				newStatusMessage('localStorage quota exceeded! <span class="fa fa-fw fa-exclamation-triangle"></span>');
-			}
-		}
-	}
 
 	// ARP points watchdog
 	$.ajaxPrefilter(function(options, originalOptions, jqXHR) {
@@ -324,34 +352,6 @@
 
 	function getRandomInt(min, max) {
 		return Math.floor(Math.random() * (max - min + 1)) + min;
-	}
-
-	function showDailyResetTimer() {
-		var awahDateNow = new Date();
-		var awahDayEnd = new Date(awahDateNow.getTime());
-		awahDayEnd.setUTCHours(23,59,59,999);
-		var awahDayRemains = (awahDayEnd.getTime() - awahDateNow.getTime());
-
-		awahDayRemains = Math.floor(awahDayRemains / 1000);
-
-		$(".toast-body table:eq(1) tbody").append('<tr><td><span class="fa fa-fw fa-clock-o"></span> Daily reset</td><td class="text-center awah-daily-reset-timer">hh:mm:ss</td><td class="pull-right"></td></tr>');
-
-		awahDayRemainsInterval = setInterval(function() {
-			awahDayRemains--;
-			//var secs = Math.floor(awahDayRemains / 1000);
-			var secs = awahDayRemains;
-			var hours = Math.floor(secs / 3600);
-			secs -= hours * (3600);
-			var mins = Math.floor(secs / 60);
-			secs -= mins * (60);
-			if (mins < 10) mins = "0" + mins;
-			if (secs < 10) secs = "0" + secs;
-			$(".awah-daily-reset-timer").text(hours + ":" + mins + ":" + secs);
-
-			if (awahDayRemains < 1) {
-				clearInterval(awahDayRemainsInterval);
-			}
-		}, 1000);
 	}
 
 	// CON votes section
