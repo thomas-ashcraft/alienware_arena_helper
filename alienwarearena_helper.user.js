@@ -1,7 +1,7 @@
 ﻿// ==UserScript==
 // @name         Alienware Arena helper
 // @namespace    https://github.com/thomas-ashcraft
-// @version      0.5.4
+// @version      0.5.5
 // @description  Earn daily ARP easily
 // @author       Thomas Ashcraft
 // @match        *://*.alienwarearena.com/*
@@ -14,7 +14,7 @@
 
 (function() {
 	// You can configure options through the user interface. It is not recommended to edit the script for these purposes.
-	var version = "0.5.4";
+	var version = "0.5.5";
 	var DEBUG = false; // Developer option. Default: false
 
 	var status_message_delay_default	= 5000;
@@ -131,6 +131,28 @@
 		.tile-chunk {animation-duration: 0.001s; animation-name: awah-new-tile-chunk-appears;}
 		`;
 	document.head.appendChild(document.createElement('style')).innerHTML=helper_style.replace(/([\s\S]*?return;){2}([\s\S]*)}/,'$2');
+
+	function arp_pts_status_update() {
+		$(".awah-arp-pts-con").html("CON: " + votes_content_cur + " / " + votes_content_max);
+		if (votes_content_cur >= votes_content_max && !votes_content_action) {
+			$(".awah-arp-pts-con").addClass("awah-grey");
+		}
+		if (votes_content_action) {
+			$(".awah-con-check-queue-length").text(content_to_check.length);
+			$(".awah-con-votes-queue-length").text(content_to_vote.length);
+			var progress_bar_background = "linear-gradient(90deg, rgb(0, 160, 240) " +
+				((votes_content_cur / votes_content_max) * 100) +
+				"%, rgba(0, 160, 240, 0.2) 0%, rgba(0, 160, 240, 0.2) " +
+				(((votes_content_cur + content_to_vote.length) / votes_content_max) * 100) +
+				"%, rgb(255, 255, 255) 0%, rgb(255, 255, 255) " +
+				((((votes_content_cur + content_to_vote.length) / votes_content_max) * 100) + 1 ) +
+				"%, rgba(0, 160, 240, 0.2) 0%, rgba(0, 160, 240, 0.2) " +
+				(((votes_content_cur + content_to_vote.length + content_to_check.length) / votes_content_max) * 100) +
+				"%, rgb(40, 37, 36) 0%)";
+			progress_bar_background = progress_bar_background.replace(/(\d{3}|\d{3}\.\d{1,})%/g,'100%'); // values greater than 100% can cause incorrect rendering
+			$(".awah-arp-pts-con").css("background-image", progress_bar_background);
+		}
+	}
 
 	function newStatusMessage(statusMessageText) {
 		var statusMessageObj = $('<div>' + statusMessageText + '</div>');
@@ -295,28 +317,6 @@
 		}
 	});
 
-	function arp_pts_status_update() {
-		$(".awah-arp-pts-con").html("CON: " + votes_content_cur + " / " + votes_content_max);
-		if (votes_content_cur >= votes_content_max && !votes_content_action) {
-			$(".awah-arp-pts-con").addClass("awah-grey");
-		}
-		if (votes_content_action) {
-			$(".awah-con-check-queue-length").text(content_to_check.length);
-			$(".awah-con-votes-queue-length").text(content_to_vote.length);
-			var progress_bar_background = "linear-gradient(90deg, rgb(0, 160, 240) " +
-				((votes_content_cur / votes_content_max) * 100) +
-				"%, rgba(0, 160, 240, 0.2) 0%, rgba(0, 160, 240, 0.2) " +
-				(((votes_content_cur + content_to_vote.length) / votes_content_max) * 100) +
-				"%, rgb(255, 255, 255) 0%, rgb(255, 255, 255) " +
-				((((votes_content_cur + content_to_vote.length) / votes_content_max) * 100) + 1 ) +
-				"%, rgba(0, 160, 240, 0.2) 0%, rgba(0, 160, 240, 0.2) " +
-				(((votes_content_cur + content_to_vote.length + content_to_check.length) / votes_content_max) * 100) +
-				"%, rgb(40, 37, 36) 0%)";
-			progress_bar_background = progress_bar_background.replace(/(\d{3}|\d{3}\.\d{1,})%/g,'100%'); // values greater than 100% can cause incorrect rendering
-			$(".awah-arp-pts-con").css("background-image", progress_bar_background);
-		}
-	}
-
 	function scrl(target) {
 		$('html, body').animate({scrollTop: target.offset().top-100}, 800);
 		//target.effect("highlight", "800");
@@ -423,7 +423,8 @@
 				if (content_to_check.length == 0 && content_to_vote.length == 0) {
 					newStatusMessage('Going to look for more content <span class="fa fa-fw fa-eye"></span>');
 					setTimeout(() => votes_content_get_page(), getRandomInt(actions_delay_min, actions_delay_max)); // to the beginning!
-				} else if (content_to_vote.length >= (votes_content_max - votes_content_cur)) {
+				} else if (content_to_vote.length >= (votes_content_max - votes_content_cur) ||
+					(content_to_vote.length > 0 && content_to_check.length == 0)) {
 					newStatusMessage('Going to vote <span class="fa fa-fw fa-forward"></span>');
 					setTimeout(() => votes_content_apply(), getRandomInt(actions_delay_min, actions_delay_max)); // go to the next block!
 				} else if (content_to_check.length > 0) {
