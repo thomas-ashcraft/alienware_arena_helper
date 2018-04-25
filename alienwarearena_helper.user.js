@@ -1,7 +1,7 @@
 ﻿// ==UserScript==
 // @name         Alienware Arena helper
 // @namespace    https://github.com/thomas-ashcraft
-// @version      0.5.5
+// @version      0.5.6
 // @description  Earn daily ARP easily
 // @author       Thomas Ashcraft
 // @match        *://*.alienwarearena.com/*
@@ -14,41 +14,41 @@
 
 (function() {
 	// You can configure options through the user interface. It is not recommended to edit the script for these purposes.
-	var version = "0.5.5";
+	var version = "0.5.6";
 	var DEBUG = false; // Developer option. Default: false
 
-	var status_message_delay_default	= 5000;
-	var actions_delay_min_default		= 1000;
-	var actions_delay_max_default		= 5000;
-	var show_key_on_marked_giveaways_default = "true";
+	var statusMessageDelayDefault	= 5000;
+	var actionsDelayMinDefault		= 1000;
+	var actionsDelayMaxDefault		= 5000;
+	var showKeyOnMarkedGiveawaysDefault = "true";
 
-	var actions_delay_min		= parseInt(localStorage.getItem('awah_actions_delay_min'), 10) || actions_delay_min_default;
-	var actions_delay_max		= parseInt(localStorage.getItem('awah_actions_delay_max'), 10) || actions_delay_max_default;
-	localStorage.removeItem('awah_tot_add_votes_min'); // fix legacy
-	localStorage.removeItem('awah_tot_add_votes_max'); // fix legacy
-	var show_key_on_marked_giveaways = localStorage.getItem('awah_show_key_on_marked_giveaways') || show_key_on_marked_giveaways_default;
-	show_key_on_marked_giveaways = (show_key_on_marked_giveaways === "true");
-	var status_message_delay = parseInt(localStorage.getItem('awah_status_message_delay'), 10) || status_message_delay_default;
-	var votedContentCache = new Set(JSON.parse(localStorage.getItem('awahVotedContentCache')));
+	var actionsDelayMin		= parseInt(localStorage.getItem("awah_actions_delay_min"), 10) || actionsDelayMinDefault;
+	var actionsDelayMax		= parseInt(localStorage.getItem("awah_actions_delay_max"), 10) || actionsDelayMaxDefault;
+	localStorage.removeItem("awah_tot_add_votes_min"); // fix legacy
+	localStorage.removeItem("awah_tot_add_votes_max"); // fix legacy
+	var showKeyOnMarkedGiveaways = localStorage.getItem("awah_show_key_on_marked_giveaways") || showKeyOnMarkedGiveawaysDefault;
+	showKeyOnMarkedGiveaways = (showKeyOnMarkedGiveaways === "true");
+	var statusMessageDelay = parseInt(localStorage.getItem("awah_status_message_delay"), 10) || statusMessageDelayDefault;
+	var votedContentCache = new Set(JSON.parse(localStorage.getItem("awahVotedContentCache")));
 
 	var url = window.location.href;
 	var path = window.location.pathname;
 	path = path.replace(/\/+/g, "/");
 
 	// ARP points initial readings
-	var pm_counter = /Vote on Content(?:.|\n)*>(\d+) of (\d+)<\/td>/.exec($("head").html());
-	var votes_content_cur = parseInt(pm_counter[1], 10);
-	var votes_content_max = parseInt(pm_counter[2], 10);
-	var votes_content_action = false;
-	var votes_content_url = '';
-	var content_to_vote = [];
-	var content_to_check = [];
-	var content_page = 1;
-	var voting_down = false;
-	var options_save_apply_timer;
+	let readPoints = /Vote on Content(?:.|\n)*>(\d+) of (\d+)<\/td>/.exec($("head").html());
+	var currentContentVotes = parseInt(readPoints[1], 10);
+	var maximumContentVotes = parseInt(readPoints[2], 10);
+	var contentVotingInAction = false;
+	var contentVotingURL = "";
+	var contentToVote = [];
+	var contentToCheck = [];
+	var contentGettingPage = 1;
+	var votingDown = false;
+	var saveOptionsTimer;
 
 	// Embed style
-	var helper_style = `
+	var helperStyle = `
 		/* script buttons */
 		.awah-btn-cons,
 		.awah-btn-cons:hover {color: gold;}
@@ -130,34 +130,34 @@
 		}
 		.tile-chunk {animation-duration: 0.001s; animation-name: awah-new-tile-chunk-appears;}
 		`;
-	document.head.appendChild(document.createElement('style')).innerHTML=helper_style.replace(/([\s\S]*?return;){2}([\s\S]*)}/,'$2');
+	document.head.appendChild(document.createElement("style")).textContent = helperStyle;
 
-	function arp_pts_status_update() {
-		$(".awah-arp-pts-con").html("CON: " + votes_content_cur + " / " + votes_content_max);
-		if (votes_content_cur >= votes_content_max && !votes_content_action) {
+	function pointsStatusUpdate() {
+		$(".awah-arp-pts-con").html("CON: " + currentContentVotes + " / " + maximumContentVotes);
+		if (currentContentVotes >= maximumContentVotes && !contentVotingInAction) {
 			$(".awah-arp-pts-con").addClass("awah-grey");
 		}
-		if (votes_content_action) {
-			$(".awah-con-check-queue-length").text(content_to_check.length);
-			$(".awah-con-votes-queue-length").text(content_to_vote.length);
+		if (contentVotingInAction) {
+			$(".awah-con-check-queue-length").text(contentToCheck.length);
+			$(".awah-con-votes-queue-length").text(contentToVote.length);
 			var progress_bar_background = "linear-gradient(90deg, rgb(0, 160, 240) " +
-				((votes_content_cur / votes_content_max) * 100) +
+				((currentContentVotes / maximumContentVotes) * 100) +
 				"%, rgba(0, 160, 240, 0.2) 0%, rgba(0, 160, 240, 0.2) " +
-				(((votes_content_cur + content_to_vote.length) / votes_content_max) * 100) +
+				(((currentContentVotes + contentToVote.length) / maximumContentVotes) * 100) +
 				"%, rgb(255, 255, 255) 0%, rgb(255, 255, 255) " +
-				((((votes_content_cur + content_to_vote.length) / votes_content_max) * 100) + 1 ) +
+				((((currentContentVotes + contentToVote.length) / maximumContentVotes) * 100) + 1 ) +
 				"%, rgba(0, 160, 240, 0.2) 0%, rgba(0, 160, 240, 0.2) " +
-				(((votes_content_cur + content_to_vote.length + content_to_check.length) / votes_content_max) * 100) +
+				(((currentContentVotes + contentToVote.length + contentToCheck.length) / maximumContentVotes) * 100) +
 				"%, rgb(40, 37, 36) 0%)";
-			progress_bar_background = progress_bar_background.replace(/(\d{3}|\d{3}\.\d{1,})%/g,'100%'); // values greater than 100% can cause incorrect rendering
+			progress_bar_background = progress_bar_background.replace(/(\d{3}|\d{3}\.\d{1,})%/g, "100%"); // values greater than 100% can cause incorrect rendering
 			$(".awah-arp-pts-con").css("background-image", progress_bar_background);
 		}
 	}
 
 	function newStatusMessage(statusMessageText) {
-		var statusMessageObj = $('<div>' + statusMessageText + '</div>');
+		var statusMessageObj = $("<div>" + statusMessageText + "</div>");
 		statusMessageObj.appendTo(".awah-arp-status")
-			.delay(status_message_delay).queue(function() {
+			.delay(statusMessageDelay).queue(function() {
 				$(this).addClass("awah-casper-out").dequeue();
 			});
 		return statusMessageObj;
@@ -166,26 +166,26 @@
 	// initialize UI
 	setTimeout(function() {
 		$("div.toast-header").append('<div class="awah-ui-overlay"><div class="awah-arp-status awah-grey"></div><div class="awah-arp-pts"><div class="awah-arp-pts-con"></div></div></div>');
-		if (votes_content_cur < votes_content_max) {
-			$('<div class="awah-con-check-queue" style="display: none;">content to check: <span class="awah-con-check-queue-length">' + content_to_check.length + '</span> <span class="fa fa-fw fa-search"></span></div>').appendTo(".awah-arp-status");
-			$('<div class="awah-con-votes-queue" style="display: none;">content to vote: <span class="awah-con-votes-queue-length">' + content_to_vote.length + '</span> <span class="fa fa-fw fa-upload"></span></div>').appendTo(".awah-arp-status");
+		if (currentContentVotes < maximumContentVotes) {
+			$('<div class="awah-con-check-queue" style="display: none;">content to check: <span class="awah-con-check-queue-length">' + contentToCheck.length + '</span> <span class="fa fa-fw fa-search"></span></div>').appendTo(".awah-arp-status");
+			$('<div class="awah-con-votes-queue" style="display: none;">content to vote: <span class="awah-con-votes-queue-length">' + contentToVote.length + '</span> <span class="fa fa-fw fa-upload"></span></div>').appendTo(".awah-arp-status");
 		}
-		arp_pts_status_update();
+		pointsStatusUpdate();
 		$("div.toast-body > p.text-center").css({ "float": "right", "padding-right": "16px" });
 		$("div.toast-body").append('<p class="awah-options-btn"><span class="fa fa-fw fa-cog"></span> HELPER OPTIONS</p>');
 		$("div.toast-body").prepend('<div class="awah-options-overlay" style="display: none; bottom: -102%;"><div class="awah-option"><span class="awah-opt-desc awah-grey">AWA helper v<b>' + version + '</b></span></div>' +
 			'<div class="awah-option">' +
-			'<label><span class="awah-opt-title">actions_delay_min</span><input id="awah_actions_delay_min" class="form-control awah-opt-input" type="text" value="' + actions_delay_min + '"></label>' +
-			'<label><span class="awah-opt-title">actions_delay_max</span><input id="awah_actions_delay_max" class="form-control awah-opt-input" type="text" value="' + actions_delay_max + '"></label>' +
-			'<span class="awah-opt-desc awah-grey">Minimum and maximum random delay time between net actions. (in milliseconds)<br>Default minimum: ' + actions_delay_min_default + ' || Default maximum: ' + actions_delay_max_default + '</span></div>' +
+			'<label><span class="awah-opt-title">actionsDelayMin</span><input id="awah_actions_delay_min" class="form-control awah-opt-input" type="text" value="' + actionsDelayMin + '"></label>' +
+			'<label><span class="awah-opt-title">actionsDelayMax</span><input id="awah_actions_delay_max" class="form-control awah-opt-input" type="text" value="' + actionsDelayMax + '"></label>' +
+			'<span class="awah-opt-desc awah-grey">Minimum and maximum random delay time between net actions. (in milliseconds)<br>Default minimum: ' + actionsDelayMinDefault + ' || Default maximum: ' + actionsDelayMaxDefault + '</span></div>' +
 
 			'<div class="awah-option">' +
-			'<label><span class="awah-opt-title">show_key_on_marked_giveaways</span><input id="awah_show_key_on_marked_giveaways" class="form-control awah-opt-input" type="checkbox" ' + (show_key_on_marked_giveaways ? 'checked' : '') + '><div class="form-control awah-opt-input"><div>&nbsp;</div>&nbsp;</div></label>' +
-			'<span class="awah-opt-desc awah-grey">At Giveaways page. Default: ' + (show_key_on_marked_giveaways_default === "true" ? 'ON' : 'OFF') + '</span></div>' +
+			'<label><span class="awah-opt-title">showKeyOnMarkedGiveaways</span><input id="awah_show_key_on_marked_giveaways" class="form-control awah-opt-input" type="checkbox" ' + (showKeyOnMarkedGiveaways ? 'checked' : '') + '><div class="form-control awah-opt-input"><div>&nbsp;</div>&nbsp;</div></label>' +
+			'<span class="awah-opt-desc awah-grey">At Giveaways page. Default: ' + (showKeyOnMarkedGiveawaysDefault === "true" ? 'ON' : 'OFF') + '</span></div>' +
 
 			'<div class="awah-option">' +
-			'<label><span class="awah-opt-title">status_message_delay</span><input id="awah_status_message_delay" class="form-control awah-opt-input" type="text" value="' + status_message_delay + '"></label>' +
-			'<span class="awah-opt-desc awah-grey">How long the status messages will be displayed before they disappear. (in milliseconds, 1000 = 1 second)<br>Default: ' + status_message_delay_default + '</span></div>' +
+			'<label><span class="awah-opt-title">statusMessageDelay</span><input id="awah_status_message_delay" class="form-control awah-opt-input" type="text" value="' + statusMessageDelay + '"></label>' +
+			'<span class="awah-opt-desc awah-grey">How long the status messages will be displayed before they disappear. (in milliseconds, 1000 = 1 second)<br>Default: ' + statusMessageDelayDefault + '</span></div>' +
 
 			'<div class="awah-option">' +
 			'<button id="awah_restore_default" class="btn btn-danger"><span class="fa fa-exclamation-triangle"></span> Restore default</button>' +
@@ -196,7 +196,7 @@
 			'<button id="awah_clear_voted_content_cache" class="btn btn-danger"><span class="fa fa-exclamation-triangle"></span> Clear voted content cache</button>' +
 			'<span class="awah-opt-desc awah-grey">Use only in case of emergency.</span></div>' +
 			'</div>');
-		show_daily_reset_timer();
+		showDailyResetTimer();
 
 		document.addEventListener('animationend', function(event) {
 			if (event.animationName == "awah-casper-out") {
@@ -210,19 +210,19 @@
 		});
 
 		$("input.awah-opt-input").on("change", function() {
-			clearTimeout(options_save_apply_timer);
-			options_save_apply_timer = setTimeout(function() {
-				options_save_apply();
+			clearTimeout(saveOptionsTimer);
+			saveOptionsTimer = setTimeout(function() {
+				saveOptions();
 			}, 400);
 		});
 
 		$("#awah_restore_default").on("click", function() {
-			$("#awah_actions_delay_min").val(actions_delay_min_default);
-			$("#awah_actions_delay_max").val(actions_delay_max_default);
-			$("#awah_show_key_on_marked_giveaways").prop("checked", (show_key_on_marked_giveaways_default === "true"));
-			$("#awah_status_message_delay").val(status_message_delay_default);
+			$("#awah_actions_delay_min").val(actionsDelayMinDefault);
+			$("#awah_actions_delay_max").val(actionsDelayMaxDefault);
+			$("#awah_show_key_on_marked_giveaways").prop("checked", (showKeyOnMarkedGiveawaysDefault === "true"));
+			$("#awah_status_message_delay").val(statusMessageDelayDefault);
 			newStatusMessage('Default options settings restored!');
-			options_save_apply();
+			saveOptions();
 		});
 
 		$("#awah_clear_voted_content_cache").on("click", function() {
@@ -246,24 +246,24 @@
 		newStatusMessage("Alienware Arena helper v<b>" + version + "</b></span>");
 	}, 1);
 
-	function options_save_apply() {
-		actions_delay_min = parseInt($("#awah_actions_delay_min").val(), 10);
-		actions_delay_max = parseInt($("#awah_actions_delay_max").val(), 10);
-		show_key_on_marked_giveaways = $("#awah_show_key_on_marked_giveaways").prop("checked");
-		// trick to apply show_key_on_marked_giveaways on the fly
+	function saveOptions() {
+		actionsDelayMin = parseInt($("#awah_actions_delay_min").val(), 10);
+		actionsDelayMax = parseInt($("#awah_actions_delay_max").val(), 10);
+		showKeyOnMarkedGiveaways = $("#awah_show_key_on_marked_giveaways").prop("checked");
+		// trick to apply showKeyOnMarkedGiveaways on the fly
 		if (path == "/ucf/Giveaway") {
 			awahTemp = $('<div class="tile-chunk"></div>');
 			awahTemp.appendTo(".awah-options-overlay").delay(250).queue(function() {
 				$(this).remove().dequeue();
 			});
 		}
-		status_message_delay = parseInt($("#awah_status_message_delay").val(), 10);
+		statusMessageDelay = parseInt($("#awah_status_message_delay").val(), 10);
 
 		try {
-			localStorage.setItem('awah_actions_delay_min', actions_delay_min);
-			localStorage.setItem('awah_actions_delay_max', actions_delay_max);
-			localStorage.setItem('awah_show_key_on_marked_giveaways', show_key_on_marked_giveaways.toString());
-			localStorage.setItem('awah_status_message_delay', status_message_delay);
+			localStorage.setItem('awah_actions_delay_min', actionsDelayMin);
+			localStorage.setItem('awah_actions_delay_max', actionsDelayMax);
+			localStorage.setItem('awah_show_key_on_marked_giveaways', showKeyOnMarkedGiveaways.toString());
+			localStorage.setItem('awah_status_message_delay', statusMessageDelay);
 			newStatusMessage('Settings saved! <span class="fa fa-fw fa-floppy-o"></span>');
 		} catch (e) {
 			if (e == QUOTA_EXCEEDED_ERR) {
@@ -291,24 +291,24 @@
 				/* ajaxBeforeSuccess functionality */
 				var contentId = parseInt(this.url.replace(/\/ucf\/vote\/(?:up|down)\/(\d*)/g, "$1"), 10);
 				if (data.votedForContent === true) {
-					votes_content_cur++;
+					currentContentVotes++;
 					votedContentCache.add(contentId);
 					saveVotedContentCache();
 				} else if (data.votedForContent === false) {
-					votes_content_cur--;
+					currentContentVotes--;
 					votedContentCache.delete(contentId);
 					saveVotedContentCache();
 				} else if (data.message.indexOf("already voted") >= 0) {
 					votedContentCache.add(contentId);
 					saveVotedContentCache();
 				}
-				if (!votes_content_action) {
+				if (!contentVotingInAction) {
 					newStatusMessage(data.message);
 					if (typeof data.upVotes !== 'undefined') {
 						newStatusMessage('up: ' + data.upVotes + ' | down: ' + data.downVotes + (typeof data.voteTotal !== 'undefined' ? ' | total: ' + data.voteTotal : ''));
 					}
 				}
-				arp_pts_status_update();
+				pointsStatusUpdate();
 				/* ajaxBeforeSuccess functionality END */
 				if (typeof originalSuccess === "function") {
 					originalSuccess(data);
@@ -326,20 +326,20 @@
 		return Math.floor(Math.random() * (max - min + 1)) + min;
 	}
 
-	function show_daily_reset_timer() {
-		var awah_date_now = new Date();
-		var awah_day_end = new Date(awah_date_now.getTime());
-		awah_day_end.setUTCHours(23,59,59,999);
-		var awah_day_remains = (awah_day_end.getTime() - awah_date_now.getTime());
+	function showDailyResetTimer() {
+		var awahDateNow = new Date();
+		var awahDayEnd = new Date(awahDateNow.getTime());
+		awahDayEnd.setUTCHours(23,59,59,999);
+		var awahDayRemains = (awahDayEnd.getTime() - awahDateNow.getTime());
 
-		awah_day_remains = Math.floor(awah_day_remains / 1000);
+		awahDayRemains = Math.floor(awahDayRemains / 1000);
 
 		$(".toast-body table:eq(1) tbody").append('<tr><td><span class="fa fa-fw fa-clock-o"></span> Daily reset</td><td class="text-center awah-daily-reset-timer">hh:mm:ss</td><td class="pull-right"></td></tr>');
 
-		awah_day_remains_interval = setInterval(function() {
-			awah_day_remains--;
-			//var secs = Math.floor(awah_day_remains / 1000);
-			var secs = awah_day_remains;
+		awahDayRemainsInterval = setInterval(function() {
+			awahDayRemains--;
+			//var secs = Math.floor(awahDayRemains / 1000);
+			var secs = awahDayRemains;
 			var hours = Math.floor(secs / 3600);
 			secs -= hours * (3600);
 			var mins = Math.floor(secs / 60);
@@ -348,16 +348,16 @@
 			if (secs < 10) secs = "0" + secs;
 			$(".awah-daily-reset-timer").text(hours + ":" + mins + ":" + secs);
 
-			if (awah_day_remains < 1) {
-				clearInterval(awah_day_remains_interval);
+			if (awahDayRemains < 1) {
+				clearInterval(awahDayRemainsInterval);
 			}
 		}, 1000);
 	}
 
 	// CON votes section
-	function votes_content_apply() {
-		var contentId = content_to_vote.shift();
-		var url = "/ucf/vote/" + (voting_down ? 'down' : 'up') + "/" + contentId;
+	function applyContentVoting() {
+		var contentId = contentToVote.shift();
+		var url = "/ucf/vote/" + (votingDown ? 'down' : 'up') + "/" + contentId;
 
 		$.ajax({
 				url: url,
@@ -372,32 +372,32 @@
 				newStatusMessage('Vote apply failed! <span class="fa fa-fw fa-exclamation-triangle"></span>');
 			})
 			.always(function() {
-				arp_pts_status_update();
-				if (votes_content_cur < votes_content_max) {
-					if (content_to_vote.length > 0) {
-						setTimeout(() => votes_content_apply(), getRandomInt(actions_delay_min, actions_delay_max)); // recursion!
+				pointsStatusUpdate();
+				if (currentContentVotes < maximumContentVotes) {
+					if (contentToVote.length > 0) {
+						setTimeout(() => applyContentVoting(), getRandomInt(actionsDelayMin, actionsDelayMax)); // recursion!
 					} else {
-						if (content_to_check.length > 0) {
-							setTimeout(() => votes_content_is_voted(), getRandomInt(actions_delay_min, actions_delay_max)); // to the check!
+						if (contentToCheck.length > 0) {
+							setTimeout(() => checkVotingContent(), getRandomInt(actionsDelayMin, actionsDelayMax)); // to the check!
 						} else {
 							newStatusMessage('Going to look for more content <span class="fa fa-fw fa-eye"></span>');
-							setTimeout(() => votes_content_get_page(), getRandomInt(actions_delay_min, actions_delay_max)); // to the beginning!
+							setTimeout(() => getVotingContentPage(), getRandomInt(actionsDelayMin, actionsDelayMax)); // to the beginning!
 						}
 					}
 				} else {
-					votes_content_action = false;
+					contentVotingInAction = false;
 					setTimeout(() => {
 						$(".awah-con-check-queue").addClass("awah-casper-out");
 						$(".awah-con-votes-queue").addClass("awah-casper-out");
 						$(".awah-arp-pts-con").css("background-image", "");
 						$(".awah-arp-pts-con").addClass("awah-grey");
-					}, status_message_delay);
+					}, statusMessageDelay);
 				}
 			});
 	}
 
-	function votes_content_is_voted() {
-		var contentItem = content_to_check.shift();
+	function checkVotingContent() {
+		var contentItem = contentToCheck.shift();
 		var contentId = contentItem.id;
 		$.get("/ucf/show/" + contentId)
 			.done(function(response) {
@@ -406,7 +406,7 @@
 					votedOnContent = JSON.parse(votedOnContent[1]);
 					if (DEBUG) console.log("votedOnContent", votedOnContent);
 					if (votedOnContent.downVote === false && votedOnContent.upVote === false) {
-						content_to_vote.push(contentId);
+						contentToVote.push(contentId);
 					} else if (votedOnContent.downVote === true || votedOnContent.upVote === true) {
 						votedContentCache.add(contentId);
 						saveVotedContentCache();
@@ -419,101 +419,101 @@
 				newStatusMessage('Failed to get status of ' + contentId + '! <span class="fa fa-fw fa-exclamation-triangle"></span>');
 			})
 			.always(function() {
-				arp_pts_status_update();
-				if (content_to_check.length == 0 && content_to_vote.length == 0) {
+				pointsStatusUpdate();
+				if (contentToCheck.length == 0 && contentToVote.length == 0) {
 					newStatusMessage('Going to look for more content <span class="fa fa-fw fa-eye"></span>');
-					setTimeout(() => votes_content_get_page(), getRandomInt(actions_delay_min, actions_delay_max)); // to the beginning!
-				} else if (content_to_vote.length >= (votes_content_max - votes_content_cur) ||
-					(content_to_vote.length > 0 && content_to_check.length == 0)) {
+					setTimeout(() => getVotingContentPage(), getRandomInt(actionsDelayMin, actionsDelayMax)); // to the beginning!
+				} else if (contentToVote.length >= (maximumContentVotes - currentContentVotes) ||
+					(contentToVote.length > 0 && contentToCheck.length == 0)) {
 					newStatusMessage('Going to vote <span class="fa fa-fw fa-forward"></span>');
-					setTimeout(() => votes_content_apply(), getRandomInt(actions_delay_min, actions_delay_max)); // go to the next block!
-				} else if (content_to_check.length > 0) {
-					setTimeout(() => votes_content_is_voted(), getRandomInt(actions_delay_min, actions_delay_max)); // recursion!
+					setTimeout(() => applyContentVoting(), getRandomInt(actionsDelayMin, actionsDelayMax)); // go to the next block!
+				} else if (contentToCheck.length > 0) {
+					setTimeout(() => checkVotingContent(), getRandomInt(actionsDelayMin, actionsDelayMax)); // recursion!
 				}
 			});
 	}
 
-	function votes_content_get_page(failCounter = 0) {
-		var statusMessage = newStatusMessage(`Getting page ${content_page} <span class="fa fa-fw fa-circle-o-notch fa-spin"></span>`);
+	function getVotingContentPage(failCounter = 0) {
+		var statusMessage = newStatusMessage(`Getting page ${contentGettingPage} <span class="fa fa-fw fa-circle-o-notch fa-spin"></span>`);
 		statusMessage.clearQueue();
-		$.get(votes_content_url + content_page)
+		$.get(contentVotingURL + contentGettingPage)
 			.done(function(response) {
 				failCounter = 0;
 				statusMessage.children("span").attr('class', 'fa fa-fw fa-check-circle');
-				statusMessage.delay(status_message_delay).queue(function() {
+				statusMessage.delay(statusMessageDelay).queue(function() {
 					$(this).addClass("awah-casper-out");
 				});
 				if (response.data.length == 0) {
 					newStatusMessage(`No more content pages left in this section <span class="fa fa-fw fa-times-circle"></span>`);
 				} else {
-					content_page++;
-					content_to_check.push(...response.data);
-					content_to_check = content_to_check.filter(f => !votedContentCache.has(f.id));
-					if (DEBUG) console.log("content_to_check", content_to_check);
+					contentGettingPage++;
+					contentToCheck.push(...response.data);
+					contentToCheck = contentToCheck.filter(f => !votedContentCache.has(f.id));
+					if (DEBUG) console.log("contentToCheck", contentToCheck);
 				}
 			})
 			.fail(function() {
 				failCounter++;
 				statusMessage.children("span").attr('class', 'fa fa-fw fa-exclamation-triangle');
-				statusMessage.delay(status_message_delay).queue(function() {
+				statusMessage.delay(statusMessageDelay).queue(function() {
 					$(this).addClass("awah-casper-out");
 				});
 			})
 			.always(function(response, textStatus) {
-				arp_pts_status_update();
+				pointsStatusUpdate();
 				// .fail
 				if (failCounter > 0 && failCounter < 5) {
 					newStatusMessage(`Failed to get content page! Trying again${failCounter > 1 ? ` (${failCounter})` : '...'} <span class="fa fa-fw fa-exclamation-triangle"></span>`);
-					setTimeout(() => votes_content_get_page(failCounter), getRandomInt(actions_delay_min, actions_delay_max)); // recursion!
+					setTimeout(() => getVotingContentPage(failCounter), getRandomInt(actionsDelayMin, actionsDelayMax)); // recursion!
 				} else {
 					if (failCounter > 0) {
 						newStatusMessage(`Failed to get content page after ${failCounter} tries! <span class="fa fa-fw fa-exclamation-triangle"></span>`);
 					}
 					// .done
-					if (content_to_check.length >= (votes_content_max - votes_content_cur) ||
-						((textStatus == "error" ? true : response.data.length == 0) && content_to_check.length > 0)) {
+					if (contentToCheck.length >= (maximumContentVotes - currentContentVotes) ||
+						((textStatus == "error" ? true : response.data.length == 0) && contentToCheck.length > 0)) {
 						newStatusMessage('Going to check content <span class="fa fa-fw fa-forward"></span>');
-						setTimeout(() => votes_content_is_voted(), getRandomInt(actions_delay_min, actions_delay_max)); // go to the next block!
+						setTimeout(() => checkVotingContent(), getRandomInt(actionsDelayMin, actionsDelayMax)); // go to the next block!
 					} else if (failCounter == 0 && (textStatus == "error" ? true : response.data.length > 0)) {
-						setTimeout(() => votes_content_get_page(), getRandomInt(actions_delay_min, actions_delay_max)); // recursion!
+						setTimeout(() => getVotingContentPage(), getRandomInt(actionsDelayMin, actionsDelayMax)); // recursion!
 					} else {
 						newStatusMessage(`Voting stopped!`);
-						votes_content_action = false;
+						contentVotingInAction = false;
 					}
 				}
 			});
 	}
 
-	function votes_content_algorithm() {
+	function startContentVotingAlgorithm() {
 		$(".awah-con-check-queue").show();
 		$(".awah-con-votes-queue").show();
-		votes_content_action = true;
-		votes_content_get_page();
+		contentVotingInAction = true;
+		getVotingContentPage();
 	}
 
-	function votes_content_register_buttons() {
-		if (votes_content_cur >= votes_content_max) {
+	function registerContentVotingButtons() {
+		if (currentContentVotes >= maximumContentVotes) {
 			$(".awah-btn-cons").addClass("disabled");
 			return;
 		}
 		$(".awah-btn-cons").on("click", function() {
 			$(".awah-btn-cons").addClass("disabled");
 			if ($(this).data('awah-voting-direction') == "up") {
-				voting_down = false;
+				votingDown = false;
 			} else if ($(this).data('awah-voting-direction') == "down") {
-				voting_down = true;
+				votingDown = true;
 			}
 			if ($(this).data('awah-content-url') != "") {
-				votes_content_url = $(this).data('awah-content-url');
+				contentVotingURL = $(this).data('awah-content-url');
 			} else {
 				newStatusMessage('No content URL specified! Voting is impossible! <span class="fa fa-fw fa-exclamation-triangle"></span>');
 				return;
 			}
-			votes_content_algorithm(); //start algorithm
+			startContentVotingAlgorithm();
 		});
 	}
 
-	function votes_content_btn_featured(content_type = 'Image') {
+	function showFeaturedContentVotingButtons(content_type = 'Image') {
 		$('<div class="panel panel-default awah-panel">' +
 			'<div class="panel-heading"><h3 class="panel-title"><i class="fa fa-wrench"></i> Alienware Arena helper</h3></div>' +
 			'<div class="list-group">' +
@@ -539,24 +539,24 @@
 			'</div>' +
 
 			'</div>').insertAfter("div:has(.panel-default) > a:last-of-type");
-		votes_content_register_buttons();
+		registerContentVotingButtons();
 
 		if(DEBUG) $('<div class="list-group-item">' +
 			'<a class="btn btn-default awah-btn-test" href="javascript:void(0);" data-awah-tooltip="At your own risk!">' +
 			'<i class="fa fa-terminal"></i> <span class="hidden-xs">Make test</span></a></div>').appendTo(".awah-panel > .list-group");
 		if(DEBUG) $(".awah-btn-test").on("click", function() {
-			votes_content_cur = getRandomInt(5, 15);
-			votes_content_action = true;
-			content_to_check = new Array(votes_content_cur);
-			content_to_vote = new Array(votes_content_cur);
-			arp_pts_status_update();
-			votes_content_action = false;
-			content_to_check = new Array();
-			content_to_vote = new Array();
+			currentContentVotes = getRandomInt(5, 15);
+			contentVotingInAction = true;
+			contentToCheck = new Array(currentContentVotes);
+			contentToVote = new Array(currentContentVotes);
+			pointsStatusUpdate();
+			contentVotingInAction = false;
+			contentToCheck = new Array();
+			contentToVote = new Array();
 		});
 	}
 
-	function votes_content_btn_profile() {
+	function showProfileContentVotingButtons() {
 		$('<li>' +
 			'<a class="btn btn-default awah-btn-cons" href="javascript:void(0);" data-awah-tooltip="Automatic voting" data-awah-voting-direction="up" ' +
 			'data-awah-content-url="/esi/recent-activity-data/user/' + profileData.profile.id + '/">' +
@@ -566,40 +566,40 @@
 			'<i class="fa fa-arrow-down"></i> <span class="hidden-xs">DOWN-votes</span></a>' +
 			'</div>' +
 			'</li>').appendTo(".list-profile-actions");
-		votes_content_register_buttons();
+		registerContentVotingButtons();
 	}
 
 	// USER profile functions
-	function show_user_steam_profile_link() {
+	function showUserSteamProfileLink() {
 		if (profileData.profile.steamId) {
 			$('<li><a class="btn btn-default btn-block" href="//steamcommunity.com/profiles/' + profileData.profile.steamId + '" target="_blank" data-awah-tooltip="Open user\'s Steam profile in new tab"><span class="fa fa-fw fa-steam"></span> Open Steam profile</a></li>').appendTo(".list-profile-actions");
 		}
 	}
 
 	// GIVEAWAY functions
-	function show_available_keys() {
+	function showAvailableKeys() {
 		//output prependTo(".content-container");
 		//div#get-key-actions span.key-count
 		if (typeof countryKeys !== 'undefined') {
-			var keys_left = 0;
+			var keysLeft = 0;
 			var userCountryKeys = countryKeys[user_country];
 			if (typeof userCountryKeys === "number") {
-				keys_left = userCountryKeys;
+				keysLeft = userCountryKeys;
 			} else if (typeof userCountryKeys === "object") {
 				for (var level in userCountryKeys) {
 					if (userCountryKeys[level] > 0) {
-						keys_left += userCountryKeys[level];
+						keysLeft += userCountryKeys[level];
 					}
 				}
 			}
-			$("#giveaway-flash-message").after('<div class="well well-sm"><b>' + keys_left + '</b> keys left for <b>' + user_country + '</b> country</div>');
+			$("#giveaway-flash-message").after('<div class="well well-sm"><b>' + keysLeft + '</b> keys left for <b>' + user_country + '</b> country</div>');
 			setTimeout(function() {
-				$('<div><b>' + keys_left + '</b> keys left for <b>' + user_country + '</b> country <span class="fa fa-fw fa-key"></span></div>').appendTo(".awah-arp-status");
+				$('<div><b>' + keysLeft + '</b> keys left for <b>' + user_country + '</b> country <span class="fa fa-fw fa-key"></span></div>').appendTo(".awah-arp-status");
 			}, 1);
 		}
 	}
 
-	function get_entered_giveaways() {
+	function getTakenGiveaways() {
 		document.head.appendChild(document.createElement('style')).innerHTML = ".tile-content:not(.awah-giveaway-taken) {box-shadow: 0px 0px 2px 1px rgb(0,160,240);}";
 		// TODO: isnt it supposed to be attached only if keys data received ?
 
@@ -611,7 +611,7 @@
 		$.getJSON("/giveaways/keys", function(data) {
 			statusMessage.clearQueue()
 				.html('<div>Getting your giveaways info <span class="fa fa-fw fa-check-circle"></span></div>')
-				.delay(status_message_delay).queue(function() {
+				.delay(statusMessageDelay).queue(function() {
 					$(this).addClass("awah-casper-out");
 				});
 			var awahGiveawayKeys = [];
@@ -619,28 +619,28 @@
 				awahGiveawayKeys[value.giveaway_id] = value;
 			});
 			if (DEBUG) console.log("awahGiveawayKeys", awahGiveawayKeys);
-			mark_entered_giveaways(awahGiveawayKeys); // sometimes first giveaways page loaded before event registered
+			markTakenGiveaways(awahGiveawayKeys); // sometimes first giveaways page loaded before event registered
 			document.addEventListener('animationstart', function(event) {
 				if (event.animationName == "awah-new-tile-chunk-appears") {
-					mark_entered_giveaways(awahGiveawayKeys);
+					markTakenGiveaways(awahGiveawayKeys);
 				}
 			}, false);
 		}).fail(function() {
 			statusMessage.html('<div>Getting your giveaways info <span class="fa fa-fw fa-exclamation-triangle"></span></div>')
-				.delay(status_message_delay).queue(function() {
+				.delay(statusMessageDelay).queue(function() {
 					$(this).addClass("awah-casper-out").dequeue();
 				});
 		});
 	}
 
-	function mark_entered_giveaways(awahGiveawayKeys) {
+	function markTakenGiveaways(awahGiveawayKeys) {
 		$("a.Giveaway").each(function() {
 			var awahGiveawayID = /\/ucf\/show\/([\d]+)/.exec($(this).prop("href"));
 			awahGiveawayID = awahGiveawayID[1];
 			if (typeof awahGiveawayKeys[awahGiveawayID] === "object") {
 				$(this).parent().addClass("awah-giveaway-taken");
 				awahlabel = '✔\nTAKEN AT: ' + awahGiveawayKeys[awahGiveawayID].assigned_at;
-				if (show_key_on_marked_giveaways) awahlabel += '\n            KEY: ' + awahGiveawayKeys[awahGiveawayID].value;
+				if (showKeyOnMarkedGiveaways) awahlabel += '\n            KEY: ' + awahGiveawayKeys[awahGiveawayID].value;
 				$(this).attr("awahlabel", awahlabel);
 			}
 		});
@@ -697,31 +697,31 @@
 				case /^\/ucf\/show\/.*\/Giveaway\//.test(path):
 				case /\/ucf\/show\/.*\/Giveaway\//.test(og_url):
 					if (DEBUG) console.log("SWITCH: Giveaway");
-					show_available_keys();
+					showAvailableKeys();
 					break;
 			}
 			showUserLevelAtInsignias();
 			break;
 		case /^\/ucf\/Giveaway$/.test(path):
 			if (DEBUG) console.log("SWITCH: Giveaways list");
-			get_entered_giveaways();
+			getTakenGiveaways();
 			break;
 		case /^\/ucf\/Image$/.test(path):
 			if (DEBUG) console.log("SWITCH: Featured images page");
-			votes_content_btn_featured('Image');
+			showFeaturedContentVotingButtons('Image');
 			break;
 		case /^\/ucf\/Video$/.test(path):
 			if (DEBUG) console.log("SWITCH: Featured videos page");
-			votes_content_btn_featured('Video');
+			showFeaturedContentVotingButtons('Video');
 			break;
 		case /^\/ucf\/News$/.test(path):
 			if (DEBUG) console.log("SWITCH: Featured news page");
-			votes_content_btn_featured('News');
+			showFeaturedContentVotingButtons('News');
 			break;
 		case /^\/member\/.*$/.test(path):
 			if (DEBUG) console.log("SWITCH: user profile page");
-			votes_content_btn_profile();
-			show_user_steam_profile_link();
+			showProfileContentVotingButtons();
+			showUserSteamProfileLink();
 			break;
 		case /\/$/.test(url):
 			if (DEBUG) console.log("SWITCH: main page");
