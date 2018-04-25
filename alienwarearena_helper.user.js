@@ -261,15 +261,15 @@
 			'</div>');
 		showDailyResetTimer();
 
-		document.addEventListener('animationend', function(event) {
+		document.addEventListener("animationend", function(event) {
 			if (event.animationName === "awah-casper-out") {
 				$(event.target).remove();
 			}
 		}, false);
 
 		$('input.awah-opt-input[type="text"]').on("input", function() {
-			this.value=this.value.replace(/[^\d]/,'');
-			this.value=this.value.slice(0, 5);
+			this.value = this.value.replace(/[^\d]/, "");
+			this.value = this.value.slice(0, 5);
 		});
 
 		$("input.awah-opt-input").on("change", function() {
@@ -284,14 +284,14 @@
 			$("#awah_actions_delay_max").val(actionsDelayMaxDefault);
 			$("#awah_show_key_on_marked_giveaways").prop("checked", (showKeyOnMarkedGiveawaysDefault === "true"));
 			$("#awah_status_message_delay").val(statusMessageDelayDefault);
-			newStatusMessage('Default options settings restored!');
+			newStatusMessage("Default options settings restored!");
 			saveOptions();
 		});
 
 		$("#awah_clear_voted_content_cache").on("click", function() {
 			votedContentCache.clear();
 			saveVotedContentCache();
-			newStatusMessage('Voted content cache cleared!');
+			newStatusMessage("Voted content cache cleared!");
 		});
 
 		$(".awah-options-btn").on("click", function() {
@@ -344,7 +344,7 @@
 	});
 
 	function scrl(target) {
-		$('html, body').animate({scrollTop: target.offset().top-100}, 800);
+		$("html, body").animate({scrollTop: target.offset().top-100}, 800);
 		//target.effect("highlight", "800");
 	}
 
@@ -355,11 +355,11 @@
 	// CON votes section
 	function applyContentVoting() {
 		var contentId = contentToVote.shift();
-		var url = "/ucf/vote/" + (votingDown ? 'down' : 'up') + "/" + contentId;
+		var votingURL = "/ucf/vote/" + (votingDown ? "down" : "up") + "/" + contentId;
 
 		$.ajax({
-				url: url,
-				type: 'post'
+				url: votingURL,
+				type: "post"
 			})
 			.done(function(data) {
 				if (data.success) {
@@ -437,7 +437,7 @@
 		$.get(contentVotingURL + contentGettingPage)
 			.done(function(response) {
 				failCounter = 0;
-				statusMessage.children("span").attr('class', 'fa fa-fw fa-check-circle');
+				statusMessage.children("span").attr("class", "fa fa-fw fa-check-circle");
 				statusMessage.delay(statusMessageDelay).queue(function() {
 					$(this).addClass("awah-casper-out");
 				});
