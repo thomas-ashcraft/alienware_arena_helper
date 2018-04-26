@@ -230,35 +230,36 @@
 	setTimeout(function() {
 		$("div.toast-header").append('<div class="awah-ui-overlay"><div class="awah-arp-status awah-grey"></div><div class="awah-arp-pts"><div class="awah-arp-pts-con"></div></div></div>');
 		if (currentContentVotes < maximumContentVotes) {
-			$('<div class="awah-con-check-queue" style="display: none;">content to check: <span class="awah-con-check-queue-length">' + contentToCheck.length + '</span> <span class="fa fa-fw fa-search"></span></div>').appendTo(".awah-arp-status");
-			$('<div class="awah-con-votes-queue" style="display: none;">content to vote: <span class="awah-con-votes-queue-length">' + contentToVote.length + '</span> <span class="fa fa-fw fa-upload"></span></div>').appendTo(".awah-arp-status");
+			$(`<div class="awah-con-check-queue" style="display: none;">content to check: <span class="awah-con-check-queue-length">${contentToCheck.length}</span> <span class="fa fa-fw fa-search"></span></div>`).appendTo(".awah-arp-status");
+			$(`<div class="awah-con-votes-queue" style="display: none;">content to vote: <span class="awah-con-votes-queue-length">${contentToVote.length}</span> <span class="fa fa-fw fa-upload"></span></div>`).appendTo(".awah-arp-status");
 		}
 		pointsStatusUpdate();
 		$("div.toast-body > p.text-center").css({ "float": "right", "padding-right": "16px" });
 		$("div.toast-body").append('<p class="awah-options-btn"><span class="fa fa-fw fa-cog"></span> HELPER OPTIONS</p>');
-		$("div.toast-body").prepend('<div class="awah-options-overlay" style="display: none; bottom: -102%;"><div class="awah-option"><span class="awah-opt-desc awah-grey">AWA helper v<b>' + version + '</b></span></div>' +
-			'<div class="awah-option">' +
-			'<label><span class="awah-opt-title">actionsDelayMin</span><input id="awah_actions_delay_min" class="form-control awah-opt-input" type="text" value="' + actionsDelayMin + '"></label>' +
-			'<label><span class="awah-opt-title">actionsDelayMax</span><input id="awah_actions_delay_max" class="form-control awah-opt-input" type="text" value="' + actionsDelayMax + '"></label>' +
-			'<span class="awah-opt-desc awah-grey">Minimum and maximum random delay time between net actions. (in milliseconds)<br>Default minimum: ' + actionsDelayMinDefault + ' || Default maximum: ' + actionsDelayMaxDefault + '</span></div>' +
+		$("div.toast-body").prepend(`<div class="awah-options-overlay" style="display: none; bottom: -102%;">
+<div class="awah-option"><span class="awah-opt-desc awah-grey">AWA helper v<b>${version}</b></span></div>
+<div class="awah-option">
+<label><span class="awah-opt-title">actionsDelayMin</span><input id="awah_actions_delay_min" class="form-control awah-opt-input" type="text" value="${actionsDelayMin}"></label>
+<label><span class="awah-opt-title">actionsDelayMax</span><input id="awah_actions_delay_max" class="form-control awah-opt-input" type="text" value="${actionsDelayMax}"></label>
+<span class="awah-opt-desc awah-grey">Minimum and maximum random delay time between net actions. (in milliseconds)<br>Default minimum: ${actionsDelayMinDefault} || Default maximum: ${actionsDelayMaxDefault}</span></div>
 
-			'<div class="awah-option">' +
-			'<label><span class="awah-opt-title">showKeyOnMarkedGiveaways</span><input id="awah_show_key_on_marked_giveaways" class="form-control awah-opt-input" type="checkbox" ' + (showKeyOnMarkedGiveaways ? 'checked' : '') + '><div class="form-control awah-opt-input"><div>&nbsp;</div>&nbsp;</div></label>' +
-			'<span class="awah-opt-desc awah-grey">At Giveaways page. Default: ' + (showKeyOnMarkedGiveawaysDefault === "true" ? 'ON' : 'OFF') + '</span></div>' +
+<div class="awah-option">
+<label><span class="awah-opt-title">showKeyOnMarkedGiveaways</span><input id="awah_show_key_on_marked_giveaways" class="form-control awah-opt-input" type="checkbox" ${showKeyOnMarkedGiveaways ? "checked" : ""}><div class="form-control awah-opt-input"><div>&nbsp;</div>&nbsp;</div></label>
+<span class="awah-opt-desc awah-grey">At Giveaways page. Default: ${showKeyOnMarkedGiveawaysDefault === "true" ? "ON" : "OFF"}</span></div>
 
-			'<div class="awah-option">' +
-			'<label><span class="awah-opt-title">statusMessageDelay</span><input id="awah_status_message_delay" class="form-control awah-opt-input" type="text" value="' + statusMessageDelay + '"></label>' +
-			'<span class="awah-opt-desc awah-grey">How long the status messages will be displayed before they disappear. (in milliseconds, 1000 = 1 second)<br>Default: ' + statusMessageDelayDefault + '</span></div>' +
+<div class="awah-option">
+<label><span class="awah-opt-title">statusMessageDelay</span><input id="awah_status_message_delay" class="form-control awah-opt-input" type="text" value="${statusMessageDelay}"></label>
+<span class="awah-opt-desc awah-grey">How long the status messages will be displayed before they disappear. (in milliseconds, 1000 = 1 second)<br>Default: ${statusMessageDelayDefault}</span></div>
 
-			'<div class="awah-option">' +
-			'<button id="awah_restore_default" class="btn btn-danger"><span class="fa fa-exclamation-triangle"></span> Restore default</button>' +
-			'<span class="awah-opt-desc awah-grey">Restore default settings.</span></div>' +
+<div class="awah-option">
+<button id="awah_restore_default" class="btn btn-danger"><span class="fa fa-exclamation-triangle"></span> Restore default</button>
+<span class="awah-opt-desc awah-grey">Restore default settings.</span></div>
 
-			'<div class="awah-option">' +
-			'<label><span class="awah-opt-title">Voted content cahed</span><span id="awah_voted_content_cache_size" class="form-control awah-opt-input">' + votedContentCache.size + '</span></label>' +
-			'<button id="awah_clear_voted_content_cache" class="btn btn-danger"><span class="fa fa-exclamation-triangle"></span> Clear voted content cache</button>' +
-			'<span class="awah-opt-desc awah-grey">Use only in case of emergency.</span></div>' +
-			'</div>');
+<div class="awah-option">
+<label><span class="awah-opt-title">Voted content cahed</span><span id="awah_voted_content_cache_size" class="form-control awah-opt-input">${votedContentCache.size}</span></label>
+<button id="awah_clear_voted_content_cache" class="btn btn-danger"><span class="fa fa-exclamation-triangle"></span> Clear voted content cache</button>
+<span class="awah-opt-desc awah-grey">Use only in case of emergency.</span></div>
+</div>`);
 		showDailyResetTimer();
 
 		document.addEventListener("animationend", function(event) {
@@ -330,8 +331,8 @@
 				}
 				if (!contentVotingInAction) {
 					newStatusMessage(data.message);
-					if (typeof data.upVotes !== 'undefined') {
-						newStatusMessage('up: ' + data.upVotes + ' | down: ' + data.downVotes + (typeof data.voteTotal !== 'undefined' ? ' | total: ' + data.voteTotal : ''));
+					if (typeof data.upVotes !== "undefined") {
+						newStatusMessage(`up: ${data.upVotes} | down: ${data.downVotes}${typeof data.voteTotal !== "undefined" ? ` | total: ${data.voteTotal}` : ""}`);
 					}
 				}
 				pointsStatusUpdate();
@@ -355,7 +356,7 @@
 	// CON votes section
 	function applyContentVoting() {
 		var contentId = contentToVote.shift();
-		var votingURL = "/ucf/vote/" + (votingDown ? "down" : "up") + "/" + contentId;
+		var votingURL = `/ucf/vote/${votingDown ? "down" : "up"}/${contentId}`;
 
 		$.ajax({
 				url: votingURL,
@@ -446,13 +447,13 @@
 				} else {
 					contentGettingPage++;
 					contentToCheck.push(...response.data);
-					contentToCheck = contentToCheck.filter(f => !votedContentCache.has(f.id));
+					contentToCheck = contentToCheck.filter((f) => !votedContentCache.has(f.id));
 					if (DEBUG) console.log("contentToCheck", contentToCheck);
 				}
 			})
 			.fail(function() {
 				failCounter++;
-				statusMessage.children("span").attr('class', 'fa fa-fw fa-exclamation-triangle');
+				statusMessage.children("span").attr("class", "fa fa-fw fa-exclamation-triangle");
 				statusMessage.delay(statusMessageDelay).queue(function() {
 					$(this).addClass("awah-casper-out");
 				});
@@ -461,7 +462,7 @@
 				pointsStatusUpdate();
 				// .fail
 				if (failCounter > 0 && failCounter < 5) {
-					newStatusMessage(`Failed to get content page! Trying again${failCounter > 1 ? ` (${failCounter})` : '...'} <span class="fa fa-fw fa-exclamation-triangle"></span>`);
+					newStatusMessage(`Failed to get content page! Trying again${failCounter > 1 ? ` (${failCounter})` : "..."} <span class="fa fa-fw fa-exclamation-triangle"></span>`);
 					setTimeout(() => getVotingContentPage(failCounter), getRandomInt(actionsDelayMin, actionsDelayMax)); // recursion!
 				} else {
 					if (failCounter > 0) {
@@ -475,7 +476,7 @@
 					} else if (failCounter === 0 && (textStatus === "error" ? true : response.data.length > 0)) {
 						setTimeout(() => getVotingContentPage(), getRandomInt(actionsDelayMin, actionsDelayMax)); // recursion!
 					} else {
-						newStatusMessage(`Voting stopped!`);
+						newStatusMessage("Voting stopped!");
 						contentVotingInAction = false;
 					}
 				}
@@ -486,6 +487,7 @@
 		$(".awah-con-check-queue").show();
 		$(".awah-con-votes-queue").show();
 		contentVotingInAction = true;
+		pointsStatusUpdate();
 		getVotingContentPage();
 	}
 
@@ -602,7 +604,7 @@
 		// TODO: isnt it supposed to be attached only if keys data received ?
 
 		var statusMessage = $('<div>Getting your giveaways info <span class="fa fa-fw fa-circle-o-notch fa-spin"></span></div>');
-		statusMessage.delay(3000).queue(function() {
+		statusMessage.delay(2000).queue(function() {
 			$(this).appendTo(".awah-arp-status").dequeue();
 		});
 
