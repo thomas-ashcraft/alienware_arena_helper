@@ -61,7 +61,7 @@
 
 		/* script GUI */
 		#arp-toast .toast-header {overflow: visible !important;}
-		.awah-ui-overlay {clear: both; font-size: smaller !important; pointer-events: none; position: absolute; bottom: 102%; right: 0; min-width: 100%; padding: inherit; text-shadow: 2px 2px 2px rgb(0, 0, 0), -1px -1px 2px rgb(0, 0, 0), 2px 2px 5px rgb(0, 0, 0), -1px -1px 5px rgb(0, 0, 0), 0px 0px 10px rgb(0, 0, 0); text-align: right; background: rgba(0, 0, 0, 0) linear-gradient(to right bottom, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0) 50%, rgba(0, 0, 0, 0.85) 85%, rgba(0, 0, 0, 0.85) 100%) no-repeat scroll 0 0;}
+		.awah-ui-overlay {clear: both; font-size: smaller !important; pointer-events: none; position: absolute; bottom: 102%; right: 0; max-width: 100%; min-width: 100%; padding: inherit; text-shadow: 2px 2px 2px rgb(0, 0, 0), -1px -1px 2px rgb(0, 0, 0), 2px 2px 5px rgb(0, 0, 0), -1px -1px 5px rgb(0, 0, 0), 0px 0px 10px rgb(0, 0, 0); text-align: right; background: rgba(0, 0, 0, 0) linear-gradient(to right bottom, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0) 50%, rgba(0, 0, 0, 0.85) 85%, rgba(0, 0, 0, 0.85) 100%) no-repeat scroll 0 0;}
 		.awah-arp-status {float: right; clear: both; white-space: nowrap; border-bottom: 1px solid #1c1e22;}
 		.awah-arp-status > div {clear: both; position: relative; animation: awah-slide-from-bottom 0.25s ease-out 1 forwards;}
 		.awah-arp-pts {clear: both; width: 100%}
@@ -214,8 +214,12 @@
 			secs -= hours * (3600);
 			var mins = Math.floor(secs / 60);
 			secs -= mins * (60);
-			if (mins < 10) mins = "0" + mins;
-			if (secs < 10) secs = "0" + secs;
+			if (mins < 10) {
+				mins = "0" + mins;
+			}
+			if (secs < 10) {
+				secs = "0" + secs;
+			}
 			$(".awah-daily-reset-timer").text(hours + ":" + mins + ":" + secs);
 
 			if (awahDayRemains < 1) {
@@ -578,8 +582,10 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 			awahGiveawayID = awahGiveawayID[1];
 			if (typeof awahGiveawayKeys[awahGiveawayID] === "object") {
 				$(this).parent().addClass("awah-giveaway-taken");
-				awahlabel = '✔\nTAKEN AT: ' + awahGiveawayKeys[awahGiveawayID].assigned_at;
-				if (showKeyOnMarkedGiveaways) awahlabel += '\n            KEY: ' + awahGiveawayKeys[awahGiveawayID].value;
+				var awahlabel = '✔\nTAKEN AT: ' + awahGiveawayKeys[awahGiveawayID].assigned_at;
+				if (showKeyOnMarkedGiveaways) {
+					awahlabel += '\n            KEY: ' + awahGiveawayKeys[awahGiveawayID].value;
+				}
 				$(this).attr("awahlabel", awahlabel);
 			}
 		});
@@ -681,15 +687,15 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 			break;
 		case /^\/ucf\/Image$/.test(path):
 			console.log("SWITCH: Featured images page");
-			showFeaturedContentVotingButtons('Image');
+			showFeaturedContentVotingButtons("Image");
 			break;
 		case /^\/ucf\/Video$/.test(path):
 			console.log("SWITCH: Featured videos page");
-			showFeaturedContentVotingButtons('Video');
+			showFeaturedContentVotingButtons("Video");
 			break;
 		case /^\/ucf\/News$/.test(path):
 			console.log("SWITCH: Featured news page");
-			showFeaturedContentVotingButtons('News');
+			showFeaturedContentVotingButtons("News");
 			break;
 		case /^\/member\/.*$/.test(path):
 			console.log("SWITCH: user profile page");
