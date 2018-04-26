@@ -15,8 +15,6 @@
 (function() {
 	// You can configure options through the user interface. It is not recommended to edit the script for these purposes.
 	var version = "0.5.6";
-	var DEBUG = false; // Developer option. Default: false
-
 	var statusMessageDelayDefault	= 5000;
 	var actionsDelayMinDefault		= 1000;
 	var actionsDelayMaxDefault		= 5000;
@@ -411,11 +409,11 @@
 						saveVotedContentCache();
 					}
 				} else {
-					newStatusMessage('Failed to parse status of ' + contentId + '! <span class="fa fa-fw fa-exclamation-triangle"></span>');
+					newStatusMessage(`Failed to parse status of ${contentId}! <span class="fa fa-fw fa-exclamation-triangle"></span>`);
 				}
 			})
 			.fail(function() {
-				newStatusMessage('Failed to get status of ' + contentId + '! <span class="fa fa-fw fa-exclamation-triangle"></span>');
+				newStatusMessage(`Failed to get status of ${contentId}! <span class="fa fa-fw fa-exclamation-triangle"></span>`);
 			})
 			.always(function() {
 				pointsStatusUpdate();
@@ -443,7 +441,7 @@
 					$(this).addClass("awah-casper-out");
 				});
 				if (response.data.length === 0) {
-					newStatusMessage(`No more content pages left in this section <span class="fa fa-fw fa-times-circle"></span>`);
+					newStatusMessage('No more content pages left in this section <span class="fa fa-fw fa-times-circle"></span>');
 				} else {
 					contentGettingPage++;
 					contentToCheck.push(...response.data);
@@ -512,24 +510,24 @@
 		});
 	}
 
-	function showFeaturedContentVotingButtons(content_type = "Image") {
+	function showFeaturedContentVotingButtons(sectionType = "Image") {
 		$(`<div class="panel panel-default awah-panel">
 <div class="panel-heading"><h3 class="panel-title"><i class="fa fa-wrench"></i> Alienware Arena helper</h3></div>
 <div class="list-group">
 
 <div class="list-group-item">
-<div class="list-group-item-heading" data-awah-tooltip="The ones you see right here">Vote for featured ${content_type}${content_type !== "News"  ? "s" : ""}</div>
-<a class="btn btn-default awah-btn-cons" href="javascript:void(0);" data-awah-tooltip="Automatic voting" data-awah-voting-direction="up" data-awah-content-url="/esi/featured-tile-data/${content_type}/">
-<i class="fa fa-arrow-up"></i> <span class="hidden-xs">UP-votes</span></a><a class="btn btn-default awah-btn-cons" href="javascript:void(0);" data-awah-tooltip="Automatic voting" data-awah-voting-direction="down" data-awah-content-url="/esi/featured-tile-data/${content_type}/">
+<div class="list-group-item-heading" data-awah-tooltip="The ones you see right here">Vote for featured ${sectionType}${sectionType !== "News"  ? "s" : ""}</div>
+<a class="btn btn-default awah-btn-cons" href="javascript:void(0);" data-awah-tooltip="Automatic voting" data-awah-voting-direction="up" data-awah-content-url="/esi/featured-tile-data/${sectionType}/">
+<i class="fa fa-arrow-up"></i> <span class="hidden-xs">UP-votes</span></a><a class="btn btn-default awah-btn-cons" href="javascript:void(0);" data-awah-tooltip="Automatic voting" data-awah-voting-direction="down" data-awah-content-url="/esi/featured-tile-data/${sectionType}/">
 <i class="fa fa-arrow-down"></i> <span class="hidden-xs">DOWN-votes</span></a>
 </div>
 
-<div class="list-group-item"${content_type === "News" ? 'style="display: none;"' : ""}>
-<div class="list-group-item-heading" data-awah-tooltip="Every ${content_type} which uploaded to the Alienware Arena.
+<div class="list-group-item"${sectionType === "News" ? 'style="display: none;"' : ""}>
+<div class="list-group-item-heading" data-awah-tooltip="Every ${sectionType} which uploaded to the Alienware Arena.
 Excluding ones that moved to \'featured\' list.
-Sorting from fresh ones to old ones.">Vote for newly uploaded ${content_type}${(content_type !== "News"  ? "s" : "")}</div>
-<a class="btn btn-default awah-btn-cons" href="javascript:void(0);" data-awah-tooltip="Automatic voting" data-awah-voting-direction="up" data-awah-content-url="/esi/tile-data/${content_type}/">
-<i class="fa fa-arrow-up"></i> <span class="hidden-xs">UP-votes</span></a><a class="btn btn-default awah-btn-cons" href="javascript:void(0);" data-awah-tooltip="Automatic voting" data-awah-voting-direction="down" data-awah-content-url="/esi/tile-data/${content_type}/">
+Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(sectionType !== "News"  ? "s" : "")}</div>
+<a class="btn btn-default awah-btn-cons" href="javascript:void(0);" data-awah-tooltip="Automatic voting" data-awah-voting-direction="up" data-awah-content-url="/esi/tile-data/${sectionType}/">
+<i class="fa fa-arrow-up"></i> <span class="hidden-xs">UP-votes</span></a><a class="btn btn-default awah-btn-cons" href="javascript:void(0);" data-awah-tooltip="Automatic voting" data-awah-voting-direction="down" data-awah-content-url="/esi/tile-data/${sectionType}/">
 <i class="fa fa-arrow-down"></i> <span class="hidden-xs">DOWN-votes</span></a>
 </div>
 </div>`).insertAfter("div:has(.panel-default) > a:last-of-type");
@@ -557,7 +555,7 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${content_type}${(
 	function showAvailableKeys() {
 		//output prependTo(".content-container");
 		//div#get-key-actions span.key-count
-		if (typeof countryKeys !== 'undefined') {
+		if (typeof countryKeys !== "undefined") {
 			var keysLeft = 0;
 			var userCountryKeys = countryKeys[user_country];
 			if (typeof userCountryKeys === "number") {
@@ -574,8 +572,21 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${content_type}${(
 		}
 	}
 
+	function markTakenGiveaways(awahGiveawayKeys) {
+		$("a.Giveaway").each(function() {
+			var awahGiveawayID = /\/ucf\/show\/([\d]+)/.exec($(this).prop("href"));
+			awahGiveawayID = awahGiveawayID[1];
+			if (typeof awahGiveawayKeys[awahGiveawayID] === "object") {
+				$(this).parent().addClass("awah-giveaway-taken");
+				awahlabel = '✔\nTAKEN AT: ' + awahGiveawayKeys[awahGiveawayID].assigned_at;
+				if (showKeyOnMarkedGiveaways) awahlabel += '\n            KEY: ' + awahGiveawayKeys[awahGiveawayID].value;
+				$(this).attr("awahlabel", awahlabel);
+			}
+		});
+	}
+
 	function getTakenGiveaways() {
-		document.head.appendChild(document.createElement('style')).innerHTML = ".tile-content:not(.awah-giveaway-taken) {box-shadow: 0px 0px 2px 1px rgb(0,160,240);}";
+		document.head.appendChild(document.createElement("style")).textContent = ".tile-content:not(.awah-giveaway-taken) {box-shadow: 0px 0px 2px 1px rgb(0,160,240);}";
 		// TODO: isnt it supposed to be attached only if keys data received ?
 
 		var statusMessage = $('<div>Getting your giveaways info <span class="fa fa-fw fa-circle-o-notch fa-spin"></span></div>');
@@ -593,7 +604,7 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${content_type}${(
 			$.each(data, function(index, value) {
 				awahGiveawayKeys[value.giveaway_id] = value;
 			});
-			if (DEBUG) console.log("awahGiveawayKeys", awahGiveawayKeys);
+			console.log("awahGiveawayKeys", awahGiveawayKeys);
 			markTakenGiveaways(awahGiveawayKeys); // sometimes first giveaways page loaded before event registered
 			document.addEventListener("animationstart", function(event) {
 				if (event.animationName === "awah-new-tile-chunk-appears") {
@@ -605,19 +616,6 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${content_type}${(
 				.delay(statusMessageDelay).queue(function() {
 					$(this).addClass("awah-casper-out").dequeue();
 				});
-		});
-	}
-
-	function markTakenGiveaways(awahGiveawayKeys) {
-		$("a.Giveaway").each(function() {
-			var awahGiveawayID = /\/ucf\/show\/([\d]+)/.exec($(this).prop("href"));
-			awahGiveawayID = awahGiveawayID[1];
-			if (typeof awahGiveawayKeys[awahGiveawayID] === "object") {
-				$(this).parent().addClass("awah-giveaway-taken");
-				awahlabel = '✔\nTAKEN AT: ' + awahGiveawayKeys[awahGiveawayID].assigned_at;
-				if (showKeyOnMarkedGiveaways) awahlabel += '\n            KEY: ' + awahGiveawayKeys[awahGiveawayID].value;
-				$(this).attr("awahlabel", awahlabel);
-			}
 		});
 	}
 
@@ -660,46 +658,46 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${content_type}${(
 
 	switch (true) {
 		case /.*\/ucf\/show\/.*/.test(path):
-			if (DEBUG) console.log("SWITCH: Content");
+			console.log("SWITCH: Content");
 			// <meta property="og:url" content="https://eu.alienwarearena.com/ucf/show/1592462/boards/contest-and-giveaways-global/Giveaway/rising-storm-2-vietnam-closed-beta-key-giveaway" />
 			var og_url = $('meta[property="og:url"]').attr("content");
 			switch (true) {
 				case /.*\/boards\/this-or-that\/.*/.test(path):
 				case /.*\/boards\/this-or-that\/.*/.test(og_url):
-					if (DEBUG) console.log("SWITCH: This or That");
+					console.log("SWITCH: This or That");
 					// this_or_that_btn();
 					break;
 				case /^\/ucf\/show\/.*\/Giveaway\//.test(path):
 				case /\/ucf\/show\/.*\/Giveaway\//.test(og_url):
-					if (DEBUG) console.log("SWITCH: Giveaway");
+					console.log("SWITCH: Giveaway");
 					showAvailableKeys();
 					break;
 			}
 			showUserLevelAtInsignias();
 			break;
 		case /^\/ucf\/Giveaway$/.test(path):
-			if (DEBUG) console.log("SWITCH: Giveaways list");
+			console.log("SWITCH: Giveaways list");
 			getTakenGiveaways();
 			break;
 		case /^\/ucf\/Image$/.test(path):
-			if (DEBUG) console.log("SWITCH: Featured images page");
+			console.log("SWITCH: Featured images page");
 			showFeaturedContentVotingButtons('Image');
 			break;
 		case /^\/ucf\/Video$/.test(path):
-			if (DEBUG) console.log("SWITCH: Featured videos page");
+			console.log("SWITCH: Featured videos page");
 			showFeaturedContentVotingButtons('Video');
 			break;
 		case /^\/ucf\/News$/.test(path):
-			if (DEBUG) console.log("SWITCH: Featured news page");
+			console.log("SWITCH: Featured news page");
 			showFeaturedContentVotingButtons('News');
 			break;
 		case /^\/member\/.*$/.test(path):
-			if (DEBUG) console.log("SWITCH: user profile page");
+			console.log("SWITCH: user profile page");
 			showProfileContentVotingButtons();
 			showUserSteamProfileLink();
 			break;
 		case /\/$/.test(url):
-			if (DEBUG) console.log("SWITCH: main page");
+			console.log("SWITCH: main page");
 			break;
 	}
 }(window));
