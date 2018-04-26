@@ -403,7 +403,7 @@
 				var votedOnContent = /var votedOnContent = (.+);/.exec(response);
 				if (votedOnContent) {
 					votedOnContent = JSON.parse(votedOnContent[1]);
-					if (DEBUG) console.log("votedOnContent", votedOnContent);
+					console.log("votedOnContent", votedOnContent);
 					if (votedOnContent.downVote === false && votedOnContent.upVote === false) {
 						contentToVote.push(contentId);
 					} else if (votedOnContent.downVote === true || votedOnContent.upVote === true) {
@@ -448,7 +448,6 @@
 					contentGettingPage++;
 					contentToCheck.push(...response.data);
 					contentToCheck = contentToCheck.filter((f) => !votedContentCache.has(f.id));
-					if (DEBUG) console.log("contentToCheck", contentToCheck);
 				}
 			})
 			.fail(function() {
@@ -498,13 +497,13 @@
 		}
 		$(".awah-btn-cons").on("click", function() {
 			$(".awah-btn-cons").addClass("disabled");
-			if ($(this).data('awah-voting-direction') === "up") {
+			if ($(this).data("awah-voting-direction") === "up") {
 				votingDown = false;
-			} else if ($(this).data('awah-voting-direction') === "down") {
+			} else if ($(this).data("awah-voting-direction") === "down") {
 				votingDown = true;
 			}
-			if ($(this).data('awah-content-url') !== "") {
-				contentVotingURL = $(this).data('awah-content-url');
+			if ($(this).data("awah-content-url") !== "") {
+				contentVotingURL = $(this).data("awah-content-url");
 			} else {
 				newStatusMessage('No content URL specified! Voting is impossible! <span class="fa fa-fw fa-exclamation-triangle"></span>');
 				return;
@@ -513,66 +512,44 @@
 		});
 	}
 
-	function showFeaturedContentVotingButtons(content_type = 'Image') {
-		$('<div class="panel panel-default awah-panel">' +
-			'<div class="panel-heading"><h3 class="panel-title"><i class="fa fa-wrench"></i> Alienware Arena helper</h3></div>' +
-			'<div class="list-group">' +
+	function showFeaturedContentVotingButtons(content_type = "Image") {
+		$(`<div class="panel panel-default awah-panel">
+<div class="panel-heading"><h3 class="panel-title"><i class="fa fa-wrench"></i> Alienware Arena helper</h3></div>
+<div class="list-group">
 
-			'<div class="list-group-item">' +
-			'<div class="list-group-item-heading" data-awah-tooltip="The ones you see right here">Vote for featured ' + content_type + (content_type !== "News"  ? 's' : '') + '</div>' +
-			'<a class="btn btn-default awah-btn-cons" href="javascript:void(0);" data-awah-tooltip="Automatic voting" data-awah-voting-direction="up" ' +
-			'data-awah-content-url="/esi/featured-tile-data/' + content_type + '/">' +
-			'<i class="fa fa-arrow-up"></i> <span class="hidden-xs">UP-votes</span></a>' +
-			'<a class="btn btn-default awah-btn-cons" href="javascript:void(0);" data-awah-tooltip="Automatic voting" data-awah-voting-direction="down" ' +
-			'data-awah-content-url="/esi/featured-tile-data/' + content_type + '/">' +
-			'<i class="fa fa-arrow-down"></i> <span class="hidden-xs">DOWN-votes</span></a>' +
-			'</div>' +
+<div class="list-group-item">
+<div class="list-group-item-heading" data-awah-tooltip="The ones you see right here">Vote for featured ${content_type}${content_type !== "News"  ? "s" : ""}</div>
+<a class="btn btn-default awah-btn-cons" href="javascript:void(0);" data-awah-tooltip="Automatic voting" data-awah-voting-direction="up" data-awah-content-url="/esi/featured-tile-data/${content_type}/">
+<i class="fa fa-arrow-up"></i> <span class="hidden-xs">UP-votes</span></a><a class="btn btn-default awah-btn-cons" href="javascript:void(0);" data-awah-tooltip="Automatic voting" data-awah-voting-direction="down" data-awah-content-url="/esi/featured-tile-data/${content_type}/">
+<i class="fa fa-arrow-down"></i> <span class="hidden-xs">DOWN-votes</span></a>
+</div>
 
-			'<div class="list-group-item"' + (content_type === "News" ? 'style="display: none;"' : '') + '>' +
-			'<div class="list-group-item-heading" data-awah-tooltip="Every ' + content_type + ' which uploaded to the Alienware Arena.\nExcluding ones that moved to \'featured\' list.\nSorting from fresh ones to old ones.">Vote for newly uploaded ' + content_type + (content_type !== "News"  ? 's' : '') + '</div>' +
-			'<a class="btn btn-default awah-btn-cons" href="javascript:void(0);" data-awah-tooltip="Automatic voting" data-awah-voting-direction="up" ' +
-			'data-awah-content-url="/esi/tile-data/' + content_type + '/">' +
-			'<i class="fa fa-arrow-up"></i> <span class="hidden-xs">UP-votes</span></a>' +
-			'<a class="btn btn-default awah-btn-cons" href="javascript:void(0);" data-awah-tooltip="Automatic voting" data-awah-voting-direction="down" ' +
-			'data-awah-content-url="/esi/tile-data/' + content_type + '/">' +
-			'<i class="fa fa-arrow-down"></i> <span class="hidden-xs">DOWN-votes</span></a>' +
-			'</div>' +
-
-			'</div>').insertAfter("div:has(.panel-default) > a:last-of-type");
+<div class="list-group-item"${content_type === "News" ? 'style="display: none;"' : ""}>
+<div class="list-group-item-heading" data-awah-tooltip="Every ${content_type} which uploaded to the Alienware Arena.
+Excluding ones that moved to \'featured\' list.
+Sorting from fresh ones to old ones.">Vote for newly uploaded ${content_type}${(content_type !== "News"  ? "s" : "")}</div>
+<a class="btn btn-default awah-btn-cons" href="javascript:void(0);" data-awah-tooltip="Automatic voting" data-awah-voting-direction="up" data-awah-content-url="/esi/tile-data/${content_type}/">
+<i class="fa fa-arrow-up"></i> <span class="hidden-xs">UP-votes</span></a><a class="btn btn-default awah-btn-cons" href="javascript:void(0);" data-awah-tooltip="Automatic voting" data-awah-voting-direction="down" data-awah-content-url="/esi/tile-data/${content_type}/">
+<i class="fa fa-arrow-down"></i> <span class="hidden-xs">DOWN-votes</span></a>
+</div>
+</div>`).insertAfter("div:has(.panel-default) > a:last-of-type");
 		registerContentVotingButtons();
-
-		if(DEBUG) $('<div class="list-group-item">' +
-			'<a class="btn btn-default awah-btn-test" href="javascript:void(0);" data-awah-tooltip="At your own risk!">' +
-			'<i class="fa fa-terminal"></i> <span class="hidden-xs">Make test</span></a></div>').appendTo(".awah-panel > .list-group");
-		if(DEBUG) $(".awah-btn-test").on("click", function() {
-			currentContentVotes = getRandomInt(5, 15);
-			contentVotingInAction = true;
-			contentToCheck = new Array(currentContentVotes);
-			contentToVote = new Array(currentContentVotes);
-			pointsStatusUpdate();
-			contentVotingInAction = false;
-			contentToCheck = new Array();
-			contentToVote = new Array();
-		});
 	}
 
 	function showProfileContentVotingButtons() {
-		$('<li>' +
-			'<a class="btn btn-default awah-btn-cons" href="javascript:void(0);" data-awah-tooltip="Automatic voting" data-awah-voting-direction="up" ' +
-			'data-awah-content-url="/esi/recent-activity-data/user/' + profileData.profile.id + '/">' +
-			'<i class="fa fa-arrow-up"></i> <span class="hidden-xs">UP-votes</span></a>' +
-			'<a class="btn btn-default awah-btn-cons" href="javascript:void(0);" data-awah-tooltip="Automatic voting" data-awah-voting-direction="down" ' +
-			'data-awah-content-url="/esi/recent-activity-data/user/' + profileData.profile.id + '/">' +
-			'<i class="fa fa-arrow-down"></i> <span class="hidden-xs">DOWN-votes</span></a>' +
-			'</div>' +
-			'</li>').appendTo(".list-profile-actions");
+		$(`<li>
+<a class="btn btn-default awah-btn-cons" href="javascript:void(0);" data-awah-tooltip="Automatic voting" data-awah-voting-direction="up" data-awah-content-url="/esi/recent-activity-data/user/${profileData.profile.id}/">
+<i class="fa fa-arrow-up"></i> <span class="hidden-xs">UP-votes</span></a><a class="btn btn-default awah-btn-cons" href="javascript:void(0);" data-awah-tooltip="Automatic voting" data-awah-voting-direction="down" data-awah-content-url="/esi/recent-activity-data/user/${profileData.profile.id}/">
+<i class="fa fa-arrow-down"></i> <span class="hidden-xs">DOWN-votes</span></a>
+</div>
+</li>`).appendTo(".list-profile-actions");
 		registerContentVotingButtons();
 	}
 
 	// USER profile functions
 	function showUserSteamProfileLink() {
 		if (profileData.profile.steamId) {
-			$('<li><a class="btn btn-default btn-block" href="//steamcommunity.com/profiles/' + profileData.profile.steamId + '" target="_blank" data-awah-tooltip="Open user\'s Steam profile in new tab"><span class="fa fa-fw fa-steam"></span> Open Steam profile</a></li>').appendTo(".list-profile-actions");
+			$(`<li><a class="btn btn-default btn-block" href="//steamcommunity.com/profiles/${profileData.profile.steamId}" target="_blank" data-awah-tooltip="Open user\'s Steam profile in new tab"><span class="fa fa-fw fa-steam"></span> Open Steam profile</a></li>`).appendTo(".list-profile-actions");
 		}
 	}
 
@@ -592,10 +569,8 @@
 					}
 				}
 			}
-			$("#giveaway-flash-message").after('<div class="well well-sm"><b>' + keysLeft + '</b> keys left for <b>' + user_country + '</b> country</div>');
-			setTimeout(function() {
-				$('<div><b>' + keysLeft + '</b> keys left for <b>' + user_country + '</b> country <span class="fa fa-fw fa-key"></span></div>').appendTo(".awah-arp-status");
-			}, 1);
+			$("#giveaway-flash-message").after(`<div class="well well-sm"><b>${keysLeft}</b> keys left for <b>${user_country}</b> country</div>`);
+			setTimeout(() => $(`<div><b>${keysLeft}</b> keys left for <b>${user_country}</b> country <span class="fa fa-fw fa-key"></span></div>`).appendTo(".awah-arp-status"), 1);
 		}
 	}
 
@@ -620,7 +595,7 @@
 			});
 			if (DEBUG) console.log("awahGiveawayKeys", awahGiveawayKeys);
 			markTakenGiveaways(awahGiveawayKeys); // sometimes first giveaways page loaded before event registered
-			document.addEventListener('animationstart', function(event) {
+			document.addEventListener("animationstart", function(event) {
 				if (event.animationName === "awah-new-tile-chunk-appears") {
 					markTakenGiveaways(awahGiveawayKeys);
 				}
