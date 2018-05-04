@@ -15,13 +15,13 @@
 (function() {
 	// You can configure options through the user interface. It is not recommended to edit the script for these purposes.
 	var version = "0.5.6";
-	var statusMessageDelayDefault	= 5000;
-	var actionsDelayMinDefault		= 1000;
-	var actionsDelayMaxDefault		= 5000;
+	var statusMessageDelayDefault = 5000;
+	var actionsDelayMinDefault = 1000;
+	var actionsDelayMaxDefault = 5000;
 	var showKeyOnMarkedGiveawaysDefault = "true";
 
-	var actionsDelayMin		= parseInt(localStorage.getItem("awah_actions_delay_min"), 10) || actionsDelayMinDefault;
-	var actionsDelayMax		= parseInt(localStorage.getItem("awah_actions_delay_max"), 10) || actionsDelayMaxDefault;
+	var actionsDelayMin = parseInt(localStorage.getItem("awah_actions_delay_min"), 10) || actionsDelayMinDefault;
+	var actionsDelayMax = parseInt(localStorage.getItem("awah_actions_delay_max"), 10) || actionsDelayMaxDefault;
 	localStorage.removeItem("awah_tot_add_votes_min"); // fix legacy
 	localStorage.removeItem("awah_tot_add_votes_max"); // fix legacy
 	var showKeyOnMarkedGiveaways = localStorage.getItem("awah_show_key_on_marked_giveaways") || showKeyOnMarkedGiveawaysDefault;
@@ -52,9 +52,14 @@
 		.awah-btn-cons:hover {color: gold;}
 		.list-group-item > .awah-btn-cons {width: 50%;}
 		.list-profile-actions > li > .awah-btn-cons {width: 50%; border-color: rgba(0, 0, 0, .6);}
+		.awah-btn-cons.disabled {position: relative;}
 		.awah-btn-cons.disabled::before {content: ''; width: 100%; height: 100%; position: absolute; top: 0; left: 0; background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACAQMAAABIeJ9nAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAABlBMVEUAAAAAAAClZ7nPAAAAAXRSTlMAQObYZgAAAAFiS0dEAIgFHUgAAAAJcEhZcwAACxIAAAsSAdLdfvwAAAAMSURBVAjXY2hgYAAAAYQAgSjdetcAAAAASUVORK5CYII=');}
 		.awah-panel {margin: 20px 0;}
+		.awah-activate-steam-key-btn {text-decoration: none !important; padding: 1px 5px; background-color: rgba( 48, 95, 128, 0.9 ); vertical-align: inherit;}
+		.awah-activate-steam-key-btn:hover {background: linear-gradient( -60deg, #417a9b 5%,#67c1f5 95%);}
 
+		.awah-info-btn {cursor: pointer; opacity: 0.4; transition: opacity 0.25s ease-in-out;}
+		.awah-info-btn:hover {opacity: 1;}
 		[data-awah-tooltip] {position: relative;}
 		[data-awah-tooltip]:after {content: attr(data-awah-tooltip); pointer-events: none; padding: 4px 8px; color: white; position: absolute; left: 0; bottom: 0%; opacity: 0; font-weight: normal; text-transform: none; font-size: smaller; white-space: pre; box-shadow: 0px 0px 3px 0px #54bbdb; background-color: #0e0e0e; transition: opacity 0.25s ease-out, bottom 0.25s ease-out; z-index: 1000;}
 		[data-awah-tooltip]:hover:after {bottom: 115%; opacity: 1;}
@@ -122,11 +127,12 @@
 			from {text-shadow: 0px 0px 3px rgba(75, 201, 239, 0.25), 0px 0px 12px rgba(75, 201, 239, 0.25);}
 			to {text-shadow: 0px 0px 3px rgba(75, 201, 239, 1), 0px 0px 12px rgba(75, 201, 239, 1);}
 		}
-		@keyframes awah-new-tile-chunk-appears {
+		@keyframes awah-element-appears-hook {
 			from {opacity: 0.99;}
 			to {opacity: 1;}
 		}
-		.tile-chunk {animation-duration: 0.001s; animation-name: awah-new-tile-chunk-appears;}
+		.tile-chunk {animation-duration: 0.001s; animation-name: awah-element-appears-hook;}
+		#giveaway-flash-message {animation-duration: 0.001s; animation-name: awah-element-appears-hook;}
 		`;
 	document.head.appendChild(document.createElement("style")).textContent = helperStyle;
 
@@ -516,13 +522,13 @@
 
 	function showFeaturedContentVotingButtons(sectionType = "Image") {
 		$(`<div class="panel panel-default awah-panel">
-<div class="panel-heading"><h3 class="panel-title"><i class="fa fa-wrench"></i> Alienware Arena helper</h3></div>
+<div class="panel-heading" data-awah-tooltip="by Alienware Arena helper"><h3 class="panel-title"><i class="fa fa-chevron-up"></i> Automatic voting</h3></div>
 <div class="list-group">
 
 <div class="list-group-item">
 <div class="list-group-item-heading" data-awah-tooltip="The ones you see right here">Vote for featured ${sectionType}${sectionType !== "News"  ? "s" : ""}</div>
-<a class="btn btn-default awah-btn-cons" href="javascript:void(0);" data-awah-tooltip="Automatic voting" data-awah-voting-direction="up" data-awah-content-url="/esi/featured-tile-data/${sectionType}/">
-<i class="fa fa-arrow-up"></i> <span class="hidden-xs">UP-votes</span></a><a class="btn btn-default awah-btn-cons" href="javascript:void(0);" data-awah-tooltip="Automatic voting" data-awah-voting-direction="down" data-awah-content-url="/esi/featured-tile-data/${sectionType}/">
+<a class="btn btn-default awah-btn-cons" href="javascript:void(0);" data-awah-voting-direction="up" data-awah-content-url="/esi/featured-tile-data/${sectionType}/">
+<i class="fa fa-arrow-up"></i> <span class="hidden-xs">UP-votes</span></a><a class="btn btn-default awah-btn-cons" href="javascript:void(0);" data-awah-voting-direction="down" data-awah-content-url="/esi/featured-tile-data/${sectionType}/">
 <i class="fa fa-arrow-down"></i> <span class="hidden-xs">DOWN-votes</span></a>
 </div>
 
@@ -530,8 +536,8 @@
 <div class="list-group-item-heading" data-awah-tooltip="Every ${sectionType} which uploaded to the Alienware Arena.
 Excluding ones that moved to \'featured\' list.
 Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(sectionType !== "News"  ? "s" : "")}</div>
-<a class="btn btn-default awah-btn-cons" href="javascript:void(0);" data-awah-tooltip="Automatic voting" data-awah-voting-direction="up" data-awah-content-url="/esi/tile-data/${sectionType}/">
-<i class="fa fa-arrow-up"></i> <span class="hidden-xs">UP-votes</span></a><a class="btn btn-default awah-btn-cons" href="javascript:void(0);" data-awah-tooltip="Automatic voting" data-awah-voting-direction="down" data-awah-content-url="/esi/tile-data/${sectionType}/">
+<a class="btn btn-default awah-btn-cons" href="javascript:void(0);" data-awah-voting-direction="up" data-awah-content-url="/esi/tile-data/${sectionType}/">
+<i class="fa fa-arrow-up"></i> <span class="hidden-xs">UP-votes</span></a><a class="btn btn-default awah-btn-cons" href="javascript:void(0);" data-awah-voting-direction="down" data-awah-content-url="/esi/tile-data/${sectionType}/">
 <i class="fa fa-arrow-down"></i> <span class="hidden-xs">DOWN-votes</span></a>
 </div>
 </div>`).insertAfter("div:has(.panel-default) > a:last-of-type");
@@ -561,19 +567,45 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 		//div#get-key-actions span.key-count
 		if (typeof countryKeys !== "undefined") {
 			var keysLeft = 0;
+			var keysOutput = "";
 			var userCountryKeys = countryKeys[user_country];
 			if (typeof userCountryKeys === "number") {
 				keysLeft = userCountryKeys;
 			} else if (typeof userCountryKeys === "object") {
-				for (var level in userCountryKeys) {
-					if (userCountryKeys[level] > 0) {
-						keysLeft += userCountryKeys[level];
+				for (var level in userCountryKeys["normal"]) {
+					if (userCountryKeys["normal"][level] > 0) {
+						keysLeft += userCountryKeys["normal"][level];
+						keysOutput += `<b>${userCountryKeys["normal"][level]}</b> keys for <b>${level}</b>+ level<br>\n`;
+					}
+				}
+				for (var level in userCountryKeys["prestige"]) {
+					if (userCountryKeys["prestige"][level] > 0) {
+						keysOutput += `<b>${userCountryKeys["prestige"][level]}</b> keys for <b>master${(userCountryKeys["prestige"].length > 1  ? ` ${level}</b>+ level` : "</b> levels")} <span class="awah-info-btn" data-awah-tooltip="Prestige key pool"><span class="fa fa-fw fa-info-circle"></span></span><br>\n`;
 					}
 				}
 			}
-			$("#giveaway-flash-message").after(`<div class="well well-sm"><b>${keysLeft}</b> keys left for <b>${user_country}</b> country</div>`);
-			setTimeout(() => $(`<div><b>${keysLeft}</b> keys left for <b>${user_country}</b> country <span class="fa fa-fw fa-key"></span></div>`).appendTo(".awah-arp-status"), 1);
+			$("#giveaway-flash-message").after(`<div class="well well-sm">
+<span class="awah-grey" style="float: right;" data-awah-tooltip="by Alienware Arena helper"><span class="fa fa-fw fa-key"></span> Available keys info</span>
+User country: <b>${user_country}</b> <span class="awah-info-btn" data-awah-tooltip="Can affect the keys availability.
+Site determines it automatically, based on your IP."><span class="fa fa-fw fa-info-circle"></span></span><br>
+${keysOutput}</div>`);
 		}
+	}
+
+	function showActivateSteamKeyButton() {
+		function injectActivateSteamKeyButton() {
+			// https://store.steampowered.com/account/registerkey?key=XXXXX-XXXXX-XXXXX
+			// /([A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5})/
+			let message = $("#giveaway-flash-message").html();
+			message = message.replace(/<p>Key: (.*)([\s]{1}<a[\s]{1}.*<\/a>)<\/p>/m, `<p>Key: $1</p>`);
+			$("#giveaway-flash-message").html(message.replace(/<p>Key:[\s]{1}([A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5})<\/p>/m, `<p>Key: $1 <a target="_blank" href="https://store.steampowered.com/account/registerkey?key=$1" class="btn btn-share awah-activate-steam-key-btn" data-awah-tooltip="Activate key on Steam site"><i class="fa fa-steam"></i> Activate</a></p>`));
+		}
+		injectActivateSteamKeyButton();
+		document.addEventListener("animationstart", function(event) {
+			if (event.animationName === "awah-element-appears-hook") {
+				setTimeout(() => injectActivateSteamKeyButton(), 1);
+			}
+		}, false);
 	}
 
 	function markTakenGiveaways(awahGiveawayKeys) {
@@ -613,7 +645,7 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 			console.log("awahGiveawayKeys", awahGiveawayKeys);
 			markTakenGiveaways(awahGiveawayKeys); // sometimes first giveaways page loaded before event registered
 			document.addEventListener("animationstart", function(event) {
-				if (event.animationName === "awah-new-tile-chunk-appears") {
+				if (event.animationName === "awah-element-appears-hook") {
 					markTakenGiveaways(awahGiveawayKeys);
 				}
 			}, false);
@@ -651,7 +683,6 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 				options.success = function(data) {
 					/* ajaxBeforeSuccess functionality */
 					var contentId = parseInt(this.url.replace(/\/ucf\/comments\/(\d*)/g, "$1"), 10);
-					//parseUserLevelData();
 					setTimeout(() => parseUserLevelData(), 1);
 					/* ajaxBeforeSuccess functionality END */
 					if (typeof originalSuccess === "function") {
@@ -677,6 +708,7 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 				case /\/ucf\/show\/.*\/Giveaway\//.test(og_url):
 					console.log("SWITCH: Giveaway");
 					showAvailableKeys();
+					showActivateSteamKeyButton();
 					break;
 			}
 			showUserLevelAtInsignias();
