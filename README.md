@@ -1,5 +1,7 @@
 # Alienware Arena helper
 
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/f1d734df129b4cacaf2188649a603ff6)](https://app.codacy.com/app/ashcraftom/alienware_arena_helper?utm_source=github.com&utm_medium=referral&utm_content=thomas-ashcraft/alienware_arena_helper&utm_campaign=badger)
+
 Helps you to easily earn daily ARP and improves site with usable features
 
 ## Features
