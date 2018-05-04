@@ -588,7 +588,7 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 <span class="awah-grey" style="float: right;" data-awah-tooltip="by Alienware Arena helper"><span class="fa fa-fw fa-key"></span> Available keys info</span>
 User country: <b>${user_country}</b> <span class="awah-info-btn" data-awah-tooltip="Can affect the keys availability.
 Site determines it automatically, based on your IP."><span class="fa fa-fw fa-info-circle"></span></span><br>
-${keysOutput}</div>`);
+${(keysOutput ? `${keysOutput}` : `<b>${keysLeft}</b> keys left`)}</div>`);
 		}
 	}
 
