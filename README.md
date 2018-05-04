@@ -7,7 +7,8 @@ Helps you to easily earn daily ARP and improves site with usable features
 * Automatic voting.
 * Counting daily content votes on the fly.
 * Mark taken giveaways.
-* Visible counter of available keys in giveaways.
+* Additional info about giveaway's available keys.
+* Steam key activation button at giveaways pages.
 * Visible Daily ARP reset timer.
 * Button to simply open users Steam profiles without adding to friends.
 * Show user level at insignias (in comments).
