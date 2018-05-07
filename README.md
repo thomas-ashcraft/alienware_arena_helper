@@ -1,8 +1,8 @@
 # Alienware Arena helper
 
-[![Codacy Badge](https://api.codacy.com/project/badge/Grade/f1d734df129b4cacaf2188649a603ff6)](https://app.codacy.com/app/ashcraftom/alienware_arena_helper?utm_source=github.com&utm_medium=referral&utm_content=thomas-ashcraft/alienware_arena_helper&utm_campaign=badger)
-
 Helps you to easily earn daily ARP and improves site with usable features
+
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/f1d734df129b4cacaf2188649a603ff6)](https://app.codacy.com/app/ashcraftom/alienware_arena_helper?utm_source=github.com&utm_medium=referral&utm_content=thomas-ashcraft/alienware_arena_helper&utm_campaign=badger)
 
 ## Features
 
@@ -17,7 +17,7 @@ Helps you to easily earn daily ARP and improves site with usable features
 
 ## Installing
 
-1. First you need to install "Tampermonkey" into your browser.
+1. First you need to install "Tampermonkey" into your browser:
   * [Firefox](https://addons.mozilla.org/ru/firefox/addon/tampermonkey/)
   * [Chrome](https://chrome.google.com/webstore/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo?hl=ru&gl=RU) (and Yandex.browser)
   * [Opera](https://addons.opera.com/ru/extensions/details/tampermonkey-beta/?display=en)

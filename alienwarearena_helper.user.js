@@ -1,7 +1,7 @@
 ﻿// ==UserScript==
 // @name         Alienware Arena helper
 // @namespace    https://github.com/thomas-ashcraft
-// @version      0.5.6
+// @version      0.5.7
 // @description  Earn daily ARP easily
 // @author       Thomas Ashcraft
 // @match        *://*.alienwarearena.com/*
@@ -14,7 +14,7 @@
 
 (function() {
 	// You can configure options through the user interface. It is not recommended to edit the script for these purposes.
-	var version = "0.5.6";
+	var version = "0.5.7";
 	var statusMessageDelayDefault = 5000;
 	var actionsDelayMinDefault = 1000;
 	var actionsDelayMaxDefault = 5000;
@@ -105,15 +105,10 @@
 		div.tile-content.awah-giveaway-taken:not(:hover) {opacity: 0.2; transition: opacity 0.25s ease-in-out;}
 
 		/* comments */
-		.insignia-label::before {
-			content: attr(data-arp-level);
-			font-size: 10px;
-			width: 35px; /* 30 for master */
-			line-height: 30px; /* 26 for master */
-			position: absolute;
-			text-align: center;
-			pointer-events: none;
-		}
+		.insignia-label::before {content: attr(data-arp-level); font-size: 10px; width: 35px; /* 30 for master */ line-height: 30px; /* 26 for master */ position: absolute; text-align: center; pointer-events: none;}
+
+		/* user profile */
+		.awah-sub-recent-activity {text-align: center; font-size: smaller; margin-bottom: 10px; margin-top: -10px;}
 
 		@keyframes awah-slide-from-bottom {
 			from {opacity: 0.5; bottom: -90px; max-height: 0px;}
@@ -411,7 +406,7 @@
 				var votedOnContent = /var votedOnContent = (.+);/.exec(response);
 				if (votedOnContent) {
 					votedOnContent = JSON.parse(votedOnContent[1]);
-					console.log("votedOnContent", votedOnContent);
+					console.log("👽 votedOnContent", votedOnContent);
 					if (votedOnContent.downVote === false && votedOnContent.upVote === false) {
 						contentToVote.push(contentId);
 					} else if (votedOnContent.downVote === true || votedOnContent.upVote === true) {
@@ -561,6 +556,10 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 		}
 	}
 
+	function showUserRecentActivityTotal() {
+		$(`<div class="awah-sub-recent-activity awah-grey">Total: ${recentActivityData.total}</div>`).insertAfter(".gradient.recent-activity");
+	}
+
 	// GIVEAWAY functions
 	function showAvailableKeys() {
 		//output prependTo(".content-container");
@@ -642,7 +641,7 @@ ${(keysOutput ? `${keysOutput}` : `<b>${keysLeft}</b> keys left`)}</div>`);
 			$.each(data, function(index, value) {
 				awahGiveawayKeys[value.giveaway_id] = value;
 			});
-			console.log("awahGiveawayKeys", awahGiveawayKeys);
+			console.log("👽 awahGiveawayKeys", awahGiveawayKeys);
 			markTakenGiveaways(awahGiveawayKeys); // sometimes first giveaways page loaded before event registered
 			document.addEventListener("animationstart", function(event) {
 				if (event.animationName === "awah-element-appears-hook") {
@@ -695,18 +694,18 @@ ${(keysOutput ? `${keysOutput}` : `<b>${keysLeft}</b> keys left`)}</div>`);
 
 	switch (true) {
 		case /.*\/ucf\/show\/.*/.test(path):
-			console.log("SWITCH: Content");
+			console.log("👽 SWITCH: Content");
 			// <meta property="og:url" content="https://eu.alienwarearena.com/ucf/show/1592462/boards/contest-and-giveaways-global/Giveaway/rising-storm-2-vietnam-closed-beta-key-giveaway" />
 			var og_url = $('meta[property="og:url"]').attr("content");
 			switch (true) {
 				case /.*\/boards\/this-or-that\/.*/.test(path):
 				case /.*\/boards\/this-or-that\/.*/.test(og_url):
-					console.log("SWITCH: This or That");
+					console.log("👽 SWITCH: This or That");
 					// this_or_that_btn();
 					break;
 				case /^\/ucf\/show\/.*\/Giveaway\//.test(path):
 				case /\/ucf\/show\/.*\/Giveaway\//.test(og_url):
-					console.log("SWITCH: Giveaway");
+					console.log("👽 SWITCH: Giveaway");
 					showAvailableKeys();
 					showActivateSteamKeyButton();
 					break;
@@ -714,28 +713,29 @@ ${(keysOutput ? `${keysOutput}` : `<b>${keysLeft}</b> keys left`)}</div>`);
 			showUserLevelAtInsignias();
 			break;
 		case /^\/ucf\/Giveaway$/.test(path):
-			console.log("SWITCH: Giveaways list");
+			console.log("👽 SWITCH: Giveaways list");
 			getTakenGiveaways();
 			break;
 		case /^\/ucf\/Image$/.test(path):
-			console.log("SWITCH: Featured images page");
+			console.log("👽 SWITCH: Featured images page");
 			showFeaturedContentVotingButtons("Image");
 			break;
 		case /^\/ucf\/Video$/.test(path):
-			console.log("SWITCH: Featured videos page");
+			console.log("👽 SWITCH: Featured videos page");
 			showFeaturedContentVotingButtons("Video");
 			break;
 		case /^\/ucf\/News$/.test(path):
-			console.log("SWITCH: Featured news page");
+			console.log("👽 SWITCH: Featured news page");
 			showFeaturedContentVotingButtons("News");
 			break;
 		case /^\/member\/.*$/.test(path):
-			console.log("SWITCH: user profile page");
+			console.log("👽 SWITCH: user profile page");
 			showProfileContentVotingButtons();
 			showUserSteamProfileLink();
+			showUserRecentActivityTotal();
 			break;
 		case /\/$/.test(url):
-			console.log("SWITCH: main page");
+			console.log("👽 SWITCH: main page");
 			break;
 	}
 }(window));
