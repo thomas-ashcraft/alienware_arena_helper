@@ -1,7 +1,7 @@
 ﻿// ==UserScript==
 // @name         Alienware Arena helper
 // @namespace    https://github.com/thomas-ashcraft
-// @version      0.5.7
+// @version      0.5.8
 // @description  Earn daily ARP easily
 // @author       Thomas Ashcraft
 // @match        *://*.alienwarearena.com/*
@@ -58,6 +58,7 @@
 		.awah-activate-steam-key-btn {text-decoration: none !important; padding: 1px 5px; background-color: rgba( 48, 95, 128, 0.9 ); vertical-align: inherit;}
 		.awah-activate-steam-key-btn:hover {background: linear-gradient( -60deg, #417a9b 5%,#67c1f5 95%);}
 
+		/* script tooltips */
 		.awah-info-btn {cursor: pointer; opacity: 0.4; transition: opacity 0.25s ease-in-out;}
 		.awah-info-btn:hover {opacity: 1;}
 		[data-awah-tooltip] {position: relative;}
@@ -65,6 +66,7 @@
 		[data-awah-tooltip]:hover:after {bottom: 115%; opacity: 1;}
 
 		/* script GUI */
+		#arp-toast {overflow: visible !important;}
 		#arp-toast .toast-header {overflow: visible !important;}
 		.awah-ui-overlay {clear: both; font-size: smaller !important; pointer-events: none; position: absolute; bottom: 102%; right: 0; max-width: 100%; min-width: 100%; padding: inherit; text-shadow: 2px 2px 2px rgb(0, 0, 0), -1px -1px 2px rgb(0, 0, 0), 2px 2px 5px rgb(0, 0, 0), -1px -1px 5px rgb(0, 0, 0), 0px 0px 10px rgb(0, 0, 0); text-align: right; background: rgba(0, 0, 0, 0) linear-gradient(to right bottom, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0) 50%, rgba(0, 0, 0, 0.85) 85%, rgba(0, 0, 0, 0.85) 100%) no-repeat scroll 0 0;}
 		.awah-arp-status {float: right; clear: both; white-space: nowrap; border-bottom: 1px solid #1c1e22;}
