@@ -14,7 +14,7 @@
 
 (function() {
 	// You can configure options through the user interface. It is not recommended to edit the script for these purposes.
-	var version = "0.5.7";
+	var version = "0.5.8";
 	var statusMessageDelayDefault = 5000;
 	var actionsDelayMinDefault = 1000;
 	var actionsDelayMaxDefault = 5000;
