@@ -1,7 +1,7 @@
 ﻿// ==UserScript==
 // @name         Alienware Arena helper
 // @namespace    https://github.com/thomas-ashcraft
-// @version      0.5.8
+// @version      0.5.9
 // @description  Earn daily ARP easily
 // @author       Thomas Ashcraft
 // @match        *://*.alienwarearena.com/*
@@ -14,7 +14,7 @@
 
 (function() {
 	// You can configure options through the user interface. It is not recommended to edit the script for these purposes.
-	var version = "0.5.8";
+	var version = "0.5.9";
 	var statusMessageDelayDefault = 5000;
 	var actionsDelayMinDefault = 1000;
 	var actionsDelayMaxDefault = 5000;
@@ -51,7 +51,7 @@
 		.awah-btn-cons,
 		.awah-btn-cons:hover {color: gold;}
 		.list-group-item > .awah-btn-cons {width: 50%;}
-		.list-profile-actions > li > .awah-btn-cons {width: 50%; border-color: rgba(0, 0, 0, .6);}
+		.list-profile-actions > li > .awah-btn-cons {width: 50%;}
 		.awah-btn-cons.disabled {position: relative;}
 		.awah-btn-cons.disabled::before {content: ''; width: 100%; height: 100%; position: absolute; top: 0; left: 0; background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACAQMAAABIeJ9nAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAABlBMVEUAAAAAAAClZ7nPAAAAAXRSTlMAQObYZgAAAAFiS0dEAIgFHUgAAAAJcEhZcwAACxIAAAsSAdLdfvwAAAAMSURBVAjXY2hgYAAAAYQAgSjdetcAAAAASUVORK5CYII=');}
 		.awah-panel {margin: 20px 0;}
@@ -68,7 +68,7 @@
 		/* script GUI */
 		#arp-toast {overflow: visible !important;}
 		#arp-toast .toast-header {overflow: visible !important;}
-		.awah-ui-overlay {clear: both; font-size: smaller !important; pointer-events: none; position: absolute; bottom: 102%; right: 0; max-width: 100%; min-width: 100%; padding: inherit; text-shadow: 2px 2px 2px rgb(0, 0, 0), -1px -1px 2px rgb(0, 0, 0), 2px 2px 5px rgb(0, 0, 0), -1px -1px 5px rgb(0, 0, 0), 0px 0px 10px rgb(0, 0, 0); text-align: right; background: rgba(0, 0, 0, 0) linear-gradient(to right bottom, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0) 50%, rgba(0, 0, 0, 0.85) 85%, rgba(0, 0, 0, 0.85) 100%) no-repeat scroll 0 0;}
+		.awah-ui-overlay {clear: both; font-size: smaller !important; pointer-events: none; position: absolute; bottom: 103%; right: 0; max-width: 100%; min-width: 100%; padding: inherit; text-shadow: 2px 2px 2px rgb(0, 0, 0), -1px -1px 2px rgb(0, 0, 0), 2px 2px 5px rgb(0, 0, 0), -1px -1px 5px rgb(0, 0, 0), 0px 0px 10px rgb(0, 0, 0); text-align: right; background: rgba(0, 0, 0, 0) linear-gradient(to right bottom, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0) 50%, rgba(0, 0, 0, 0.85) 85%, rgba(0, 0, 0, 0.85) 100%) no-repeat scroll 0 0;}
 		.awah-arp-status {float: right; clear: both; white-space: nowrap; border-bottom: 1px solid #1c1e22;}
 		.awah-arp-status > div {clear: both; position: relative; animation: awah-slide-from-bottom 0.25s ease-out 1 forwards;}
 		.awah-arp-pts {clear: both; width: 100%}
@@ -559,7 +559,7 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 	}
 
 	function showUserRecentActivityTotal() {
-		$(`<div class="awah-sub-recent-activity awah-grey">Total: ${recentActivityData.total}</div>`).insertAfter(".gradient.recent-activity");
+		$(`<div class="awah-sub-recent-activity awah-grey">Total: ${recentActivityData.total}</div>`).insertAfter(".show-hdr__txt:contains('Recent Activity')");
 	}
 
 	// GIVEAWAY functions
