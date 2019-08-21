@@ -1,7 +1,7 @@
 ﻿// ==UserScript==
 // @name         Alienware Arena helper
 // @namespace    https://github.com/thomas-ashcraft
-// @version      0.5.9
+// @version      1.0.1
 // @description  Earn daily ARP easily
 // @author       Thomas Ashcraft
 // @match        *://*.alienwarearena.com/*
@@ -14,39 +14,58 @@
 
 (function() {
 	// You can configure options through the user interface. It is not recommended to edit the script for these purposes.
-	var version = "0.5.9";
-	var statusMessageDelayDefault = 5000;
-	var actionsDelayMinDefault = 1000;
-	var actionsDelayMaxDefault = 5000;
-	var showKeyOnMarkedGiveawaysDefault = "true";
+	const version = "1.0.1";
+	let statusMessageDelayDefault = 5000;
+	let actionsDelayMinDefault = 1000;
+	let actionsDelayMaxDefault = 2000;
+	let showKeyOnMarkedGiveawaysDefault = "true";
 
-	var actionsDelayMin = parseInt(localStorage.getItem("awah_actions_delay_min"), 10) || actionsDelayMinDefault;
-	var actionsDelayMax = parseInt(localStorage.getItem("awah_actions_delay_max"), 10) || actionsDelayMaxDefault;
+	let actionsDelayMin = parseInt(localStorage.getItem("awah_actions_delay_min"), 10) || actionsDelayMinDefault;
+	let actionsDelayMax = parseInt(localStorage.getItem("awah_actions_delay_max"), 10) || actionsDelayMaxDefault;
 	localStorage.removeItem("awah_tot_add_votes_min"); // fix legacy
 	localStorage.removeItem("awah_tot_add_votes_max"); // fix legacy
-	var showKeyOnMarkedGiveaways = localStorage.getItem("awah_show_key_on_marked_giveaways") || showKeyOnMarkedGiveawaysDefault;
+	let showKeyOnMarkedGiveaways = localStorage.getItem("awah_show_key_on_marked_giveaways") || showKeyOnMarkedGiveawaysDefault;
 	showKeyOnMarkedGiveaways = (showKeyOnMarkedGiveaways === "true");
-	var statusMessageDelay = parseInt(localStorage.getItem("awah_status_message_delay"), 10) || statusMessageDelayDefault;
-	var votedContentCache = new Set(JSON.parse(localStorage.getItem("awahVotedContentCache")));
+	let statusMessageDelay = parseInt(localStorage.getItem("awah_status_message_delay"), 10) || statusMessageDelayDefault;
+	let votedContentCache = new Set(JSON.parse(localStorage.getItem("awahVotedContentCache")));
+	let dailyVotingStats = JSON.parse(localStorage.getItem("awahDailyVotingStat"));
+	// default dailyVotingStats object
+	if (dailyVotingStats == null) {
+		dailyVotingStats = {
+			lastVoteTime: 0,
+			currentContentVotes: 0,
+		};
+	}
 
-	var url = window.location.href;
-	var path = window.location.pathname;
+	function checkDailyVotingStats() {
+		let startOfCurrentDay = new Date();
+		startOfCurrentDay.setUTCHours(0, 0, 0, 0);
+		let lastVoteTime = new Date(dailyVotingStats.lastVoteTime);
+		if (lastVoteTime < startOfCurrentDay) {
+			dailyVotingStats.currentContentVotes = 0;
+		}
+	}
+
+	checkDailyVotingStats();
+
+	let url = window.location.href;
+	let path = window.location.pathname;
 	path = path.replace(/\/+/g, "/");
 
 	// ARP points initial readings
-	let readPoints = /Vote on Content(?:.|\n)*>(\d+) of (\d+)<\/td>/.exec($("head").html());
-	var currentContentVotes = parseInt(readPoints[1], 10);
-	var maximumContentVotes = parseInt(readPoints[2], 10);
-	var contentVotingInAction = false;
-	var contentVotingURL = "";
-	var contentToVote = [];
-	var contentToCheck = [];
-	var contentGettingPage = 1;
-	var votingDown = false;
-	var saveOptionsTimer;
+	//let readPoints = /Vote on Content(?:.|\n)*>(\d+) of (\d+)<\/td>/.exec($("head").html());
+	let currentContentVotes = parseInt(dailyVotingStats.currentContentVotes, 10);
+	let maximumContentVotes = 20;
+	let contentVotingInAction = false;
+	let contentVotingURL = "";
+	let contentToVote = [];
+	let contentToCheck = [];
+	let contentGettingPage = 1;
+	let votingDown = false;
+	let saveOptionsTimer;
 
 	// Embed style
-	var helperStyle = `
+	document.head.appendChild(document.createElement("style")).textContent = `
 		/* script buttons */
 		.awah-btn-cons,
 		.awah-btn-cons:hover {color: gold;}
@@ -62,13 +81,13 @@
 		.awah-info-btn {cursor: pointer; opacity: 0.4; transition: opacity 0.25s ease-in-out;}
 		.awah-info-btn:hover {opacity: 1;}
 		[data-awah-tooltip] {position: relative;}
-		[data-awah-tooltip]:after {content: attr(data-awah-tooltip); pointer-events: none; padding: 4px 8px; color: white; position: absolute; left: 0; bottom: 0%; opacity: 0; font-weight: normal; text-transform: none; font-size: smaller; white-space: pre; box-shadow: 0px 0px 3px 0px #54bbdb; background-color: #0e0e0e; transition: opacity 0.25s ease-out, bottom 0.25s ease-out; z-index: 1000;}
-		[data-awah-tooltip]:hover:after {bottom: 115%; opacity: 1;}
+		[data-awah-tooltip]:after {content: attr(data-awah-tooltip); pointer-events: none; padding: 4px 8px; color: white; position: absolute; left: 0; bottom: 100%; opacity: 0; font-weight: normal; text-transform: none; font-size: smaller; white-space: pre; box-shadow: 0px 0px 3px 0px #54bbdb; background-color: #0e0e0e; transition: opacity 0.25s ease-out, bottom 0.25s ease-out; z-index: 1000;}
+		[data-awah-tooltip]:hover:after {bottom: -100%; opacity: 1;}
 
 		/* script GUI */
 		#arp-toast {overflow: visible !important;}
 		#arp-toast .toast-header {overflow: visible !important;}
-		.awah-ui-overlay {clear: both; font-size: smaller !important; pointer-events: none; position: absolute; bottom: 103%; right: 0; max-width: 100%; min-width: 100%; padding: inherit; text-shadow: 2px 2px 2px rgb(0, 0, 0), -1px -1px 2px rgb(0, 0, 0), 2px 2px 5px rgb(0, 0, 0), -1px -1px 5px rgb(0, 0, 0), 0px 0px 10px rgb(0, 0, 0); text-align: right; background: rgba(0, 0, 0, 0) linear-gradient(to right bottom, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0) 50%, rgba(0, 0, 0, 0.85) 85%, rgba(0, 0, 0, 0.85) 100%) no-repeat scroll 0 0;}
+		.awah-ui-overlay {color: white; clear: both; font-size: smaller !important; pointer-events: none; position: fixed; bottom: 0; right: 0; max-width: 40%; min-width: 20%; padding: 1rem 0.5rem 0 0; text-shadow: 2px 2px 2px rgb(0, 0, 0), -1px -1px 2px rgb(0, 0, 0), 2px 2px 5px rgb(0, 0, 0), -1px -1px 5px rgb(0, 0, 0), 0px 0px 10px rgb(0, 0, 0); text-align: right; background: rgba(0, 0, 0, 0) linear-gradient(to right bottom, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0) 50%, rgba(0, 0, 0, 0.85) 85%, rgba(0, 0, 0, 0.85) 100%) no-repeat scroll 0 0;}
 		.awah-arp-status {float: right; clear: both; white-space: nowrap; border-bottom: 1px solid #1c1e22;}
 		.awah-arp-status > div {clear: both; position: relative; animation: awah-slide-from-bottom 0.25s ease-out 1 forwards;}
 		.awah-arp-pts {clear: both; width: 100%}
@@ -76,6 +95,10 @@
 		.awah-arp-pts > div::after {content: ""; display: block; height: 0; clear: both;}
 		.awah-grey {color: #767676;}
 		.awah-casper-out {overflow: hidden !important; animation: awah-casper-out 0.6s ease-in !important;}
+		
+		li.awah-nav-panel {}
+		li.awah-nav-panel > a.nav-link {width: 2.5rem; height: 2.5rem; float: left; cursor: pointer;}
+		li.awah-nav-panel > a.nav-link > i {font-size: 26px;}
 
 		.awah-daily-reset-timer {min-width: 22%;}
 		.toast-body table tbody > :nth-child(2n) {background: #090909}
@@ -111,6 +134,7 @@
 
 		/* user profile */
 		.awah-sub-recent-activity {text-align: center; font-size: smaller; margin-bottom: 10px; margin-top: -10px;}
+		section.um-profile__friends {flex-wrap: wrap;}
 
 		@keyframes awah-slide-from-bottom {
 			from {opacity: 0.5; bottom: -90px; max-height: 0px;}
@@ -131,7 +155,6 @@
 		.tile-chunk {animation-duration: 0.001s; animation-name: awah-element-appears-hook;}
 		#giveaway-flash-message {animation-duration: 0.001s; animation-name: awah-element-appears-hook;}
 		`;
-	document.head.appendChild(document.createElement("style")).textContent = helperStyle;
 
 	function pointsStatusUpdate() {
 		$(".awah-arp-pts-con").html("CON: " + currentContentVotes + " / " + maximumContentVotes);
@@ -141,13 +164,13 @@
 		if (contentVotingInAction) {
 			$(".awah-con-check-queue-length").text(contentToCheck.length);
 			$(".awah-con-votes-queue-length").text(contentToVote.length);
-			var progressBarBackground = "linear-gradient(90deg, rgb(0, 160, 240) " +
+			let progressBarBackground = "linear-gradient(90deg, rgb(0, 160, 240) " +
 				((currentContentVotes / maximumContentVotes) * 100) +
-				"%, rgba(0, 160, 240, 0.2) 0%, rgba(0, 160, 240, 0.2) " +
+				"%, rgba(0, 160, 240, 0.8) 0%, rgba(0, 160, 240, 0.8) " +
 				(((currentContentVotes + contentToVote.length) / maximumContentVotes) * 100) +
 				"%, rgb(255, 255, 255) 0%, rgb(255, 255, 255) " +
-				((((currentContentVotes + contentToVote.length) / maximumContentVotes) * 100) + 1 ) +
-				"%, rgba(0, 160, 240, 0.2) 0%, rgba(0, 160, 240, 0.2) " +
+				((((currentContentVotes + contentToVote.length) / maximumContentVotes) * 100) + 1) +
+				"%, rgba(0, 160, 240, 0.8) 0%, rgba(0, 160, 240, 0.8) " +
 				(((currentContentVotes + contentToVote.length + contentToCheck.length) / maximumContentVotes) * 100) +
 				"%, rgb(40, 37, 36) 0%)";
 			progressBarBackground = progressBarBackground.replace(/(\d{3}|\d{3}\.\d{1,})%/g, "100%"); // values greater than 100% can cause incorrect rendering
@@ -156,11 +179,11 @@
 	}
 
 	function newStatusMessage(statusMessageText) {
-		var statusMessageObj = $("<div>" + statusMessageText + "</div>");
+		let statusMessageObj = $("<div>" + statusMessageText + "</div>");
 		statusMessageObj.appendTo(".awah-arp-status")
 			.delay(statusMessageDelay).queue(function() {
-				$(this).addClass("awah-casper-out").dequeue();
-			});
+			$(this).addClass("awah-casper-out").dequeue();
+		});
 		return statusMessageObj;
 	}
 
@@ -184,8 +207,8 @@
 			localStorage.setItem("awah_status_message_delay", statusMessageDelay);
 			newStatusMessage('Settings saved! <span class="fa fa-fw fa-floppy-o"></span>');
 		} catch (e) {
-			newStatusMessage('localStorage quota exceeded! <span class="fa fa-fw fa-exclamation-triangle"></span>');
 			console.warn(e);
+			newStatusMessage('localStorage quota exceeded! <span class="fa fa-fw fa-exclamation-triangle"></span>');
 		}
 	}
 
@@ -194,28 +217,40 @@
 			localStorage.setItem("awahVotedContentCache", JSON.stringify([...votedContentCache]));
 			$("#awah_voted_content_cache_size").text(votedContentCache.size);
 		} catch (e) {
-			newStatusMessage('localStorage quota exceeded! <span class="fa fa-fw fa-exclamation-triangle"></span>');
 			console.warn(e);
+			newStatusMessage('localStorage quota exceeded! <span class="fa fa-fw fa-exclamation-triangle"></span>');
+		}
+	}
+
+	function saveDailyVotingStats() {
+		dailyVotingStats.lastVoteTime = new Date().getTime();
+		dailyVotingStats.currentContentVotes = currentContentVotes;
+		try {
+			localStorage.setItem("awahDailyVotingStat", JSON.stringify(dailyVotingStats));
+			// $("#awah_voted_content_cache_size").text(dailyVotingStats.size);
+		} catch (e) {
+			console.warn(e);
+			newStatusMessage('localStorage quota exceeded! <span class="fa fa-fw fa-exclamation-triangle"></span>');
 		}
 	}
 
 	function showDailyResetTimer() {
-		var awahDateNow = new Date();
-		var awahDayEnd = new Date(awahDateNow.getTime());
+		let awahDateNow = new Date();
+		let awahDayEnd = new Date(awahDateNow.getTime());
 		awahDayEnd.setUTCHours(23,59,59,999);
-		var awahDayRemains = (awahDayEnd.getTime() - awahDateNow.getTime());
+		let awahDayRemains = (awahDayEnd.getTime() - awahDateNow.getTime());
 
 		awahDayRemains = Math.floor(awahDayRemains / 1000);
 
-		$(".toast-body table:eq(1) tbody").append('<tr><td><span class="fa fa-fw fa-clock-o"></span> Daily reset</td><td class="text-center awah-daily-reset-timer">hh:mm:ss</td><td class="pull-right"></td></tr>');
+		$(".toast-body table:eq(1) tbody").append('<tr><td><span class="fa fa-fw fa-clock-o"></span> Daily reset</td><td class="text-center awah-daily-reset-timer">hh:mm:ss</td></tr>');
 
-		var awahDayRemainsInterval = setInterval(function() {
+		let awahDayRemainsInterval = setInterval(function () {
 			awahDayRemains--;
-			//var secs = Math.floor(awahDayRemains / 1000);
-			var secs = awahDayRemains;
-			var hours = Math.floor(secs / 3600);
+			//let secs = Math.floor(awahDayRemains / 1000);
+			let secs = awahDayRemains;
+			let hours = Math.floor(secs / 3600);
 			secs -= hours * (3600);
-			var mins = Math.floor(secs / 60);
+			let mins = Math.floor(secs / 60);
 			secs -= mins * (60);
 			if (mins < 10) {
 				mins = "0" + mins;
@@ -232,16 +267,17 @@
 	}
 
 	// initialize UI
-	setTimeout(function() {
-		$("div.toast-header").append('<div class="awah-ui-overlay"><div class="awah-arp-status awah-grey"></div><div class="awah-arp-pts"><div class="awah-arp-pts-con"></div></div></div>');
-		if (currentContentVotes < maximumContentVotes) {
-			$(`<div class="awah-con-check-queue" style="display: none;">content to check: <span class="awah-con-check-queue-length">${contentToCheck.length}</span> <span class="fa fa-fw fa-search"></span></div>`).appendTo(".awah-arp-status");
-			$(`<div class="awah-con-votes-queue" style="display: none;">content to vote: <span class="awah-con-votes-queue-length">${contentToVote.length}</span> <span class="fa fa-fw fa-upload"></span></div>`).appendTo(".awah-arp-status");
-		}
-		pointsStatusUpdate();
-		$("div.toast-body > p.text-center").css({ "float": "right", "padding-right": "16px" });
-		$("div.toast-body").append('<p class="awah-options-btn"><span class="fa fa-fw fa-cog"></span> HELPER OPTIONS</p>');
-		$("div.toast-body").prepend(`<div class="awah-options-overlay" style="display: none; bottom: -102%;">
+	function initUI() {
+		setTimeout(() => {
+			$("div#content").append('<div class="awah-ui-overlay"><div class="awah-arp-status"></div><div class="awah-arp-pts"><div class="awah-arp-pts-con"></div></div></div>');
+			if (currentContentVotes < maximumContentVotes) {
+				$(`<div class="awah-con-check-queue" style="display: none;">content to check: <span class="awah-con-check-queue-length">${contentToCheck.length}</span> <span class="fa fa-fw fa-search"></span></div>`).appendTo(".awah-arp-status");
+				$(`<div class="awah-con-votes-queue" style="display: none;">content to vote: <span class="awah-con-votes-queue-length">${contentToVote.length}</span> <span class="fa fa-fw fa-upload"></span></div>`).appendTo(".awah-arp-status");
+			}
+			pointsStatusUpdate();
+			$("div.toast-body > p.text-center").css({ "float": "right", "padding-right": "16px" });
+			$("div.toast-body").append('<p class="awah-options-btn"><span class="fa fa-fw fa-cog"></span> HELPER OPTIONS</p>');
+			$("div.toast-body").prepend(`<div class="awah-options-overlay" style="display: none; bottom: -102%;">
 <div class="awah-option"><span class="awah-opt-desc awah-grey">AWA helper v<b>${version}</b></span></div>
 <div class="awah-option">
 <label><span class="awah-opt-title">actionsDelayMin</span><input id="awah_actions_delay_min" class="form-control awah-opt-input" type="text" value="${actionsDelayMin}"></label>
@@ -265,74 +301,73 @@
 <button id="awah_clear_voted_content_cache" class="btn btn-danger"><span class="fa fa-exclamation-triangle"></span> Clear voted content cache</button>
 <span class="awah-opt-desc awah-grey">Use only in case of emergency.</span></div>
 </div>`);
-		showDailyResetTimer();
+			showDailyResetTimer();
 
-		document.addEventListener("animationend", function(event) {
-			if (event.animationName === "awah-casper-out") {
-				$(event.target).remove();
-			}
-		}, false);
+			document.addEventListener("animationend", function(event) {
+				if (event.animationName === "awah-casper-out") {
+					$(event.target).remove();
+				}
+			}, false);
 
-		$('input.awah-opt-input[type="text"]').on("input", function() {
-			this.value = this.value.replace(/[^\d]/, "");
-			this.value = this.value.slice(0, 5);
-		});
+			$('input.awah-opt-input[type="text"]').on("input", function() {
+				this.value = this.value.replace(/[^\d]/, "");
+				this.value = this.value.slice(0, 5);
+			});
 
-		$("input.awah-opt-input").on("change", function() {
-			clearTimeout(saveOptionsTimer);
-			saveOptionsTimer = setTimeout(function() {
+			$("input.awah-opt-input").on("change", function() {
+				clearTimeout(saveOptionsTimer);
+				saveOptionsTimer = setTimeout(function() {
+					saveOptions();
+				}, 400);
+			});
+
+			$("#awah_restore_default").on("click", function() {
+				$("#awah_actions_delay_min").val(actionsDelayMinDefault);
+				$("#awah_actions_delay_max").val(actionsDelayMaxDefault);
+				$("#awah_show_key_on_marked_giveaways").prop("checked", (showKeyOnMarkedGiveawaysDefault === "true"));
+				$("#awah_status_message_delay").val(statusMessageDelayDefault);
+				newStatusMessage("Default options settings restored!");
 				saveOptions();
-			}, 400);
-		});
+			});
 
-		$("#awah_restore_default").on("click", function() {
-			$("#awah_actions_delay_min").val(actionsDelayMinDefault);
-			$("#awah_actions_delay_max").val(actionsDelayMaxDefault);
-			$("#awah_show_key_on_marked_giveaways").prop("checked", (showKeyOnMarkedGiveawaysDefault === "true"));
-			$("#awah_status_message_delay").val(statusMessageDelayDefault);
-			newStatusMessage("Default options settings restored!");
-			saveOptions();
-		});
+			$("#awah_clear_voted_content_cache").on("click", function() {
+				votedContentCache.clear();
+				saveVotedContentCache();
+				newStatusMessage("Voted content cache cleared!");
+			});
 
-		$("#awah_clear_voted_content_cache").on("click", function() {
-			votedContentCache.clear();
-			saveVotedContentCache();
-			newStatusMessage("Voted content cache cleared!");
-		});
+			$(".awah-options-btn").on("click", function() {
+				let awahOptions = $(".awah-options-overlay");
+				if(awahOptions.css("display") === "none") {
+					awahOptions.show();
+					awahOptions.stop().animate({bottom: "0%"}, 250);
+				} else {
+					awahOptions.stop().animate({bottom: "-102%"}, 250, function() {
+						$(this).hide();
+					});
+				}
+			});
 
-		$(".awah-options-btn").on("click", function() {
-			var awahOptions = $(".awah-options-overlay");
-			if(awahOptions.css("display") === "none") {
-				awahOptions.show();
-				awahOptions.stop().animate({bottom: "0%"}, 250);
-			} else {
-				awahOptions.stop().animate({bottom: "-102%"}, 250, function() {
-					$(this).hide();
-				});
-			}
-		});
-
-		newStatusMessage("Alienware Arena helper v<b>" + version + "</b></span>");
-	}, 1);
+			newStatusMessage("Alienware Arena helper v<b>" + version + "</b></span>");
+		}, 1);
+	}
+	initUI();
 
 	// ARP points watchdog
 	$.ajaxPrefilter(function(options, originalOptions, jqXHR) {
 		if (options.url.indexOf("vote") >= 0) {
-			var originalSuccess = options.success;
+			let originalSuccess = options.success;
 			options.success = function(data) {
 				/* ajaxBeforeSuccess functionality */
-				var contentId = parseInt(this.url.replace(/\/ucf\/vote\/(?:up|down)\/(\d*)/g, "$1"), 10);
+				let contentId = parseInt(this.url.replace(/\/ucf\/vote\/(?:up|down)\/(\d*)/g, "$1"), 10);
 				if (data.votedForContent === true) {
 					currentContentVotes++;
 					votedContentCache.add(contentId);
-					saveVotedContentCache();
 				} else if (data.votedForContent === false) {
 					currentContentVotes--;
 					votedContentCache.delete(contentId);
-					saveVotedContentCache();
 				} else if (data.message.indexOf("already voted") >= 0) {
 					votedContentCache.add(contentId);
-					saveVotedContentCache();
 				}
 				if (!contentVotingInAction) {
 					newStatusMessage(data.message);
@@ -340,6 +375,8 @@
 						newStatusMessage(`up: ${data.upVotes} | down: ${data.downVotes}${typeof data.voteTotal !== "undefined" ? ` | total: ${data.voteTotal}` : ""}`);
 					}
 				}
+				saveDailyVotingStats();
+				saveVotedContentCache();
 				pointsStatusUpdate();
 				/* ajaxBeforeSuccess functionality END */
 				if (typeof originalSuccess === "function") {
@@ -360,13 +397,13 @@
 
 	// CON votes section
 	function applyContentVoting() {
-		var contentId = contentToVote.shift();
-		var votingURL = `/ucf/vote/${votingDown ? "down" : "up"}/${contentId}`;
+		let contentId = contentToVote.shift();
+		let votingURL = `/ucf/vote/${votingDown ? "down" : "up"}/${contentId}`;
 
 		$.ajax({
-				url: votingURL,
-				type: "post"
-			})
+			url: votingURL,
+			type: "post"
+		})
 			.done(function(data) {
 				if (data.success) {
 					// yay!
@@ -401,11 +438,11 @@
 	}
 
 	function checkVotingContent() {
-		var contentItem = contentToCheck.shift();
-		var contentId = contentItem.id;
+		let contentItem = contentToCheck.shift();
+		let contentId = contentItem.id;
 		$.get("/ucf/show/" + contentId)
 			.done(function(response) {
-				var votedOnContent = /var votedOnContent = (.+);/.exec(response);
+				let votedOnContent = /var votedOnContent = (.+);/.exec(response);
 				if (votedOnContent) {
 					votedOnContent = JSON.parse(votedOnContent[1]);
 					console.log("👽 votedOnContent", votedOnContent);
@@ -438,7 +475,7 @@
 	}
 
 	function getVotingContentPage(failCounter = 0) {
-		var statusMessage = newStatusMessage(`Getting page ${contentGettingPage} <span class="fa fa-fw fa-circle-o-notch fa-spin"></span>`);
+		let statusMessage = newStatusMessage(`Getting page ${contentGettingPage} <span class="fa fa-fw fa-circle-o-notch fa-spin"></span>`);
 		statusMessage.clearQueue();
 		$.get(contentVotingURL + contentGettingPage)
 			.done(function(response) {
@@ -538,6 +575,13 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 <i class="fa fa-arrow-down"></i> <span class="hidden-xs">DOWN-votes</span></a>
 </div>
 </div>`).insertAfter("div:has(.panel-default) > a:last-of-type");
+
+		$(`
+<li class="nav-item awah-nav-panel">
+	<a class="nav-link awah-btn-cons" href="javascript:void(0);" data-awah-tooltip="UP-voting" data-awah-voting-direction="up" data-awah-content-url="/esi/featured-tile-data/${sectionType}/"><i aria-hidden="true" class="awicon far fa-caret-square-up"></i></a>
+	<a class="nav-link awah-btn-cons" href="javascript:void(0);" data-awah-tooltip="DOWN-voting" data-awah-voting-direction="down" data-awah-content-url="/esi/featured-tile-data/${sectionType}/"><i aria-hidden="true" class="awicon far fa-caret-square-down"></i></a>
+</li>`)
+			.insertBefore("li#notification-dropdown");
 		registerContentVotingButtons();
 	}
 
@@ -554,7 +598,8 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 	// USER profile functions
 	function showUserSteamProfileLink() {
 		if (profileData.profile.steamId) {
-			$(`<li><a class="btn btn-default btn-block" href="//steamcommunity.com/profiles/${profileData.profile.steamId}" target="_blank" data-awah-tooltip="Open user\'s Steam profile in new tab"><span class="fa fa-fw fa-steam"></span> Open Steam profile</a></li>`).appendTo(".list-profile-actions");
+			$(`<a href="//steamcommunity.com/profiles/${profileData.profile.steamId}" target="_blank" data-steam-enabled="true" data-is-current-user="false" class="hexagon btn-social btn-steamfriend" data-toggle="tooltip" data-placement="top" title="" data-original-title="Open user\'s Steam profile in new tab"><i class="fab fa-steam" aria-hidden="true"></i></a>`)
+				.appendTo("section.um-profile__friends");
 		}
 	}
 
@@ -567,9 +612,9 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 		//output prependTo(".content-container");
 		//div#get-key-actions span.key-count
 		if (typeof countryKeys !== "undefined") {
-			var keysLeft = 0;
-			var keysOutput = "";
-			var userCountryKeys = countryKeys[user_country];
+			let keysLeft = 0;
+			let keysOutput = "";
+			let userCountryKeys = countryKeys[user_country];
 			if (typeof userCountryKeys === "number") {
 				keysLeft = userCountryKeys;
 			} else if (typeof userCountryKeys === "object") {
@@ -611,11 +656,11 @@ ${(keysOutput ? `${keysOutput}` : `<b>${keysLeft}</b> keys left`)}</div>`);
 
 	function markTakenGiveaways(awahGiveawayKeys) {
 		$("a.Giveaway").each(function() {
-			var awahGiveawayID = /\/ucf\/show\/([\d]+)/.exec($(this).prop("href"));
+			let awahGiveawayID = /\/ucf\/show\/([\d]+)/.exec($(this).prop("href"));
 			awahGiveawayID = awahGiveawayID[1];
 			if (typeof awahGiveawayKeys[awahGiveawayID] === "object") {
 				$(this).parent().addClass("awah-giveaway-taken");
-				var awahlabel = '✔\nTAKEN AT: ' + awahGiveawayKeys[awahGiveawayID].assigned_at;
+				let awahlabel = '✔\nTAKEN AT: ' + awahGiveawayKeys[awahGiveawayID].assigned_at;
 				if (showKeyOnMarkedGiveaways) {
 					awahlabel += '\n            KEY: ' + awahGiveawayKeys[awahGiveawayID].value;
 				}
@@ -628,7 +673,7 @@ ${(keysOutput ? `${keysOutput}` : `<b>${keysLeft}</b> keys left`)}</div>`);
 		document.head.appendChild(document.createElement("style")).textContent = ".tile-content:not(.awah-giveaway-taken) {box-shadow: 0px 0px 2px 1px rgb(0,160,240);}";
 		// TODO: isnt it supposed to be attached only if keys data received ?
 
-		var statusMessage = $('<div>Getting your giveaways info <span class="fa fa-fw fa-circle-o-notch fa-spin"></span></div>');
+		let statusMessage = $('<div>Getting your giveaways info <span class="fa fa-fw fa-circle-o-notch fa-spin"></span></div>');
 		statusMessage.delay(2000).queue(function() {
 			$(this).appendTo(".awah-arp-status").dequeue();
 		});
@@ -638,8 +683,8 @@ ${(keysOutput ? `${keysOutput}` : `<b>${keysLeft}</b> keys left`)}</div>`);
 				.html('<div>Getting your giveaways info <span class="fa fa-fw fa-check-circle"></span></div>')
 				.delay(statusMessageDelay).queue(function() {
 					$(this).addClass("awah-casper-out");
-				});
-			var awahGiveawayKeys = [];
+			});
+			let awahGiveawayKeys = [];
 			$.each(data, function(index, value) {
 				awahGiveawayKeys[value.giveaway_id] = value;
 			});
@@ -653,8 +698,8 @@ ${(keysOutput ? `${keysOutput}` : `<b>${keysLeft}</b> keys left`)}</div>`);
 		}).fail(function() {
 			statusMessage.html('<div>Getting your giveaways info <span class="fa fa-fw fa-exclamation-triangle"></span></div>')
 				.delay(statusMessageDelay).queue(function() {
-					$(this).addClass("awah-casper-out").dequeue();
-				});
+				$(this).addClass("awah-casper-out").dequeue();
+			});
 		});
 	}
 
@@ -680,10 +725,10 @@ ${(keysOutput ? `${keysOutput}` : `<b>${keysLeft}</b> keys left`)}</div>`);
 		parseUserLevelData();
 		$.ajaxPrefilter(function(options, originalOptions, jqXHR) {
 			if (options.url.indexOf("ucf/comments/") >= 0) {
-				var originalSuccess = options.success;
+				let originalSuccess = options.success;
 				options.success = function(data) {
 					/* ajaxBeforeSuccess functionality */
-					var contentId = parseInt(this.url.replace(/\/ucf\/comments\/(\d*)/g, "$1"), 10);
+					let contentId = parseInt(this.url.replace(/\/ucf\/comments\/(\d*)/g, "$1"), 10);
 					setTimeout(() => parseUserLevelData(), 1);
 					/* ajaxBeforeSuccess functionality END */
 					if (typeof originalSuccess === "function") {
@@ -698,7 +743,7 @@ ${(keysOutput ? `${keysOutput}` : `<b>${keysLeft}</b> keys left`)}</div>`);
 		case /.*\/ucf\/show\/.*/.test(path):
 			console.log("👽 SWITCH: Content");
 			// <meta property="og:url" content="https://eu.alienwarearena.com/ucf/show/1592462/boards/contest-and-giveaways-global/Giveaway/rising-storm-2-vietnam-closed-beta-key-giveaway" />
-			var og_url = $('meta[property="og:url"]').attr("content");
+			let og_url = $('meta[property="og:url"]').attr("content");
 			switch (true) {
 				case /.*\/boards\/this-or-that\/.*/.test(path):
 				case /.*\/boards\/this-or-that\/.*/.test(og_url):
@@ -712,15 +757,15 @@ ${(keysOutput ? `${keysOutput}` : `<b>${keysLeft}</b> keys left`)}</div>`);
 					showActivateSteamKeyButton();
 					break;
 			}
-			showUserLevelAtInsignias();
+			//showUserLevelAtInsignias();
 			break;
 		case /^\/ucf\/Giveaway$/.test(path):
 			console.log("👽 SWITCH: Giveaways list");
-			getTakenGiveaways();
+			//getTakenGiveaways();
 			break;
 		case /^\/ucf\/Image$/.test(path):
 			console.log("👽 SWITCH: Featured images page");
-			showFeaturedContentVotingButtons("Image");
+			//showFeaturedContentVotingButtons("Image");
 			break;
 		case /^\/ucf\/Video$/.test(path):
 			console.log("👽 SWITCH: Featured videos page");
@@ -732,9 +777,9 @@ ${(keysOutput ? `${keysOutput}` : `<b>${keysLeft}</b> keys left`)}</div>`);
 			break;
 		case /^\/member\/.*$/.test(path):
 			console.log("👽 SWITCH: user profile page");
-			showProfileContentVotingButtons();
+			//showProfileContentVotingButtons();
 			showUserSteamProfileLink();
-			showUserRecentActivityTotal();
+			//showUserRecentActivityTotal();
 			break;
 		case /\/$/.test(url):
 			console.log("👽 SWITCH: main page");
