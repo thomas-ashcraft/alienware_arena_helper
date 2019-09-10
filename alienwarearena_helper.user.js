@@ -1,7 +1,7 @@
 ﻿// ==UserScript==
 // @name         Alienware Arena helper
 // @namespace    https://github.com/thomas-ashcraft
-// @version      1.0.2
+// @version      1.0.3
 // @description  Earn daily ARP easily
 // @author       Thomas Ashcraft
 // @match        *://*.alienwarearena.com/*
@@ -14,7 +14,7 @@
 
 (function() {
 	// You can configure options through the user interface. It is not recommended to edit the script for these purposes.
-	const version = "1.0.2";
+	const version = "1.0.3";
 	let statusMessageDelayDefault = 5000;
 	let actionsDelayMinDefault = 1000;
 	let actionsDelayMaxDefault = 2000;
@@ -152,7 +152,7 @@
 			from {opacity: 0.99;}
 			to {opacity: 1;}
 		}
-		.tile-chunk {animation-duration: 0.001s; animation-name: awah-element-appears-hook;}
+		.giveaways__listing .row > div {animation-duration: 0.001s; animation-name: awah-element-appears-hook;}
 		#giveaway-flash-message {animation-duration: 0.001s; animation-name: awah-element-appears-hook;}
 		`;
 
@@ -670,9 +670,6 @@ ${(keysOutput ? `${keysOutput}` : `<b>${keysLeft}</b> keys left`)}</div>`);
 	}
 
 	function getTakenGiveaways() {
-		document.head.appendChild(document.createElement("style")).textContent = ".tile-content:not(.awah-giveaway-taken) {box-shadow: 0px 0px 2px 1px rgb(0,160,240);}";
-		// TODO: isnt it supposed to be attached only if keys data received ?
-
 		let statusMessage = $('<div>Getting your giveaways info <span class="fa fa-fw fa-circle-o-notch fa-spin"></span></div>');
 		statusMessage.delay(2000).queue(function() {
 			$(this).appendTo(".awah-arp-status").dequeue();
