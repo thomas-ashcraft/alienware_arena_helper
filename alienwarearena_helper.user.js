@@ -1,7 +1,7 @@
 ﻿// ==UserScript==
 // @name         Alienware Arena helper
 // @namespace    https://github.com/thomas-ashcraft
-// @version      1.0.1
+// @version      1.0.2
 // @description  Earn daily ARP easily
 // @author       Thomas Ashcraft
 // @match        *://*.alienwarearena.com/*
@@ -14,7 +14,7 @@
 
 (function() {
 	// You can configure options through the user interface. It is not recommended to edit the script for these purposes.
-	const version = "1.0.1";
+	const version = "1.0.2";
 	let statusMessageDelayDefault = 5000;
 	let actionsDelayMinDefault = 1000;
 	let actionsDelayMaxDefault = 2000;
@@ -95,7 +95,7 @@
 		.awah-arp-pts > div::after {content: ""; display: block; height: 0; clear: both;}
 		.awah-grey {color: #767676;}
 		.awah-casper-out {overflow: hidden !important; animation: awah-casper-out 0.6s ease-in !important;}
-		
+
 		li.awah-nav-panel {}
 		li.awah-nav-panel > a.nav-link {width: 2.5rem; height: 2.5rem; float: left; cursor: pointer;}
 		li.awah-nav-panel > a.nav-link > i {font-size: 26px;}
@@ -126,8 +126,8 @@
 		.awah-opt-input[type="checkbox"] + div > div::after {content: 'OFF'; color: #767676; position: absolute; left: 120%;}
 
 		/* Giveaways page */
-		div.tile-content.awah-giveaway-taken a.Giveaway::before {content: attr(awahlabel); font-family: inherit; font-weight: 700; white-space: pre; overflow: hidden; width: 100%; height: 100%; text-shadow: 2px 2px 2px rgb(0, 0, 0), -1px -1px 2px rgb(0, 0, 0), 2px 2px 5px rgb(0, 0, 0), -1px -1px 5px rgb(0, 0, 0), 0px 0px 10px rgb(0, 0, 0); background-color: rgba(0, 0, 0, 0); background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACAQMAAABIeJ9nAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAABlBMVEUAAAAAAAClZ7nPAAAAAXRSTlMAQObYZgAAAAFiS0dEAIgFHUgAAAAJcEhZcwAACxIAAAsSAdLdfvwAAAAMSURBVAjXY2hgYAAAAYQAgSjdetcAAAAASUVORK5CYII=');}
-		div.tile-content.awah-giveaway-taken:not(:hover) {opacity: 0.2; transition: opacity 0.25s ease-in-out;}
+		.awah-giveaway-taken::before {content: attr(awahlabel); display: block; position: absolute; padding: 4rem 2rem; font-family: inherit; font-weight: 700; white-space: pre; overflow: hidden; width: 100%; height: 100%; text-shadow: 2px 2px 2px rgb(0, 0, 0), -1px -1px 2px rgb(0, 0, 0), 2px 2px 5px rgb(0, 0, 0), -1px -1px 5px rgb(0, 0, 0), 0px 0px 10px rgb(0, 0, 0); background-color: rgba(0, 0, 0, 0); background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACAQMAAABIeJ9nAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAABlBMVEUAAAAAAAClZ7nPAAAAAXRSTlMAQObYZgAAAAFiS0dEAIgFHUgAAAAJcEhZcwAACxIAAAsSAdLdfvwAAAAMSURBVAjXY2hgYAAAAYQAgSjdetcAAAAASUVORK5CYII=');}
+		.awah-giveaway-taken:not(:hover) > * {opacity: 0.1; transition: opacity 0.25s ease-in-out;}
 
 		/* comments */
 		.insignia-label::before {content: attr(data-arp-level); font-size: 10px; width: 35px; /* 30 for master */ line-height: 30px; /* 26 for master */ position: absolute; text-align: center; pointer-events: none;}
@@ -654,15 +654,15 @@ ${(keysOutput ? `${keysOutput}` : `<b>${keysLeft}</b> keys left`)}</div>`);
 		}, false);
 	}
 
-	function markTakenGiveaways(awahGiveawayKeys) {
-		$("a.Giveaway").each(function() {
-			let awahGiveawayID = /\/ucf\/show\/([\d]+)/.exec($(this).prop("href"));
-			awahGiveawayID = awahGiveawayID[1];
-			if (typeof awahGiveawayKeys[awahGiveawayID] === "object") {
-				$(this).parent().addClass("awah-giveaway-taken");
-				let awahlabel = '✔\nTAKEN AT: ' + awahGiveawayKeys[awahGiveawayID].assigned_at;
+	function markTakenGiveaways(giveawayKeysByID) {
+		$(".giveaways__listing .giveaways__listing-post").each(function() {
+			let giveawayID = /\/ucf\/show\/([\d]+)/.exec($(this).data("url-link"));
+			giveawayID = giveawayID[1];
+			if (typeof giveawayKeysByID[giveawayID] === "object") {
+				$(this).addClass("awah-giveaway-taken");
+				let awahlabel = '✔\nTAKEN AT: ' + giveawayKeysByID[giveawayID].assigned_at;
 				if (showKeyOnMarkedGiveaways) {
-					awahlabel += '\n            KEY: ' + awahGiveawayKeys[awahGiveawayID].value;
+					awahlabel += '\n            KEY: ' + giveawayKeysByID[giveawayID].value;
 				}
 				$(this).attr("awahlabel", awahlabel);
 			}
@@ -684,7 +684,7 @@ ${(keysOutput ? `${keysOutput}` : `<b>${keysLeft}</b> keys left`)}</div>`);
 				.delay(statusMessageDelay).queue(function() {
 					$(this).addClass("awah-casper-out");
 			});
-			let awahGiveawayKeys = [];
+			let awahGiveawayKeys = {};
 			$.each(data, function(index, value) {
 				awahGiveawayKeys[value.giveaway_id] = value;
 			});
@@ -761,7 +761,7 @@ ${(keysOutput ? `${keysOutput}` : `<b>${keysLeft}</b> keys left`)}</div>`);
 			break;
 		case /^\/ucf\/Giveaway$/.test(path):
 			console.log("👽 SWITCH: Giveaways list");
-			//getTakenGiveaways();
+			getTakenGiveaways();
 			break;
 		case /^\/ucf\/Image$/.test(path):
 			console.log("👽 SWITCH: Featured images page");
