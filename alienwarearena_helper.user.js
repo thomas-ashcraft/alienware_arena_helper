@@ -1,7 +1,7 @@
 ﻿// ==UserScript==
 // @name         Alienware Arena helper
 // @namespace    https://github.com/thomas-ashcraft
-// @version      1.0.3
+// @version      1.0.4
 // @description  Earn daily ARP easily
 // @author       Thomas Ashcraft
 // @match        *://*.alienwarearena.com/*
@@ -14,7 +14,7 @@
 
 (function() {
 	// You can configure options through the user interface. It is not recommended to edit the script for these purposes.
-	const version = "1.0.3";
+	const version = "1.0.4";
 	let statusMessageDelayDefault = 5000;
 	let actionsDelayMinDefault = 1000;
 	let actionsDelayMaxDefault = 2000;
@@ -700,6 +700,10 @@ ${(keysOutput ? `${keysOutput}` : `<b>${keysLeft}</b> keys left`)}</div>`);
 		});
 	}
 
+	function closeRecentKeyPopup() {
+		document.querySelector("div.alert-info button.close").click();
+	}
+
 	function showUserLevelAtInsignias() {
 		function parseUserLevelData() {
 			$("div.user-profile-small").each(function(i) {
@@ -759,6 +763,7 @@ ${(keysOutput ? `${keysOutput}` : `<b>${keysLeft}</b> keys left`)}</div>`);
 		case /^\/ucf\/Giveaway$/.test(path):
 			console.log("👽 SWITCH: Giveaways list");
 			getTakenGiveaways();
+			closeRecentKeyPopup();
 			break;
 		case /^\/ucf\/Image$/.test(path):
 			console.log("👽 SWITCH: Featured images page");
