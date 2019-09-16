@@ -599,10 +599,10 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 	function getURL(url) {
 		return new Promise((resolve, reject) => {
 			$.get(url)
-				.done(response => {
+				.done((response) => {
 					resolve(response);
 				})
-				.fail(response => {
+				.fail((response) => {
 					reject(response);
 				})
 		})
@@ -611,18 +611,18 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 	function postURL(url, content) {
 		return new Promise((resolve, reject) => {
 			$.post(url, content)
-				.done(response => {
+				.done((response) => {
 					resolve(response);
 				})
-				.fail(response => {
+				.fail((response) => {
 					reject(response);
 				})
-		})
+		});
 	}
 
 	async function dailyQuestDone() {
 		let response = await getURL("/api/v1/users/arp/status");
-		if (response.quests[0].completed == true) {
+		if (response.quests[0].completed === true) {
 			return true;
 		}
 		return false;
@@ -717,11 +717,11 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 
 	async function showDailyQuestButton() {
 		while(!document.querySelector(".quest-title")) {
-			await new Promise(r => setTimeout(r, 500));
+			await new Promise((r) => setTimeout(r, 500));
 		}
 
 		try {
-			let response = await getURL("/api/v1/users/arp/status")
+			let response = await getURL("/api/v1/users/arp/status");
 			console.log("👽 QUEST: " + response.quests[0].title);
 			switch (response.quests[0].type) {
 				case "change_border":
@@ -758,7 +758,7 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 					break;
 			}
 
-			if(response.quests[0].completed == true) {
+			if(response.quests[0].completed === true) {
 				$(".awah-btn-quest").addClass("disabled");
 			}
 		} catch (e) {
