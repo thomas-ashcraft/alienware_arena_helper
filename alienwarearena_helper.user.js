@@ -1,4 +1,4 @@
-﻿// ==UserScript==
+// ==UserScript==
 // @name         Alienware Arena helper
 // @namespace    https://github.com/thomas-ashcraft
 // @version      1.0.4
@@ -594,6 +594,183 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 </li>`).appendTo(".list-profile-actions");
 		registerContentVotingButtons();
 	}
+
+	// Daily Quests
+	function getURL(url) {
+		return new Promise((resolve, reject) => {
+			$.get(url)
+				.done(response => {
+					resolve(response);
+				})
+				.fail(response => {
+					reject(response);
+				})
+		})
+	}
+
+	function postURL(url, content) {
+		return new Promise((resolve, reject) => {
+			$.post(url, content)
+				.done(response => {
+					resolve(response);
+				})
+				.fail(response => {
+					reject(response);
+				})
+		})
+	}
+
+	async function dailyQuestDone() {
+		let response = await getURL("/api/v1/users/arp/status");
+		if (response.quests[0].completed == true) {
+			return true;
+		}
+		return false;
+	}
+
+	async function alternateSwap(url, content1, content2) {
+		try {
+			await postURL(url, content1);
+			let questCompleted = await dailyQuestDone();
+			if (questCompleted) {
+				newStatusMessage("Swapped successfully!");
+				return;
+			} else {
+				await postURL(url, content2);
+				newStatusMessage("Swapped successfully!");
+				return;
+			}
+		} catch (e) {
+			newStatusMessage("Swapping failed!");
+			throw e;
+		}
+	}
+
+	async function visitNews() {
+		try {
+			let pagecount = 1;
+			let completed = await dailyQuestDone();
+			while (!completed) {
+				let response = await getURL("/esi/tile-data/News/" + pagecount);
+				let newscount = 0;
+				while (newscount <= 14) {
+					try {
+						await getURL(response.data[newscount].url);
+						await postURL("/ucf/increment-views/" + response.data[newscount].id);
+						newStatusMessage("Visited news " + response.data[newscount].id + "!");
+					} catch (e) {
+						newStatusMessage("Visiting " + response.data[newscount].id + " failed!");
+					}
+					completed = await dailyQuestDone();
+					if (completed) {
+						break;
+					}
+					newscount++;
+				}
+				pagecount++;
+			}
+		} catch (e) {
+			newStatusMessage("Visiting news failed!");
+			throw e;
+		}
+
+		return;
+	}
+
+	async function shareSocial() {
+		try {
+			let response = await getURL("/esi/tile-data/News/1");
+			await postURL("/arp/quests/share/" + response.data[0].id);
+			newStatusMessage(response.data[0].id + " shared successfully!");
+			return;
+		} catch (e) {
+			newStatusMessage("Sharing failed!");
+			throw e;
+		}
+	}
+
+	function registerQuestButtons() {
+		$(".awah-btn-quest").on("click", async function() {
+			// Automatic stuff
+			if ($(this).data("awah-quest") === "border") {
+				await alternateSwap("/border/select", JSON.stringify({id: 1}), JSON.stringify({id: 2}));
+			} else if ($(this).data("awah-quest") === "badge") {
+				await alternateSwap("/badges/update/" + user_id, "[1]", "[2]");
+			} else if ($(this).data("awah-quest") === "news") {
+				await visitNews();
+			} else if ($(this).data("awah-quest") === "social") {
+				await shareSocial();
+			// Non automatic stuff
+			} else if ($(this).data("awah-quest") === "avatar") {
+				document.location.href = "/account/personalization";
+			} else if ($(this).data("awah-quest") === "forum") {
+				document.location.href = "/forums/board/113/awa-on-topic";
+			}
+
+			let questCompleted = await dailyQuestDone();
+			if (questCompleted) {
+				$(".awah-btn-quest").addClass("disabled");
+				newStatusMessage("Daily Quest completed!");
+			}
+		});
+	}
+
+	async function showDailyQuestButton() {
+		while(!document.querySelector(".quest-title")) {
+			await new Promise(r => setTimeout(r, 500));
+		}
+
+		try {
+			let response = await getURL("/api/v1/users/arp/status")
+			console.log("👽 QUEST: " + response.quests[0].title);
+			switch (response.quests[0].type) {
+				case "change_border":
+					$(`<a class="btn btn-default awah-btn-quest" href="javascript:void(0);" data-awah-tooltip="Automatic border swap" data-awah-quest="border">
+						<span class="more-link right"></span></a>`).appendTo(".col-2");
+					break;
+				case "change_badge":
+					$(`<a class="btn btn-default awah-btn-quest" href="javascript:void(0);" data-awah-tooltip="Automatic badge swap" data-awah-quest="badge">
+						<span class="more-link right"></span></a>`).appendTo(".col-2");
+					break;
+				case "share_page":
+					$(`<a class="btn btn-default awah-btn-quest" href="javascript:void(0);" data-awah-tooltip="Automatic sharing" data-awah-quest="social">
+						<span class="more-link right"></span></a>`).appendTo(".col-2");
+					break;
+				case "read_articles":
+					$(`<a class="btn btn-default awah-btn-quest" href="javascript:void(0);" data-awah-tooltip="Automatic news visiting" data-awah-quest="news">
+						<span class="more-link right"></span></a>`).appendTo(".col-2");
+					break;
+				case "change_avatar_placeholder":
+					$(`<a class="btn btn-default awah-btn-quest" href="javascript:void(0);" data-awah-tooltip="Visit personalization page" data-awah-quest="avatar">
+						<span class="more-link right"></span></a>`).appendTo(".col-2");
+					break;
+				case "visit_page":
+					$(`<a class="btn btn-default awah-btn-quest" href="javascript:void(0);" data-awah-tooltip="Visit forum" data-awah-quest="forum">
+						<span class="more-link right"></span></a>`).appendTo(".col-2");
+					break;
+				case "post_replies":
+					$(`<a class="btn btn-default awah-btn-quest" href="javascript:void(0);" data-awah-tooltip="Visit forum" data-awah-quest="forum">
+						<span class="more-link right"></span></a>`).appendTo(".col-2");
+					break;
+				default:
+					$(`<a class="btn btn-default awah-btn-quest" href="javascript:void(0);" data-awah-tooltip="Visit forum" data-awah-quest="forum">
+						<span class="more-link right"></span></a>`).appendTo(".col-2");
+					break;
+			}
+
+			if(response.quests[0].completed == true) {
+				$(".awah-btn-quest").addClass("disabled");
+			}
+		} catch (e) {
+			console.log("👽 QUEST: " + e);
+			newStatusMessage("Unable to get daily quest!");
+			$(`<a class="btn btn-default awah-btn-quest" href="javascript:void(0);" data-awah-tooltip="Visit forum" data-awah-quest="forum">
+				<span class="more-link right"></span></a>`).appendTo(".col-2");
+		}
+
+		registerQuestButtons();
+	}
+	showDailyQuestButton();
 
 	// USER profile functions
 	function showUserSteamProfileLink() {
