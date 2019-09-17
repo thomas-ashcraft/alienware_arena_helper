@@ -1,12 +1,12 @@
 // ==UserScript==
 // @name         Alienware Arena helper
 // @namespace    https://github.com/thomas-ashcraft
-// @version      1.0.4
+// @version      1.1.0
 // @description  Earn daily ARP easily
 // @author       Thomas Ashcraft
 // @match        *://*.alienwarearena.com/*
 // @match        *://*.alienwarearena.com//*
-// @license      GPL-2.0+; http://www.gnu.org/licenses/gpl-2.0.txt
+// @license      GPL-2.0-or-later; http://www.gnu.org/licenses/gpl-2.0.txt
 // @icon         https://www.alienwarearena.com/favicon.ico
 // @grant        none
 // @noframes
@@ -14,7 +14,7 @@
 
 (function() {
 	// You can configure options through the user interface. It is not recommended to edit the script for these purposes.
-	const version = "1.0.4";
+	const version = "1.1.0";
 	let statusMessageDelayDefault = 5000;
 	let actionsDelayMinDefault = 1000;
 	let actionsDelayMaxDefault = 2000;
