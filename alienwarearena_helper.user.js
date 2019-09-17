@@ -726,35 +726,35 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 			switch (response.quests[0].type) {
 				case "change_border":
 					$(`<a class="btn btn-default awah-btn-quest" href="javascript:void(0);" data-awah-tooltip="Automatic border swap" data-awah-quest="border">
-						<span class="more-link right"></span></a>`).appendTo(".col-2");
+						<span class="more-link right"></span></a>`).appendTo(".quest-item > .col-2");
 					break;
 				case "change_badge":
 					$(`<a class="btn btn-default awah-btn-quest" href="javascript:void(0);" data-awah-tooltip="Automatic badge swap" data-awah-quest="badge">
-						<span class="more-link right"></span></a>`).appendTo(".col-2");
+						<span class="more-link right"></span></a>`).appendTo(".quest-item > .col-2");
 					break;
 				case "share_page":
 					$(`<a class="btn btn-default awah-btn-quest" href="javascript:void(0);" data-awah-tooltip="Automatic sharing" data-awah-quest="social">
-						<span class="more-link right"></span></a>`).appendTo(".col-2");
+						<span class="more-link right"></span></a>`).appendTo(".quest-item > .col-2");
 					break;
 				case "read_articles":
 					$(`<a class="btn btn-default awah-btn-quest" href="javascript:void(0);" data-awah-tooltip="Automatic news visiting" data-awah-quest="news">
-						<span class="more-link right"></span></a>`).appendTo(".col-2");
+						<span class="more-link right"></span></a>`).appendTo(".quest-item > .col-2");
 					break;
 				case "change_avatar_placeholder":
 					$(`<a class="btn btn-default awah-btn-quest" href="javascript:void(0);" data-awah-tooltip="Visit personalization page" data-awah-quest="avatar">
-						<span class="more-link right"></span></a>`).appendTo(".col-2");
+						<span class="more-link right"></span></a>`).appendTo(".quest-item > .col-2");
 					break;
 				case "visit_page":
 					$(`<a class="btn btn-default awah-btn-quest" href="javascript:void(0);" data-awah-tooltip="Visit forum" data-awah-quest="forum">
-						<span class="more-link right"></span></a>`).appendTo(".col-2");
+						<span class="more-link right"></span></a>`).appendTo(".quest-item > .col-2");
 					break;
 				case "post_replies":
 					$(`<a class="btn btn-default awah-btn-quest" href="javascript:void(0);" data-awah-tooltip="Visit forum" data-awah-quest="forum">
-						<span class="more-link right"></span></a>`).appendTo(".col-2");
+						<span class="more-link right"></span></a>`).appendTo(".quest-item > .col-2");
 					break;
 				default:
 					$(`<a class="btn btn-default awah-btn-quest" href="javascript:void(0);" data-awah-tooltip="Visit forum" data-awah-quest="forum">
-						<span class="more-link right"></span></a>`).appendTo(".col-2");
+						<span class="more-link right"></span></a>`).appendTo(".quest-item > .col-2");
 					break;
 			}
 
@@ -765,7 +765,7 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 			console.log("👽 QUEST: " + e);
 			newStatusMessage("Unable to get daily quest!");
 			$(`<a class="btn btn-default awah-btn-quest" href="javascript:void(0);" data-awah-tooltip="Visit forum" data-awah-quest="forum">
-				<span class="more-link right"></span></a>`).appendTo(".col-2");
+				<span class="more-link right"></span></a>`).appendTo(".quest-item > .col-2");
 		}
 
 		registerQuestButtons();
