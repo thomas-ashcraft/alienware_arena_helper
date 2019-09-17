@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Alienware Arena helper
 // @namespace    https://github.com/thomas-ashcraft
-// @version      1.1.0
+// @version      1.1.1
 // @description  Earn daily ARP easily
 // @author       Thomas Ashcraft
 // @match        *://*.alienwarearena.com/*
@@ -14,7 +14,7 @@
 
 (function() {
 	// You can configure options through the user interface. It is not recommended to edit the script for these purposes.
-	const version = "1.1.0";
+	const version = "1.1.1";
 	let statusMessageDelayDefault = 5000;
 	let actionsDelayMinDefault = 1000;
 	let actionsDelayMaxDefault = 2000;
@@ -72,7 +72,10 @@
 		.list-group-item > .awah-btn-cons {width: 50%;}
 		.list-profile-actions > li > .awah-btn-cons {width: 50%;}
 		.awah-btn-cons.disabled {position: relative;}
+		.awah-btn-quest.disabled::before,
 		.awah-btn-cons.disabled::before {content: ''; width: 100%; height: 100%; position: absolute; top: 0; left: 0; background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACAQMAAABIeJ9nAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAABlBMVEUAAAAAAAClZ7nPAAAAAXRSTlMAQObYZgAAAAFiS0dEAIgFHUgAAAAJcEhZcwAACxIAAAsSAdLdfvwAAAAMSURBVAjXY2hgYAAAAYQAgSjdetcAAAAASUVORK5CYII=');}
+		.awah-btn-quest.disabled {padding-left: 0.25rem; padding-right: 0.25rem;}
+		.awah-btn-quest.disabled::before {filter: invert(60%)}
 		.awah-panel {margin: 20px 0;}
 		.awah-activate-steam-key-btn {text-decoration: none !important; padding: 1px 5px; background-color: rgba( 48, 95, 128, 0.9 ); vertical-align: inherit;}
 		.awah-activate-steam-key-btn:hover {background: linear-gradient( -60deg, #417a9b 5%,#67c1f5 95%);}
@@ -154,6 +157,9 @@
 		}
 		.giveaways__listing .row > div {animation-duration: 0.001s; animation-name: awah-element-appears-hook;}
 		#giveaway-flash-message {animation-duration: 0.001s; animation-name: awah-element-appears-hook;}
+		
+		/* Fix for Alienware Arena design bug */
+		.overlay {position: fixed !important;}
 		`;
 
 	function pointsStatusUpdate() {
