@@ -604,8 +604,8 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 				})
 				.fail((response) => {
 					reject(response);
-				})
-		})
+				});
+		});
 	}
 
 	function postURL(url, content) {
@@ -616,7 +616,7 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 				})
 				.fail((response) => {
 					reject(response);
-				})
+				});
 		});
 	}
 
