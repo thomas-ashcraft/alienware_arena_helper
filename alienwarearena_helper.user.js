@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Alienware Arena helper
 // @namespace    https://github.com/thomas-ashcraft
-// @version      1.1.1
+// @version      1.1.2
 // @description  Earn daily ARP easily
 // @author       Thomas Ashcraft
 // @match        *://*.alienwarearena.com/*
@@ -14,7 +14,7 @@
 
 (function() {
 	// You can configure options through the user interface. It is not recommended to edit the script for these purposes.
-	const version = "1.1.1";
+	const version = "1.1.2";
 	let statusMessageDelayDefault = 5000;
 	let actionsDelayMinDefault = 1000;
 	let actionsDelayMaxDefault = 2000;
@@ -74,7 +74,7 @@
 		.awah-btn-cons.disabled {position: relative;}
 		.awah-btn-quest.disabled::before,
 		.awah-btn-cons.disabled::before {content: ''; width: 100%; height: 100%; position: absolute; top: 0; left: 0; background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACAQMAAABIeJ9nAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAABlBMVEUAAAAAAAClZ7nPAAAAAXRSTlMAQObYZgAAAAFiS0dEAIgFHUgAAAAJcEhZcwAACxIAAAsSAdLdfvwAAAAMSURBVAjXY2hgYAAAAYQAgSjdetcAAAAASUVORK5CYII=');}
-		.awah-btn-quest.disabled {padding-left: 0.25rem; padding-right: 0.25rem;}
+		.awah-btn-quest {padding-left: 0.25rem; padding-right: 0.25rem;}
 		.awah-btn-quest.disabled::before {filter: invert(60%)}
 		.awah-panel {margin: 20px 0;}
 		.awah-activate-steam-key-btn {text-decoration: none !important; padding: 1px 5px; background-color: rgba( 48, 95, 128, 0.9 ); vertical-align: inherit;}
@@ -602,6 +602,34 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 	}
 
 	// Daily Quests
+	async function getCurrentBorderId() {
+		let borderImgSrc = user_border.img;
+		let borderId = null;
+		if (borderImgSrc !== null) {
+			borderId = await getBorderIdFromImgSrc(borderImgSrc);
+		}
+		return borderId;
+	}
+
+	async function getBorderIdFromImgSrc(borderImgSrc) {
+		fetch("https://eu.alienwarearena.com/account/personalization")
+			.then((response) => response.text())
+			.then(function (personalizationPageText) {
+				let parser = new DOMParser();
+				let doc = parser.parseFromString(personalizationPageText, "text/html");
+				let borderImgElement = doc.querySelector(`img.icon.border[src="${borderImgSrc}"]`);
+				return borderImgElement.parentElement.dataset.borderId;
+
+				// let regex = new RegExp(`account-borders__list-border[\\s\\S]*?data-border-id="(\\d*)"[\\s\\S]*?border[\\s\\S]*?src="${borderImgSrc}"`, "im");
+				// let found = personalizationPageText.match(regex);
+				// if (found !== null) {
+				// 	return found[1];
+				// } else {
+				// 	return null;
+				// }
+			});
+	}
+
 	function getURL(url) {
 		return new Promise((resolve, reject) => {
 			$.get(url)
@@ -699,7 +727,14 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 		$(".awah-btn-quest").on("click", async function() {
 			// Automatic stuff
 			if ($(this).data("awah-quest") === "border") {
+				let currentBorderId = await getCurrentBorderId();
 				await alternateSwap("/border/select", JSON.stringify({id: 1}), JSON.stringify({id: 2}));
+				if (currentBorderId !== null) {
+					await postURL("/border/select", JSON.stringify({id: currentBorderId}));
+				} else {
+					let temporaryBorderId = await getCurrentBorderId(); // TODO: better to check currentBorderId before swap
+					await postURL("/border/select", JSON.stringify({id: temporaryBorderId}));
+				}
 			} else if ($(this).data("awah-quest") === "badge") {
 				await alternateSwap("/badges/update/" + user_id, "[1]", "[2]");
 			} else if ($(this).data("awah-quest") === "news") {
