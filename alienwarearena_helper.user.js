@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Alienware Arena helper
 // @namespace    https://github.com/thomas-ashcraft
-// @version      1.1.2
+// @version      1.1.3
 // @description  Earn daily ARP easily
 // @author       Thomas Ashcraft
 // @match        *://*.alienwarearena.com/*
@@ -14,7 +14,7 @@
 
 (function() {
 	// You can configure options through the user interface. It is not recommended to edit the script for these purposes.
-	const version = "1.1.2";
+	const version = "1.1.3";
 	let statusMessageDelayDefault = 5000;
 	let actionsDelayMinDefault = 1000;
 	let actionsDelayMaxDefault = 2000;
@@ -90,7 +90,7 @@
 		/* script GUI */
 		#arp-toast {overflow: visible !important;}
 		#arp-toast .toast-header {overflow: visible !important;}
-		.awah-ui-overlay {color: white; clear: both; font-size: smaller !important; pointer-events: none; position: fixed; bottom: 0; right: 0; max-width: 40%; min-width: 20%; padding: 1rem 0.5rem 0 0; text-shadow: 2px 2px 2px rgb(0, 0, 0), -1px -1px 2px rgb(0, 0, 0), 2px 2px 5px rgb(0, 0, 0), -1px -1px 5px rgb(0, 0, 0), 0px 0px 10px rgb(0, 0, 0); text-align: right; background: rgba(0, 0, 0, 0) linear-gradient(to right bottom, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0) 50%, rgba(0, 0, 0, 0.85) 85%, rgba(0, 0, 0, 0.85) 100%) no-repeat scroll 0 0;}
+		.awah-ui-overlay {color: white; clear: both; font-size: smaller !important; pointer-events: none; position: fixed; bottom: 0; right: 0; max-width: 40%; min-width: 20%; padding: 1rem 0.5rem 0 0; text-shadow: 2px 2px 2px rgb(0, 0, 0), -1px -1px 2px rgb(0, 0, 0), 2px 2px 5px rgb(0, 0, 0), -1px -1px 5px rgb(0, 0, 0), 0px 0px 10px rgb(0, 0, 0); text-align: right; background: rgba(0, 0, 0, 0) linear-gradient(to right bottom, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0) 50%, rgba(0, 0, 0, 0.85) 85%, rgba(0, 0, 0, 0.85) 100%) no-repeat scroll 0 0; z-index: 9000;}
 		.awah-arp-status {float: right; clear: both; white-space: nowrap; border-bottom: 1px solid #1c1e22;}
 		.awah-arp-status > div {clear: both; position: relative; animation: awah-slide-from-bottom 0.25s ease-out 1 forwards;}
 		.awah-arp-pts {clear: both; width: 100%}
@@ -603,31 +603,42 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 
 	// Daily Quests
 	async function getCurrentBorderId() {
-		let borderImgSrc = user_border.img;
-		let borderId = null;
-		if (borderImgSrc !== null) {
-			borderId = await getBorderIdFromImgSrc(borderImgSrc);
+		if (user_border.img !== null) {
+			return await getSelectedBorderVar();
+		} else {
+			return null;
 		}
-		return borderId;
 	}
 
 	async function getBorderIdFromImgSrc(borderImgSrc) {
-		fetch("https://eu.alienwarearena.com/account/personalization")
-			.then((response) => response.text())
-			.then(function (personalizationPageText) {
-				let parser = new DOMParser();
-				let doc = parser.parseFromString(personalizationPageText, "text/html");
-				let borderImgElement = doc.querySelector(`img.icon.border[src="${borderImgSrc}"]`);
-				return borderImgElement.parentElement.dataset.borderId;
+		const response = await fetch("/account/personalization");
+		const personalizationPageText = await response.text();
+		let parser = new DOMParser();
+		let doc = parser.parseFromString(personalizationPageText, "text/html");
+		let borderImgElement = doc.querySelector(`img.icon.border[src="${borderImgSrc}"]`);
+		return borderImgElement.parentElement.dataset.borderId;
+	}
 
-				// let regex = new RegExp(`account-borders__list-border[\\s\\S]*?data-border-id="(\\d*)"[\\s\\S]*?border[\\s\\S]*?src="${borderImgSrc}"`, "im");
-				// let found = personalizationPageText.match(regex);
-				// if (found !== null) {
-				// 	return found[1];
-				// } else {
-				// 	return null;
-				// }
-			});
+	async function getSelectedBorderVar() {
+		const response = await fetch("/account/personalization");
+		const personalizationPageText = await response.text();
+		const found = personalizationPageText.match(/(?:let|var)\s*selectedBorder\s*=\s*(.*?);/);
+		return  parseInt(found[1], 10) || null;
+	}
+
+	async function getCurrentBadgesId() {
+		if (user_badges.length === 0) {
+			return user_badges;
+		} else {
+			return await getSelectedBadgesVar();
+		}
+	}
+
+	async function getSelectedBadgesVar() {
+		const response = await fetch("/account/personalization");
+		const personalizationPageText = await response.text();
+		const found = personalizationPageText.match(/(?:let|var)\s*selectedBadges\s*=\s*(.*?);/);
+		return JSON.parse(found[1]);
 	}
 
 	function getURL(url) {
@@ -656,23 +667,18 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 
 	async function dailyQuestDone() {
 		let response = await getURL("/api/v1/users/arp/status");
-		if (response.quests[0].completed === true) {
-			return true;
-		}
-		return false;
+		return response.quests[0].completed === true;
 	}
 
-	async function alternateSwap(url, content1, content2) {
+	async function alternateSwap(url, content1, content2 = null) {
 		try {
 			await postURL(url, content1);
 			let questCompleted = await dailyQuestDone();
 			if (questCompleted) {
 				newStatusMessage("Swapped successfully!");
-				return;
-			} else {
+			} else if (content2 !== null) {
 				await postURL(url, content2);
 				newStatusMessage("Swapped successfully!");
-				return;
 			}
 		} catch (e) {
 			newStatusMessage("Swapping failed!");
@@ -707,8 +713,6 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 			newStatusMessage("Visiting news failed!");
 			throw e;
 		}
-
-		return;
 	}
 
 	async function shareSocial() {
@@ -716,7 +720,6 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 			let response = await getURL("/esi/tile-data/News/1");
 			await postURL("/arp/quests/share/" + response.data[0].id);
 			newStatusMessage(response.data[0].id + " shared successfully!");
-			return;
 		} catch (e) {
 			newStatusMessage("Sharing failed!");
 			throw e;
@@ -728,15 +731,14 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 			// Automatic stuff
 			if ($(this).data("awah-quest") === "border") {
 				let currentBorderId = await getCurrentBorderId();
-				await alternateSwap("/border/select", JSON.stringify({id: 1}), JSON.stringify({id: 2}));
-				if (currentBorderId !== null) {
-					await postURL("/border/select", JSON.stringify({id: currentBorderId}));
-				} else {
-					let temporaryBorderId = await getCurrentBorderId(); // TODO: better to check currentBorderId before swap
-					await postURL("/border/select", JSON.stringify({id: temporaryBorderId}));
-				}
+				let tempBorderId = currentBorderId === 1 ? 2 : 1;
+				await alternateSwap("/border/select", JSON.stringify({id: tempBorderId}));
+				await postURL("/border/select", JSON.stringify({id: currentBorderId})); // set previous border back
 			} else if ($(this).data("awah-quest") === "badge") {
-				await alternateSwap("/badges/update/" + user_id, "[1]", "[2]");
+				let currentBadgesId = await getCurrentBadgesId();
+				let tempBadgesId = currentBadgesId === JSON.parse("[1]") ? "[2]" : "[1]";
+				await alternateSwap(`/badges/update/${user_id}`, tempBadgesId);
+				await postURL(`/badges/update/${user_id}`, JSON.stringify(currentBadgesId)); // set previous badge(s) back
 			} else if ($(this).data("awah-quest") === "news") {
 				await visitNews();
 			} else if ($(this).data("awah-quest") === "social") {
@@ -763,7 +765,7 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 
 		try {
 			let response = await getURL("/api/v1/users/arp/status");
-			console.log("👽 QUEST: " + response.quests[0].title);
+			console.log(`👽 QUEST: ${response.quests[0].title} (${response.quests[0].type})`);
 			switch (response.quests[0].type) {
 				case "change_border":
 					$(`<a class="btn btn-default awah-btn-quest" href="javascript:void(0);" data-awah-tooltip="Automatic border swap" data-awah-quest="border">
