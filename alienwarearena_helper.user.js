@@ -14,10 +14,10 @@
 
 (function() {
 	// You can configure options through the user interface or localStorage in browser. It is not recommended to edit the script for these purposes.
-	const version = "1.1.4";
+	const version = '1.1.4';
 
-	let votedContentCache = new Set(JSON.parse(localStorage.getItem("awahVotedContentCache")));
-	let dailyVotingStats = JSON.parse(localStorage.getItem("awahDailyVotingStat"));
+	let votedContentCache = new Set(JSON.parse(localStorage.getItem('awahVotedContentCache')));
+	let dailyVotingStats = JSON.parse(localStorage.getItem('awahDailyVotingStat'));
 	// default dailyVotingStats object
 	if (dailyVotingStats == null) {
 		dailyVotingStats = {
@@ -39,14 +39,14 @@
 
 	let url = window.location.href;
 	let path = window.location.pathname;
-	path = path.replace(/\/+/g, "/");
+	path = path.replace(/\/+/g, '/');
 
 	// ARP points initial readings
 	//let readPoints = /Vote on Content(?:.|\n)*>(\d+) of (\d+)<\/td>/.exec($("head").html());
 	let currentContentVotes = parseInt(dailyVotingStats.currentContentVotes, 10);
 	let maximumContentVotes = 20;
 	let contentVotingInAction = false;
-	let contentVotingURL = "";
+	let contentVotingURL = '';
 	let contentToVote = [];
 	let contentToCheck = [];
 	let contentGettingPage = 1;
@@ -54,7 +54,7 @@
 	let saveOptionsTimer;
 
 	// Embed style
-	document.head.appendChild(document.createElement("style")).textContent = `
+	document.head.appendChild(document.createElement('style')).textContent = `
 		/* script buttons */
 		.awah-btn-cons,
 		.awah-btn-cons:hover {color: gold;}
@@ -162,7 +162,7 @@
 				actionsDelayMin: 500,
 				actionsDelayMax: 2000,
 				showKeyOnMarkedGiveaways: true,
-				version: version,
+				version,
 			};
 		}
 
@@ -177,10 +177,10 @@
 		}
 
 		save() {
-			this.actionsDelayMin = parseInt($("#awah-actions-delay-min").val(), 10);
-			this.actionsDelayMax = parseInt($("#awah-actions-delay-max").val(), 10);
-			this.showKeyOnMarkedGiveaways = $("#awah-show-key-on-marked-giveaways").prop("checked");
-			this.statusMessageDelay = parseInt($("#awah-status-message-delay").val(), 10);
+			this.actionsDelayMin = parseInt($('#awah-actions-delay-min').val(), 10);
+			this.actionsDelayMax = parseInt($('#awah-actions-delay-max').val(), 10);
+			this.showKeyOnMarkedGiveaways = $('#awah-show-key-on-marked-giveaways').prop("checked");
+			this.statusMessageDelay = parseInt($('#awah-status-message-delay').val(), 10);
 
 			// TODO: need to be updated for 10YearsRedesign and as some separate function
 			// trick to apply options.showKeyOnMarkedGiveaways on the fly
@@ -204,14 +204,14 @@
 			// TODO: should consider to make it global function for some wide range of actions based upon version changing
 			switch (previousScriptVersion) {
 				default:
-					localStorage.removeItem("awah_tot_add_votes_min");
-					localStorage.removeItem("awah_tot_add_votes_max");
-					localStorage.removeItem("awah_actions_delay_min");
-					localStorage.removeItem("awah_actions_delay_max");
-					localStorage.removeItem("awah_show_key_on_marked_giveaways");
-					localStorage.removeItem("awah_status_message_delay");
+					localStorage.removeItem('awah_tot_add_votes_min');
+					localStorage.removeItem('awah_tot_add_votes_max');
+					localStorage.removeItem('awah_actions_delay_min');
+					localStorage.removeItem('awah_actions_delay_max');
+					localStorage.removeItem('awah_show_key_on_marked_giveaways');
+					localStorage.removeItem('awah_status_message_delay');
 				// fallthrough
-				case "1.1.3":
+				case '1.1.3':
 				// ok
 			}
 		}
@@ -220,30 +220,30 @@
 	let options = new Options();
 
 	function pointsStatusUpdate() {
-		$(".awah-arp-pts-con").html("CON: " + currentContentVotes + " / " + maximumContentVotes);
+		$(".awah-arp-pts-con").html(`CON: ${currentContentVotes} / ${maximumContentVotes}`);
 		if (currentContentVotes >= maximumContentVotes && !contentVotingInAction) {
 			$(".awah-arp-pts-con").addClass("awah-grey");
 		}
 		if (contentVotingInAction) {
-			$(".awah-con-check-queue-length").text(contentToCheck.length);
-			$(".awah-con-votes-queue-length").text(contentToVote.length);
-			let progressBarBackground = "linear-gradient(90deg, rgb(0, 160, 240) " +
+			$('.awah-con-check-queue-length').text(contentToCheck.length);
+			$('.awah-con-votes-queue-length').text(contentToVote.length);
+			let progressBarBackground = 'linear-gradient(90deg, rgb(0, 160, 240) ' +
 				((currentContentVotes / maximumContentVotes) * 100) +
-				"%, rgba(0, 160, 240, 0.8) 0%, rgba(0, 160, 240, 0.8) " +
+				'%, rgba(0, 160, 240, 0.8) 0%, rgba(0, 160, 240, 0.8) ' +
 				(((currentContentVotes + contentToVote.length) / maximumContentVotes) * 100) +
-				"%, rgb(255, 255, 255) 0%, rgb(255, 255, 255) " +
+				'%, rgb(255, 255, 255) 0%, rgb(255, 255, 255) ' +
 				((((currentContentVotes + contentToVote.length) / maximumContentVotes) * 100) + 1) +
-				"%, rgba(0, 160, 240, 0.8) 0%, rgba(0, 160, 240, 0.8) " +
+				'%, rgba(0, 160, 240, 0.8) 0%, rgba(0, 160, 240, 0.8) ' +
 				(((currentContentVotes + contentToVote.length + contentToCheck.length) / maximumContentVotes) * 100) +
-				"%, rgb(40, 37, 36) 0%)";
-			progressBarBackground = progressBarBackground.replace(/(\d{3}|\d{3}\.\d{1,})%/g, "100%"); // values greater than 100% can cause incorrect rendering
-			$(".awah-arp-pts-con").css("background-image", progressBarBackground);
+				'%, rgb(40, 37, 36) 0%)';
+			progressBarBackground = progressBarBackground.replace(/(\d{3}|\d{3}\.\d+)%/g, '100%'); // values greater than 100% can cause incorrect rendering
+			$('.awah-arp-pts-con').css('background-image', progressBarBackground);
 		}
 	}
 
 	function newStatusMessage(statusMessageText) {
-		let statusMessageObj = $("<div>" + statusMessageText + "</div>");
-		statusMessageObj.appendTo(".awah-arp-status")
+		let statusMessageObj = $(`<div>${statusMessageText}</div>`);
+		statusMessageObj.appendTo('.awah-arp-status')
 			.delay(options.statusMessageDelay).queue(function() {
 			$(this).addClass("awah-casper-out").dequeue();
 		});
@@ -252,8 +252,8 @@
 
 	function saveVotedContentCache() {
 		try {
-			localStorage.setItem("awahVotedContentCache", JSON.stringify([...votedContentCache]));
-			$("#awah_voted_content_cache_size").text(votedContentCache.size);
+			localStorage.setItem('awahVotedContentCache', JSON.stringify([...votedContentCache]));
+			$('#awah_voted_content_cache_size').text(votedContentCache.size);
 		} catch (e) {
 			console.warn(e);
 			newStatusMessage('localStorage quota exceeded! <span class="fa fa-fw fa-exclamation-triangle"></span>');
@@ -264,7 +264,7 @@
 		dailyVotingStats.lastVoteTime = new Date().getTime();
 		dailyVotingStats.currentContentVotes = currentContentVotes;
 		try {
-			localStorage.setItem("awahDailyVotingStat", JSON.stringify(dailyVotingStats));
+			localStorage.setItem('awahDailyVotingStat', JSON.stringify(dailyVotingStats));
 			// $("#awah_voted_content_cache_size").text(dailyVotingStats.size);
 		} catch (e) {
 			console.warn(e);
@@ -291,12 +291,12 @@
 			let mins = Math.floor(secs / 60);
 			secs -= mins * (60);
 			if (mins < 10) {
-				mins = "0" + mins;
+				mins = '0' + mins;
 			}
 			if (secs < 10) {
-				secs = "0" + secs;
+				secs = '0' + secs;
 			}
-			$(".awah-daily-reset-timer").text(hours + ":" + mins + ":" + secs);
+			$(".awah-daily-reset-timer").text(`${hours}:${mins}:${secs}`);
 
 			if (awahDayRemains < 1) {
 				clearInterval(awahDayRemainsInterval);
@@ -309,13 +309,15 @@
 		setTimeout(() => {
 			$("div#content").append('<div class="awah-ui-overlay"><div class="awah-arp-status"></div><div class="awah-arp-pts"><div class="awah-arp-pts-con"></div></div></div>');
 			if (currentContentVotes < maximumContentVotes) {
-				$(`<div class="awah-con-check-queue" style="display: none;">content to check: <span class="awah-con-check-queue-length">${contentToCheck.length}</span> <span class="fa fa-fw fa-search"></span></div>`).appendTo(".awah-arp-status");
-				$(`<div class="awah-con-votes-queue" style="display: none;">content to vote: <span class="awah-con-votes-queue-length">${contentToVote.length}</span> <span class="fa fa-fw fa-upload"></span></div>`).appendTo(".awah-arp-status");
+				$(`<div class="awah-con-check-queue" style="display: none;">content to check: <span class="awah-con-check-queue-length">${contentToCheck.length}</span> <span class="fa fa-fw fa-search"></span></div>`)
+                    .appendTo('.awah-arp-status');
+				$(`<div class="awah-con-votes-queue" style="display: none;">content to vote: <span class="awah-con-votes-queue-length">${contentToVote.length}</span> <span class="fa fa-fw fa-upload"></span></div>`)
+                    .appendTo('.awah-arp-status');
 			}
 			pointsStatusUpdate();
-			$("div.toast-body > p.text-center").css({ "float": "right", "padding-right": "16px" });
-			$("div.toast-body").append('<p class="awah-options-btn"><span class="fa fa-fw fa-cog"></span> HELPER OPTIONS</p>');
-			$("div.toast-body").prepend(`<div class="awah-options-overlay" style="display: none; bottom: -102%;">
+			$('div.toast-body > p.text-center').css({'float': 'right', 'padding-right': '16px'});
+			$('div.toast-body').append('<p class="awah-options-btn"><span class="fa fa-fw fa-cog"></span> HELPER OPTIONS</p>');
+			$('div.toast-body').prepend(`<div class="awah-options-overlay" style="display: none; bottom: -102%;">
 <div class="awah-option"><span class="awah-opt-desc awah-grey">AWA helper v<b>${version}</b></span></div>
 <div class="awah-option">
 <label><span class="awah-opt-title">actionsDelayMin</span><input id="awah-actions-delay-min" class="form-control awah-opt-input" type="text" value="${options.actionsDelayMin}"></label>
@@ -324,7 +326,7 @@
 
 <div class="awah-option">
 <label><span class="awah-opt-title">showKeyOnMarkedGiveaways</span><input id="awah-show-key-on-marked-giveaways" class="form-control awah-opt-input" type="checkbox" ${options.showKeyOnMarkedGiveaways ? 'checked' : ''}><div class="form-control awah-opt-input"><div>&nbsp;</div>&nbsp;</div></label>
-<span class="awah-opt-desc awah-grey">At Giveaways page. Default: ${options.default().showKeyOnMarkedGiveaways === "true" ? "ON" : "OFF"}</span></div>
+<span class="awah-opt-desc awah-grey">At Giveaways page. Default: ${options.default().showKeyOnMarkedGiveaways === 'true' ? 'ON' : 'OFF'}</span></div>
 
 <div class="awah-option">
 <label><span class="awah-opt-title">statusMessageDelay</span><input id="awah-status-message-delay" class="form-control awah-opt-input" type="text" value="${options.statusMessageDelay}"></label>
@@ -341,52 +343,52 @@
 </div>`);
 			showDailyResetTimer();
 
-			document.addEventListener("animationend", function(event) {
-				if (event.animationName === "awah-casper-out") {
+			document.addEventListener('animationend', function(event) {
+				if (event.animationName === 'awah-casper-out') {
 					$(event.target).remove();
 				}
 			}, false);
 
 			$('input.awah-opt-input[type="text"]').on("input", function() {
-				this.value = this.value.replace(/[^\d]/, "");
+				this.value = this.value.replace(/[^\d]/, '');
 				this.value = this.value.slice(0, 5);
 			});
 
-			$("input.awah-opt-input").on("change", function() {
+			$('input.awah-opt-input').on('change', function() {
 				clearTimeout(saveOptionsTimer);
 				saveOptionsTimer = setTimeout(function() {
 					options.save();
 				}, 400);
 			});
 
-			$("#awah_restore_default").on("click", function() {
-				$("#awah-actions-delay-min").val(options.default().actionsDelayMin);
-				$("#awah-actions-delay-max").val(options.default().actionsDelayMax);
-				$("#awah-show-key-on-marked-giveaways").prop("checked", (options.default().showKeyOnMarkedGiveaways === "true"));
-				$("#awah-status-message-delay").val(options.default().statusMessageDelay);
-				newStatusMessage("Default options settings restored!");
+			$('#awah_restore_default').on('click', function() {
+				$('#awah-actions-delay-min').val(options.default().actionsDelayMin);
+				$('#awah-actions-delay-max').val(options.default().actionsDelayMax);
+				$('#awah-show-key-on-marked-giveaways').prop('checked', (options.default().showKeyOnMarkedGiveaways === 'true'));
+				$('#awah-status-message-delay').val(options.default().statusMessageDelay);
+				newStatusMessage('Default options settings restored!');
 				options.save();
 			});
 
-			$("#awah_clear_voted_content_cache").on("click", function() {
+			$('#awah_clear_voted_content_cache').on('click', function() {
 				votedContentCache.clear();
 				saveVotedContentCache();
-				newStatusMessage("Voted content cache cleared!");
+				newStatusMessage('Voted content cache cleared!');
 			});
 
-			$(".awah-options-btn").on("click", function() {
-				let awahOptions = $(".awah-options-overlay");
-				if(awahOptions.css("display") === "none") {
+			$('.awah-options-btn').on('click', function() {
+				let awahOptions = $('.awah-options-overlay');
+				if(awahOptions.css('display') === 'none') {
 					awahOptions.show();
-					awahOptions.stop().animate({bottom: "0%"}, 250);
+					awahOptions.stop().animate({bottom: '0%'}, 250);
 				} else {
-					awahOptions.stop().animate({bottom: "-102%"}, 250, function() {
+					awahOptions.stop().animate({bottom: '-102%'}, 250, function() {
 						$(this).hide();
 					});
 				}
 			});
 
-			newStatusMessage("Alienware Arena helper v<b>" + version + "</b></span>");
+			newStatusMessage(`Alienware Arena helper v<b>${version}</b></span>`);
 		}, 1);
 	}
 	initUI();
@@ -424,11 +426,6 @@
 		}
 	});
 
-	function scrl(target) {
-		$("html, body").animate({scrollTop: target.offset().top-100}, 800);
-		//target.effect("highlight", "800");
-	}
-
 	function getRandomInt(min, max) {
 		return Math.floor(Math.random() * (max - min + 1)) + min;
 	}
@@ -440,7 +437,7 @@
 
 		$.ajax({
 			url: votingURL,
-			type: "post"
+			type: 'post'
 		})
 			.done(function(data) {
 				if (data.success) {
@@ -478,7 +475,7 @@
 	function checkVotingContent() {
 		let contentItem = contentToCheck.shift();
 		let contentId = contentItem.id;
-		$.get("/ucf/show/" + contentId)
+		$.get(`/ucf/show/${contentId}`)
 			.done(function(response) {
 				let votedOnContent = /var votedOnContent = (.+);/.exec(response);
 				if (votedOnContent) {
@@ -515,7 +512,7 @@
 	function getVotingContentPage(failCounter = 0) {
 		let statusMessage = newStatusMessage(`Getting page ${contentGettingPage} <span class="fa fa-fw fa-circle-o-notch fa-spin"></span>`);
 		statusMessage.clearQueue();
-		$.get(contentVotingURL + contentGettingPage)
+		$.get(`${contentVotingURL}${contentGettingPage}`)
 			.done(function(response) {
 				failCounter = 0;
 				statusMessage.children("span").attr("class", "fa fa-fw fa-check-circle");
@@ -563,8 +560,8 @@
 	}
 
 	function startContentVotingAlgorithm() {
-		$(".awah-con-check-queue").show();
-		$(".awah-con-votes-queue").show();
+		$('.awah-con-check-queue').show();
+		$('.awah-con-votes-queue').show();
 		contentVotingInAction = true;
 		pointsStatusUpdate();
 		getVotingContentPage();
@@ -572,18 +569,18 @@
 
 	function registerContentVotingButtons() {
 		if (currentContentVotes >= maximumContentVotes) {
-			$(".awah-btn-cons").addClass("disabled");
+			$('.awah-btn-cons').addClass('disabled');
 			return;
 		}
-		$(".awah-btn-cons").on("click", function() {
-			$(".awah-btn-cons").addClass("disabled");
-			if ($(this).data("awah-voting-direction") === "up") {
+		$('.awah-btn-cons').on('click', function() {
+			$('.awah-btn-cons').addClass('disabled');
+			if ($(this).data('awah-voting-direction') === 'up') {
 				votingDown = false;
-			} else if ($(this).data("awah-voting-direction") === "down") {
+			} else if ($(this).data('awah-voting-direction') === 'down') {
 				votingDown = true;
 			}
-			if ($(this).data("awah-content-url") !== "") {
-				contentVotingURL = $(this).data("awah-content-url");
+			if ($(this).data('awah-content-url') !== '') {
+				contentVotingURL = $(this).data('awah-content-url');
 			} else {
 				newStatusMessage('No content URL specified! Voting is impossible! <span class="fa fa-fw fa-exclamation-triangle"></span>');
 				return;
@@ -592,7 +589,7 @@
 		});
 	}
 
-	function showFeaturedContentVotingButtons(sectionType = "Image") {
+	function showFeaturedContentVotingButtons(sectionType = 'Image') {
 		$(`<div class="panel panel-default awah-panel">
 <div class="panel-heading" data-awah-tooltip="by Alienware Arena helper"><h3 class="panel-title"><i class="fa fa-chevron-up"></i> Automatic voting</h3></div>
 <div class="list-group">
@@ -619,7 +616,7 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 	<a class="nav-link awah-btn-cons" href="javascript:void(0);" data-awah-tooltip="UP-voting" data-awah-voting-direction="up" data-awah-content-url="/esi/featured-tile-data/${sectionType}/"><i aria-hidden="true" class="awicon far fa-caret-square-up"></i></a>
 	<a class="nav-link awah-btn-cons" href="javascript:void(0);" data-awah-tooltip="DOWN-voting" data-awah-voting-direction="down" data-awah-content-url="/esi/featured-tile-data/${sectionType}/"><i aria-hidden="true" class="awicon far fa-caret-square-down"></i></a>
 </li>`)
-			.insertBefore("li#notification-dropdown");
+			.insertBefore('li#notification-dropdown');
 		registerContentVotingButtons();
 	}
 
@@ -723,15 +720,15 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 			let pagecount = 1;
 			let completed = await dailyQuestDone();
 			while (!completed) {
-				let response = await getURL("/esi/tile-data/News/" + pagecount);
+				let response = await getURL(`/esi/tile-data/News/${pagecount}`);
 				let newscount = 0;
 				while (newscount <= 14) {
 					try {
 						await getURL(response.data[newscount].url);
-						await postURL("/ucf/increment-views/" + response.data[newscount].id);
-						newStatusMessage("Visited news " + response.data[newscount].id + "!");
+						await postURL(`/ucf/increment-views/${response.data[newscount].id}`);
+						newStatusMessage(`Visited news ${response.data[newscount].id}!`);
 					} catch (e) {
-						newStatusMessage("Visiting " + response.data[newscount].id + " failed!");
+						newStatusMessage(`Visiting ${response.data[newscount].id} failed!`);
 					}
 					completed = await dailyQuestDone();
 					if (completed) {
@@ -750,10 +747,10 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 	async function shareSocial() {
 		try {
 			let response = await getURL("/esi/tile-data/News/1");
-			await postURL("/arp/quests/share/" + response.data[0].id);
-			newStatusMessage(response.data[0].id + " shared successfully!");
+			await postURL(`/arp/quests/share/${response.data[0].id}`);
+			newStatusMessage(`${response.data[0].id} shared successfully!`);
 		} catch (e) {
-			newStatusMessage("Sharing failed!");
+			newStatusMessage('Sharing failed!');
 			throw e;
 		}
 	}
@@ -840,8 +837,8 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 				$(".awah-btn-quest").addClass("disabled");
 			}
 		} catch (e) {
-			console.log("👽 QUEST: " + e);
-			newStatusMessage("Unable to get daily quest!");
+			console.log(`👽 QUEST: ${e}`);
+			newStatusMessage('Unable to get daily quest!');
 			$(`<a class="btn btn-default awah-btn-quest" href="javascript:void(0);" data-awah-tooltip="Visit forum" data-awah-quest="forum">
 				<span class="more-link right"></span></a>`).appendTo(".quest-item > .col-2");
 		}
