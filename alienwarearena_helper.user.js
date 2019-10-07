@@ -16,7 +16,6 @@
 	// You can configure options through the user interface or localStorage in browser. It is not recommended to edit the script for these purposes.
 	const version = '1.1.4';
 
-	let votedContentCache = new Set(JSON.parse(localStorage.getItem('awahVotedContentCache')));
 	let dailyVotingStats = JSON.parse(localStorage.getItem('awahDailyVotingStat'));
 	// default dailyVotingStats object
 	if (dailyVotingStats == null) {
@@ -37,10 +36,6 @@
 
 	checkDailyVotingStats();
 
-	let url = window.location.href;
-	let path = window.location.pathname;
-	path = path.replace(/\/+/g, '/');
-
 	// ARP points initial readings
 	//let readPoints = /Vote on Content(?:.|\n)*>(\d+) of (\d+)<\/td>/.exec($('head').html());
 	let currentContentVotes = parseInt(dailyVotingStats.currentContentVotes, 10);
@@ -51,6 +46,7 @@
 	let contentToCheck = [];
 	let contentGettingPage = 1;
 	let votingDown = false;
+	let votedContentCache = new Set(JSON.parse(localStorage.getItem('awahVotedContentCache')));
 	let saveOptionsTimer;
 
 	// Embed style
@@ -479,7 +475,7 @@
 				let votedOnContent = /var votedOnContent = (.+);/.exec(response);
 				if (votedOnContent) {
 					votedOnContent = JSON.parse(votedOnContent[1]);
-					console.log('👽 votedOnContent', votedOnContent);
+					// console.log('👽 votedOnContent', votedOnContent);
 					if (votedOnContent.downVote === false && votedOnContent.upVote === false) {
 						contentToVote.push(contentId);
 					} else if (votedOnContent.downVote === true || votedOnContent.upVote === true) {
@@ -952,7 +948,8 @@ ${(keysOutput ? `${keysOutput}` : `<b>${keysLeft}</b> keys left`)}</div>`);
 	}
 
 	function closeRecentKeyPopup() {
-		document.querySelector('div.alert-info button.close').click();
+		let popup = document.querySelector("div.alert-info button.close");
+		if (popup) popup.click();
 	}
 
 	function showUserLevelAtInsignias() {
@@ -990,6 +987,9 @@ ${(keysOutput ? `${keysOutput}` : `<b>${keysLeft}</b> keys left`)}</div>`);
 			}
 		});
 	}
+
+	let path = window.location.pathname;
+	path = path.replace(/\/+/g, '/');
 
 	switch (true) {
 		case /.*\/ucf\/show\/.*/.test(path):
@@ -1035,7 +1035,7 @@ ${(keysOutput ? `${keysOutput}` : `<b>${keysLeft}</b> keys left`)}</div>`);
 			showUserSteamProfileLink();
 			//showUserRecentActivityTotal();
 			break;
-		case /\/$/.test(url):
+		case /\/$/.test(window.location.href):
 			console.log('👽 SWITCH: main page');
 			break;
 	}
