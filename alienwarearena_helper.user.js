@@ -611,7 +611,7 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 	}
 
 	async function getBorderIdFromImgSrc(borderImgSrc) {
-		const response = await fetch("/account/personalization");
+		const response = await fetch("/account/personalization",{credentials: 'same-origin'});
 		const personalizationPageText = await response.text();
 		let parser = new DOMParser();
 		let doc = parser.parseFromString(personalizationPageText, "text/html");
@@ -620,7 +620,7 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 	}
 
 	async function getSelectedBorderVar() {
-		const response = await fetch("/account/personalization");
+		const response = await fetch("/account/personalization",{credentials: 'same-origin'});
 		const personalizationPageText = await response.text();
 		const found = personalizationPageText.match(/(?:let|var)\s*selectedBorder\s*=\s*(.*?);/);
 		return  parseInt(found[1], 10) || null;
@@ -635,7 +635,7 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 	}
 
 	async function getSelectedBadgesVar() {
-		const response = await fetch("/account/personalization");
+		const response = await fetch("/account/personalization",{credentials: 'same-origin'});
 		const personalizationPageText = await response.text();
 		const found = personalizationPageText.match(/(?:let|var)\s*selectedBadges\s*=\s*(.*?);/);
 		return JSON.parse(found[1]);
