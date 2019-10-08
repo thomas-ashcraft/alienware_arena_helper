@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Alienware Arena helper
 // @namespace    https://github.com/thomas-ashcraft
-// @version      1.1.3
+// @version      1.1.4
 // @description  Earn daily ARP easily
 // @author       Thomas Ashcraft
 // @match        *://*.alienwarearena.com/*
@@ -13,22 +13,10 @@
 // ==/UserScript==
 
 (function() {
-	// You can configure options through the user interface. It is not recommended to edit the script for these purposes.
-	const version = "1.1.3";
-	let statusMessageDelayDefault = 5000;
-	let actionsDelayMinDefault = 1000;
-	let actionsDelayMaxDefault = 2000;
-	let showKeyOnMarkedGiveawaysDefault = "true";
+	// You can configure options through the user interface or localStorage in browser. It is not recommended to edit the script for these purposes.
+	const version = '1.1.4';
 
-	let actionsDelayMin = parseInt(localStorage.getItem("awah_actions_delay_min"), 10) || actionsDelayMinDefault;
-	let actionsDelayMax = parseInt(localStorage.getItem("awah_actions_delay_max"), 10) || actionsDelayMaxDefault;
-	localStorage.removeItem("awah_tot_add_votes_min"); // fix legacy
-	localStorage.removeItem("awah_tot_add_votes_max"); // fix legacy
-	let showKeyOnMarkedGiveaways = localStorage.getItem("awah_show_key_on_marked_giveaways") || showKeyOnMarkedGiveawaysDefault;
-	showKeyOnMarkedGiveaways = (showKeyOnMarkedGiveaways === "true");
-	let statusMessageDelay = parseInt(localStorage.getItem("awah_status_message_delay"), 10) || statusMessageDelayDefault;
-	let votedContentCache = new Set(JSON.parse(localStorage.getItem("awahVotedContentCache")));
-	let dailyVotingStats = JSON.parse(localStorage.getItem("awahDailyVotingStat"));
+	let dailyVotingStats = JSON.parse(localStorage.getItem('awahDailyVotingStat'));
 	// default dailyVotingStats object
 	if (dailyVotingStats == null) {
 		dailyVotingStats = {
@@ -48,24 +36,21 @@
 
 	checkDailyVotingStats();
 
-	let url = window.location.href;
-	let path = window.location.pathname;
-	path = path.replace(/\/+/g, "/");
-
 	// ARP points initial readings
-	//let readPoints = /Vote on Content(?:.|\n)*>(\d+) of (\d+)<\/td>/.exec($("head").html());
+	//let readPoints = /Vote on Content(?:.|\n)*>(\d+) of (\d+)<\/td>/.exec($('head').html());
 	let currentContentVotes = parseInt(dailyVotingStats.currentContentVotes, 10);
 	let maximumContentVotes = 20;
 	let contentVotingInAction = false;
-	let contentVotingURL = "";
+	let contentVotingURL = '';
 	let contentToVote = [];
 	let contentToCheck = [];
 	let contentGettingPage = 1;
 	let votingDown = false;
+	let votedContentCache = new Set(JSON.parse(localStorage.getItem('awahVotedContentCache')));
 	let saveOptionsTimer;
 
 	// Embed style
-	document.head.appendChild(document.createElement("style")).textContent = `
+	document.head.appendChild(document.createElement('style')).textContent = `
 		/* script buttons */
 		.awah-btn-cons,
 		.awah-btn-cons:hover {color: gold;}
@@ -162,66 +147,109 @@
 		.overlay {position: fixed !important;}
 		`;
 
+	class Options {
+		constructor() {
+			this.load();
+		}
+
+		default() {
+			return {
+				statusMessageDelay: 5000,
+				actionsDelayMin: 500,
+				actionsDelayMax: 2000,
+				showKeyOnMarkedGiveaways: true,
+				version,
+			};
+		}
+
+		load() {
+			let defaultOptions = this.default();
+			Object.keys(defaultOptions).forEach((key) => this[key] = defaultOptions[key]);
+
+			let savedOptions = JSON.parse(localStorage.getItem('AlienwareArenaHelperOptions'));
+			if (savedOptions !== null) {
+				Object.keys(savedOptions).forEach((key) => this[key] = savedOptions[key]);
+			}
+		}
+
+		save() {
+			this.actionsDelayMin = parseInt($('#awah-actions-delay-min').val(), 10);
+			this.actionsDelayMax = parseInt($('#awah-actions-delay-max').val(), 10);
+			this.showKeyOnMarkedGiveaways = $('#awah-show-key-on-marked-giveaways').prop('checked');
+			this.statusMessageDelay = parseInt($('#awah-status-message-delay').val(), 10);
+
+			// TODO: need to be updated for 10YearsRedesign and as some separate function
+			// trick to apply options.showKeyOnMarkedGiveaways on the fly
+			// if (path === '/ucf/Giveaway') {
+			// 	let awahTemp = $('<div class="tile-chunk"></div>');
+			// 	awahTemp.appendTo('.awah-options-overlay').delay(250).queue(function() {
+			// 		$(this).remove().dequeue();
+			// 	});
+			// }
+
+			try {
+				localStorage.setItem('AlienwareArenaHelperOptions', JSON.stringify(this));
+				newStatusMessage('Settings saved! <span class="fa fa-fw fa-floppy-o"></span>');
+			} catch (e) {
+				console.warn(e);
+				newStatusMessage('localStorage quota exceeded! <span class="fa fa-fw fa-exclamation-triangle"></span>');
+			}
+		}
+
+		clearLegacyData(previousScriptVersion = null) {
+			// TODO: should consider to make it global function for some wide range of actions based upon version changing
+			switch (previousScriptVersion) {
+				default:
+					localStorage.removeItem('awah_tot_add_votes_min');
+					localStorage.removeItem('awah_tot_add_votes_max');
+					localStorage.removeItem('awah_actions_delay_min');
+					localStorage.removeItem('awah_actions_delay_max');
+					localStorage.removeItem('awah_show_key_on_marked_giveaways');
+					localStorage.removeItem('awah_status_message_delay');
+				// fallthrough
+				case '1.1.3':
+				// ok
+			}
+		}
+	}
+
+	let options = new Options();
+
 	function pointsStatusUpdate() {
-		$(".awah-arp-pts-con").html("CON: " + currentContentVotes + " / " + maximumContentVotes);
+		$('.awah-arp-pts-con').html(`CON: ${currentContentVotes} / ${maximumContentVotes}`);
 		if (currentContentVotes >= maximumContentVotes && !contentVotingInAction) {
-			$(".awah-arp-pts-con").addClass("awah-grey");
+			$('.awah-arp-pts-con').addClass('awah-grey');
 		}
 		if (contentVotingInAction) {
-			$(".awah-con-check-queue-length").text(contentToCheck.length);
-			$(".awah-con-votes-queue-length").text(contentToVote.length);
-			let progressBarBackground = "linear-gradient(90deg, rgb(0, 160, 240) " +
+			$('.awah-con-check-queue-length').text(contentToCheck.length);
+			$('.awah-con-votes-queue-length').text(contentToVote.length);
+			let progressBarBackground = 'linear-gradient(90deg, rgb(0, 160, 240) ' +
 				((currentContentVotes / maximumContentVotes) * 100) +
-				"%, rgba(0, 160, 240, 0.8) 0%, rgba(0, 160, 240, 0.8) " +
+				'%, rgba(0, 160, 240, 0.8) 0%, rgba(0, 160, 240, 0.8) ' +
 				(((currentContentVotes + contentToVote.length) / maximumContentVotes) * 100) +
-				"%, rgb(255, 255, 255) 0%, rgb(255, 255, 255) " +
+				'%, rgb(255, 255, 255) 0%, rgb(255, 255, 255) ' +
 				((((currentContentVotes + contentToVote.length) / maximumContentVotes) * 100) + 1) +
-				"%, rgba(0, 160, 240, 0.8) 0%, rgba(0, 160, 240, 0.8) " +
+				'%, rgba(0, 160, 240, 0.8) 0%, rgba(0, 160, 240, 0.8) ' +
 				(((currentContentVotes + contentToVote.length + contentToCheck.length) / maximumContentVotes) * 100) +
-				"%, rgb(40, 37, 36) 0%)";
-			progressBarBackground = progressBarBackground.replace(/(\d{3}|\d{3}\.\d{1,})%/g, "100%"); // values greater than 100% can cause incorrect rendering
-			$(".awah-arp-pts-con").css("background-image", progressBarBackground);
+				'%, rgb(40, 37, 36) 0%)';
+			progressBarBackground = progressBarBackground.replace(/(\d{3}|\d{3}\.\d+)%/g, '100%'); // values greater than 100% can cause incorrect rendering
+			$('.awah-arp-pts-con').css('background-image', progressBarBackground);
 		}
 	}
 
 	function newStatusMessage(statusMessageText) {
-		let statusMessageObj = $("<div>" + statusMessageText + "</div>");
-		statusMessageObj.appendTo(".awah-arp-status")
-			.delay(statusMessageDelay).queue(function() {
-			$(this).addClass("awah-casper-out").dequeue();
+		let statusMessageObj = $(`<div>${statusMessageText}</div>`);
+		statusMessageObj.appendTo('.awah-arp-status')
+			.delay(options.statusMessageDelay).queue(function() {
+			$(this).addClass('awah-casper-out').dequeue();
 		});
 		return statusMessageObj;
 	}
 
-	function saveOptions() {
-		actionsDelayMin = parseInt($("#awah_actions_delay_min").val(), 10);
-		actionsDelayMax = parseInt($("#awah_actions_delay_max").val(), 10);
-		showKeyOnMarkedGiveaways = $("#awah_show_key_on_marked_giveaways").prop("checked");
-		// trick to apply showKeyOnMarkedGiveaways on the fly
-		if (path === "/ucf/Giveaway") {
-			let awahTemp = $('<div class="tile-chunk"></div>');
-			awahTemp.appendTo(".awah-options-overlay").delay(250).queue(function() {
-				$(this).remove().dequeue();
-			});
-		}
-		statusMessageDelay = parseInt($("#awah_status_message_delay").val(), 10);
-
-		try {
-			localStorage.setItem("awah_actions_delay_min", actionsDelayMin);
-			localStorage.setItem("awah_actions_delay_max", actionsDelayMax);
-			localStorage.setItem("awah_show_key_on_marked_giveaways", showKeyOnMarkedGiveaways.toString());
-			localStorage.setItem("awah_status_message_delay", statusMessageDelay);
-			newStatusMessage('Settings saved! <span class="fa fa-fw fa-floppy-o"></span>');
-		} catch (e) {
-			console.warn(e);
-			newStatusMessage('localStorage quota exceeded! <span class="fa fa-fw fa-exclamation-triangle"></span>');
-		}
-	}
-
 	function saveVotedContentCache() {
 		try {
-			localStorage.setItem("awahVotedContentCache", JSON.stringify([...votedContentCache]));
-			$("#awah_voted_content_cache_size").text(votedContentCache.size);
+			localStorage.setItem('awahVotedContentCache', JSON.stringify([...votedContentCache]));
+			$('#awah_voted_content_cache_size').text(votedContentCache.size);
 		} catch (e) {
 			console.warn(e);
 			newStatusMessage('localStorage quota exceeded! <span class="fa fa-fw fa-exclamation-triangle"></span>');
@@ -232,8 +260,7 @@
 		dailyVotingStats.lastVoteTime = new Date().getTime();
 		dailyVotingStats.currentContentVotes = currentContentVotes;
 		try {
-			localStorage.setItem("awahDailyVotingStat", JSON.stringify(dailyVotingStats));
-			// $("#awah_voted_content_cache_size").text(dailyVotingStats.size);
+			localStorage.setItem('awahDailyVotingStat', JSON.stringify(dailyVotingStats));
 		} catch (e) {
 			console.warn(e);
 			newStatusMessage('localStorage quota exceeded! <span class="fa fa-fw fa-exclamation-triangle"></span>');
@@ -248,7 +275,7 @@
 
 		awahDayRemains = Math.floor(awahDayRemains / 1000);
 
-		$(".toast-body table:eq(1) tbody").append('<tr><td><span class="fa fa-fw fa-clock-o"></span> Daily reset</td><td class="text-center awah-daily-reset-timer">hh:mm:ss</td></tr>');
+		$('.toast-body table:eq(1) tbody').append('<tr><td><span class="fa fa-fw fa-clock-o"></span> Daily reset</td><td class="text-center awah-daily-reset-timer">hh:mm:ss</td></tr>');
 
 		let awahDayRemainsInterval = setInterval(function () {
 			awahDayRemains--;
@@ -259,12 +286,12 @@
 			let mins = Math.floor(secs / 60);
 			secs -= mins * (60);
 			if (mins < 10) {
-				mins = "0" + mins;
+				mins = '0' + mins;
 			}
 			if (secs < 10) {
-				secs = "0" + secs;
+				secs = '0' + secs;
 			}
-			$(".awah-daily-reset-timer").text(hours + ":" + mins + ":" + secs);
+			$('.awah-daily-reset-timer').text(`${hours}:${mins}:${secs}`);
 
 			if (awahDayRemains < 1) {
 				clearInterval(awahDayRemainsInterval);
@@ -275,28 +302,30 @@
 	// initialize UI
 	function initUI() {
 		setTimeout(() => {
-			$("div#content").append('<div class="awah-ui-overlay"><div class="awah-arp-status"></div><div class="awah-arp-pts"><div class="awah-arp-pts-con"></div></div></div>');
+			$('div#content').append('<div class="awah-ui-overlay"><div class="awah-arp-status"></div><div class="awah-arp-pts"><div class="awah-arp-pts-con"></div></div></div>');
 			if (currentContentVotes < maximumContentVotes) {
-				$(`<div class="awah-con-check-queue" style="display: none;">content to check: <span class="awah-con-check-queue-length">${contentToCheck.length}</span> <span class="fa fa-fw fa-search"></span></div>`).appendTo(".awah-arp-status");
-				$(`<div class="awah-con-votes-queue" style="display: none;">content to vote: <span class="awah-con-votes-queue-length">${contentToVote.length}</span> <span class="fa fa-fw fa-upload"></span></div>`).appendTo(".awah-arp-status");
+				$(`<div class="awah-con-check-queue" style="display: none;">content to check: <span class="awah-con-check-queue-length">${contentToCheck.length}</span> <span class="fa fa-fw fa-search"></span></div>`)
+                    .appendTo('.awah-arp-status');
+				$(`<div class="awah-con-votes-queue" style="display: none;">content to vote: <span class="awah-con-votes-queue-length">${contentToVote.length}</span> <span class="fa fa-fw fa-upload"></span></div>`)
+                    .appendTo('.awah-arp-status');
 			}
 			pointsStatusUpdate();
-			$("div.toast-body > p.text-center").css({ "float": "right", "padding-right": "16px" });
-			$("div.toast-body").append('<p class="awah-options-btn"><span class="fa fa-fw fa-cog"></span> HELPER OPTIONS</p>');
-			$("div.toast-body").prepend(`<div class="awah-options-overlay" style="display: none; bottom: -102%;">
+			$('div.toast-body > p.text-center').css({'float': 'right', 'padding-right': '16px'});
+			$('div.toast-body').append('<p class="awah-options-btn"><span class="fa fa-fw fa-cog"></span> HELPER OPTIONS</p>');
+			$('div.toast-body').prepend(`<div class="awah-options-overlay" style="display: none; bottom: -102%;">
 <div class="awah-option"><span class="awah-opt-desc awah-grey">AWA helper v<b>${version}</b></span></div>
 <div class="awah-option">
-<label><span class="awah-opt-title">actionsDelayMin</span><input id="awah_actions_delay_min" class="form-control awah-opt-input" type="text" value="${actionsDelayMin}"></label>
-<label><span class="awah-opt-title">actionsDelayMax</span><input id="awah_actions_delay_max" class="form-control awah-opt-input" type="text" value="${actionsDelayMax}"></label>
-<span class="awah-opt-desc awah-grey">Minimum and maximum random delay time between net actions. (in milliseconds)<br>Default minimum: ${actionsDelayMinDefault} || Default maximum: ${actionsDelayMaxDefault}</span></div>
+<label><span class="awah-opt-title">actionsDelayMin</span><input id="awah-actions-delay-min" class="form-control awah-opt-input" type="text" value="${options.actionsDelayMin}"></label>
+<label><span class="awah-opt-title">actionsDelayMax</span><input id="awah-actions-delay-max" class="form-control awah-opt-input" type="text" value="${options.actionsDelayMax}"></label>
+<span class="awah-opt-desc awah-grey">Minimum and maximum random delay time between net actions. (in milliseconds)<br>Default minimum: ${options.default().actionsDelayMin} || Default maximum: ${options.default().actionsDelayMax}</span></div>
 
 <div class="awah-option">
-<label><span class="awah-opt-title">showKeyOnMarkedGiveaways</span><input id="awah_show_key_on_marked_giveaways" class="form-control awah-opt-input" type="checkbox" ${showKeyOnMarkedGiveaways ? "checked" : ""}><div class="form-control awah-opt-input"><div>&nbsp;</div>&nbsp;</div></label>
-<span class="awah-opt-desc awah-grey">At Giveaways page. Default: ${showKeyOnMarkedGiveawaysDefault === "true" ? "ON" : "OFF"}</span></div>
+<label><span class="awah-opt-title">showKeyOnMarkedGiveaways</span><input id="awah-show-key-on-marked-giveaways" class="form-control awah-opt-input" type="checkbox" ${options.showKeyOnMarkedGiveaways ? 'checked' : ''}><div class="form-control awah-opt-input"><div>&nbsp;</div>&nbsp;</div></label>
+<span class="awah-opt-desc awah-grey">At Giveaways page. Default: ${options.default().showKeyOnMarkedGiveaways === 'true' ? 'ON' : 'OFF'}</span></div>
 
 <div class="awah-option">
-<label><span class="awah-opt-title">statusMessageDelay</span><input id="awah_status_message_delay" class="form-control awah-opt-input" type="text" value="${statusMessageDelay}"></label>
-<span class="awah-opt-desc awah-grey">How long the status messages will be displayed before they disappear. (in milliseconds, 1000 = 1 second)<br>Default: ${statusMessageDelayDefault}</span></div>
+<label><span class="awah-opt-title">statusMessageDelay</span><input id="awah-status-message-delay" class="form-control awah-opt-input" type="text" value="${options.statusMessageDelay}"></label>
+<span class="awah-opt-desc awah-grey">How long the status messages will be displayed before they disappear. (in milliseconds, 1000 = 1 second)<br>Default: ${options.default().statusMessageDelay}</span></div>
 
 <div class="awah-option">
 <button id="awah_restore_default" class="btn btn-danger"><span class="fa fa-exclamation-triangle"></span> Restore default</button>
@@ -309,93 +338,88 @@
 </div>`);
 			showDailyResetTimer();
 
-			document.addEventListener("animationend", function(event) {
-				if (event.animationName === "awah-casper-out") {
+			document.addEventListener('animationend', function(event) {
+				if (event.animationName === 'awah-casper-out') {
 					$(event.target).remove();
 				}
 			}, false);
 
-			$('input.awah-opt-input[type="text"]').on("input", function() {
-				this.value = this.value.replace(/[^\d]/, "");
+			$('input.awah-opt-input[type="text"]').on('input', function() {
+				this.value = this.value.replace(/[^\d]/, '');
 				this.value = this.value.slice(0, 5);
 			});
 
-			$("input.awah-opt-input").on("change", function() {
+			$('input.awah-opt-input').on('change', function() {
 				clearTimeout(saveOptionsTimer);
 				saveOptionsTimer = setTimeout(function() {
-					saveOptions();
+					options.save();
 				}, 400);
 			});
 
-			$("#awah_restore_default").on("click", function() {
-				$("#awah_actions_delay_min").val(actionsDelayMinDefault);
-				$("#awah_actions_delay_max").val(actionsDelayMaxDefault);
-				$("#awah_show_key_on_marked_giveaways").prop("checked", (showKeyOnMarkedGiveawaysDefault === "true"));
-				$("#awah_status_message_delay").val(statusMessageDelayDefault);
-				newStatusMessage("Default options settings restored!");
-				saveOptions();
+			$('#awah_restore_default').on('click', function() {
+				$('#awah-actions-delay-min').val(options.default().actionsDelayMin);
+				$('#awah-actions-delay-max').val(options.default().actionsDelayMax);
+				$('#awah-show-key-on-marked-giveaways').prop('checked', (options.default().showKeyOnMarkedGiveaways === 'true'));
+				$('#awah-status-message-delay').val(options.default().statusMessageDelay);
+				newStatusMessage('Default options settings restored!');
+				options.save();
 			});
 
-			$("#awah_clear_voted_content_cache").on("click", function() {
+			$('#awah_clear_voted_content_cache').on('click', function() {
 				votedContentCache.clear();
 				saveVotedContentCache();
-				newStatusMessage("Voted content cache cleared!");
+				newStatusMessage('Voted content cache cleared!');
 			});
 
-			$(".awah-options-btn").on("click", function() {
-				let awahOptions = $(".awah-options-overlay");
-				if(awahOptions.css("display") === "none") {
+			$('.awah-options-btn').on('click', function() {
+				let awahOptions = $('.awah-options-overlay');
+				if(awahOptions.css('display') === 'none') {
 					awahOptions.show();
-					awahOptions.stop().animate({bottom: "0%"}, 250);
+					awahOptions.stop().animate({bottom: '0%'}, 250);
 				} else {
-					awahOptions.stop().animate({bottom: "-102%"}, 250, function() {
+					awahOptions.stop().animate({bottom: '-102%'}, 250, function() {
 						$(this).hide();
 					});
 				}
 			});
 
-			newStatusMessage("Alienware Arena helper v<b>" + version + "</b></span>");
+			newStatusMessage(`Alienware Arena helper v<b>${version}</b></span>`);
 		}, 1);
 	}
 	initUI();
 
 	// ARP points watchdog
 	$.ajaxPrefilter(function(options, originalOptions, jqXHR) {
-		if (options.url.indexOf("vote") >= 0) {
+		if (options.url.indexOf('vote') >= 0) {
 			let originalSuccess = options.success;
 			options.success = function(data) {
 				/* ajaxBeforeSuccess functionality */
-				let contentId = parseInt(this.url.replace(/\/ucf\/vote\/(?:up|down)\/(\d*)/g, "$1"), 10);
+				let contentId = parseInt(this.url.replace(/\/ucf\/vote\/(?:up|down)\/(\d*)/g, '$1'), 10);
 				if (data.votedForContent === true) {
 					currentContentVotes++;
 					votedContentCache.add(contentId);
 				} else if (data.votedForContent === false) {
 					currentContentVotes--;
 					votedContentCache.delete(contentId);
-				} else if (data.message.indexOf("already voted") >= 0) {
+				} else if (data.message.indexOf('already voted') >= 0) {
 					votedContentCache.add(contentId);
 				}
 				if (!contentVotingInAction) {
 					newStatusMessage(data.message);
-					if (typeof data.upVotes !== "undefined") {
-						newStatusMessage(`up: ${data.upVotes} | down: ${data.downVotes}${typeof data.voteTotal !== "undefined" ? ` | total: ${data.voteTotal}` : ""}`);
+					if (typeof data.upVotes !== 'undefined') {
+						newStatusMessage(`up: ${data.upVotes} | down: ${data.downVotes}${typeof data.voteTotal !== 'undefined' ? ` | total: ${data.voteTotal}` : ''}`);
 					}
 				}
 				saveDailyVotingStats();
 				saveVotedContentCache();
 				pointsStatusUpdate();
 				/* ajaxBeforeSuccess functionality END */
-				if (typeof originalSuccess === "function") {
+				if (typeof originalSuccess === 'function') {
 					originalSuccess(data);
 				}
 			};
 		}
 	});
-
-	function scrl(target) {
-		$("html, body").animate({scrollTop: target.offset().top-100}, 800);
-		//target.effect("highlight", "800");
-	}
 
 	function getRandomInt(min, max) {
 		return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -404,11 +428,11 @@
 	// CON votes section
 	function applyContentVoting() {
 		let contentId = contentToVote.shift();
-		let votingURL = `/ucf/vote/${votingDown ? "down" : "up"}/${contentId}`;
+		let votingURL = `/ucf/vote/${votingDown ? 'down' : 'up'}/${contentId}`;
 
 		$.ajax({
 			url: votingURL,
-			type: "post"
+			type: 'post'
 		})
 			.done(function(data) {
 				if (data.success) {
@@ -422,23 +446,23 @@
 				pointsStatusUpdate();
 				if (currentContentVotes < maximumContentVotes) {
 					if (contentToVote.length > 0) {
-						setTimeout(() => applyContentVoting(), getRandomInt(actionsDelayMin, actionsDelayMax)); // recursion!
+						setTimeout(() => applyContentVoting(), getRandomInt(options.actionsDelayMin, options.actionsDelayMax)); // recursion!
 					} else {
 						if (contentToCheck.length > 0) {
-							setTimeout(() => checkVotingContent(), getRandomInt(actionsDelayMin, actionsDelayMax)); // to the check!
+							setTimeout(() => checkVotingContent(), getRandomInt(options.actionsDelayMin, options.actionsDelayMax)); // to the check!
 						} else {
 							newStatusMessage('Going to look for more content <span class="fa fa-fw fa-eye"></span>');
-							setTimeout(() => getVotingContentPage(), getRandomInt(actionsDelayMin, actionsDelayMax)); // to the beginning!
+							setTimeout(() => getVotingContentPage(), getRandomInt(options.actionsDelayMin, options.actionsDelayMax)); // to the beginning!
 						}
 					}
 				} else {
 					contentVotingInAction = false;
 					setTimeout(() => {
-						$(".awah-con-check-queue").addClass("awah-casper-out");
-						$(".awah-con-votes-queue").addClass("awah-casper-out");
-						$(".awah-arp-pts-con").css("background-image", "");
-						$(".awah-arp-pts-con").addClass("awah-grey");
-					}, statusMessageDelay);
+						$('.awah-con-check-queue').addClass('awah-casper-out');
+						$('.awah-con-votes-queue').addClass('awah-casper-out');
+						$('.awah-arp-pts-con').css('background-image', '');
+						$('.awah-arp-pts-con').addClass('awah-grey');
+					}, options.statusMessageDelay);
 				}
 			});
 	}
@@ -446,12 +470,12 @@
 	function checkVotingContent() {
 		let contentItem = contentToCheck.shift();
 		let contentId = contentItem.id;
-		$.get("/ucf/show/" + contentId)
+		$.get(`/ucf/show/${contentId}`)
 			.done(function(response) {
 				let votedOnContent = /var votedOnContent = (.+);/.exec(response);
 				if (votedOnContent) {
 					votedOnContent = JSON.parse(votedOnContent[1]);
-					console.log("👽 votedOnContent", votedOnContent);
+					// console.log('👽 votedOnContent', votedOnContent);
 					if (votedOnContent.downVote === false && votedOnContent.upVote === false) {
 						contentToVote.push(contentId);
 					} else if (votedOnContent.downVote === true || votedOnContent.upVote === true) {
@@ -469,13 +493,13 @@
 				pointsStatusUpdate();
 				if (contentToCheck.length === 0 && contentToVote.length === 0) {
 					newStatusMessage('Going to look for more content <span class="fa fa-fw fa-eye"></span>');
-					setTimeout(() => getVotingContentPage(), getRandomInt(actionsDelayMin, actionsDelayMax)); // to the beginning!
+					setTimeout(() => getVotingContentPage(), getRandomInt(options.actionsDelayMin, options.actionsDelayMax)); // to the beginning!
 				} else if (contentToVote.length >= (maximumContentVotes - currentContentVotes) ||
 					(contentToVote.length > 0 && contentToCheck.length === 0)) {
 					newStatusMessage('Going to vote <span class="fa fa-fw fa-forward"></span>');
-					setTimeout(() => applyContentVoting(), getRandomInt(actionsDelayMin, actionsDelayMax)); // go to the next block!
+					setTimeout(() => applyContentVoting(), getRandomInt(options.actionsDelayMin, options.actionsDelayMax)); // go to the next block!
 				} else if (contentToCheck.length > 0) {
-					setTimeout(() => checkVotingContent(), getRandomInt(actionsDelayMin, actionsDelayMax)); // recursion!
+					setTimeout(() => checkVotingContent(), getRandomInt(options.actionsDelayMin, options.actionsDelayMax)); // recursion!
 				}
 			});
 	}
@@ -483,12 +507,12 @@
 	function getVotingContentPage(failCounter = 0) {
 		let statusMessage = newStatusMessage(`Getting page ${contentGettingPage} <span class="fa fa-fw fa-circle-o-notch fa-spin"></span>`);
 		statusMessage.clearQueue();
-		$.get(contentVotingURL + contentGettingPage)
+		$.get(`${contentVotingURL}${contentGettingPage}`)
 			.done(function(response) {
 				failCounter = 0;
-				statusMessage.children("span").attr("class", "fa fa-fw fa-check-circle");
-				statusMessage.delay(statusMessageDelay).queue(function() {
-					$(this).addClass("awah-casper-out");
+				statusMessage.children('span').attr('class', 'fa fa-fw fa-check-circle');
+				statusMessage.delay(options.statusMessageDelay).queue(function() {
+					$(this).addClass('awah-casper-out');
 				});
 				if (response.data.length === 0) {
 					newStatusMessage('No more content pages left in this section <span class="fa fa-fw fa-times-circle"></span>');
@@ -500,30 +524,30 @@
 			})
 			.fail(function() {
 				failCounter++;
-				statusMessage.children("span").attr("class", "fa fa-fw fa-exclamation-triangle");
-				statusMessage.delay(statusMessageDelay).queue(function() {
-					$(this).addClass("awah-casper-out");
+				statusMessage.children('span').attr('class', 'fa fa-fw fa-exclamation-triangle');
+				statusMessage.delay(options.statusMessageDelay).queue(function() {
+					$(this).addClass('awah-casper-out');
 				});
 			})
 			.always(function(response, textStatus) {
 				pointsStatusUpdate();
 				// .fail
 				if (failCounter > 0 && failCounter < 5) {
-					newStatusMessage(`Failed to get content page! Trying again${failCounter > 1 ? ` (${failCounter})` : "..."} <span class="fa fa-fw fa-exclamation-triangle"></span>`);
-					setTimeout(() => getVotingContentPage(failCounter), getRandomInt(actionsDelayMin, actionsDelayMax)); // recursion!
+					newStatusMessage(`Failed to get content page! Trying again${failCounter > 1 ? ` (${failCounter})` : '...'} <span class="fa fa-fw fa-exclamation-triangle"></span>`);
+					setTimeout(() => getVotingContentPage(failCounter), getRandomInt(options.actionsDelayMin, options.actionsDelayMax)); // recursion!
 				} else {
 					if (failCounter > 0) {
 						newStatusMessage(`Failed to get content page after ${failCounter} tries! <span class="fa fa-fw fa-exclamation-triangle"></span>`);
 					}
 					// .done
 					if (contentToCheck.length >= (maximumContentVotes - currentContentVotes) ||
-						((textStatus === "error" ? true : response.data.length === 0) && contentToCheck.length > 0)) {
+						((textStatus === 'error' ? true : response.data.length === 0) && contentToCheck.length > 0)) {
 						newStatusMessage('Going to check content <span class="fa fa-fw fa-forward"></span>');
-						setTimeout(() => checkVotingContent(), getRandomInt(actionsDelayMin, actionsDelayMax)); // go to the next block!
-					} else if (failCounter === 0 && (textStatus === "error" ? true : response.data.length > 0)) {
-						setTimeout(() => getVotingContentPage(), getRandomInt(actionsDelayMin, actionsDelayMax)); // recursion!
+						setTimeout(() => checkVotingContent(), getRandomInt(options.actionsDelayMin, options.actionsDelayMax)); // go to the next block!
+					} else if (failCounter === 0 && (textStatus === 'error' ? true : response.data.length > 0)) {
+						setTimeout(() => getVotingContentPage(), getRandomInt(options.actionsDelayMin, options.actionsDelayMax)); // recursion!
 					} else {
-						newStatusMessage("Voting stopped!");
+						newStatusMessage('Voting stopped!');
 						contentVotingInAction = false;
 					}
 				}
@@ -531,8 +555,8 @@
 	}
 
 	function startContentVotingAlgorithm() {
-		$(".awah-con-check-queue").show();
-		$(".awah-con-votes-queue").show();
+		$('.awah-con-check-queue').show();
+		$('.awah-con-votes-queue').show();
 		contentVotingInAction = true;
 		pointsStatusUpdate();
 		getVotingContentPage();
@@ -540,18 +564,18 @@
 
 	function registerContentVotingButtons() {
 		if (currentContentVotes >= maximumContentVotes) {
-			$(".awah-btn-cons").addClass("disabled");
+			$('.awah-btn-cons').addClass('disabled');
 			return;
 		}
-		$(".awah-btn-cons").on("click", function() {
-			$(".awah-btn-cons").addClass("disabled");
-			if ($(this).data("awah-voting-direction") === "up") {
+		$('.awah-btn-cons').on('click', function() {
+			$('.awah-btn-cons').addClass('disabled');
+			if ($(this).data('awah-voting-direction') === 'up') {
 				votingDown = false;
-			} else if ($(this).data("awah-voting-direction") === "down") {
+			} else if ($(this).data('awah-voting-direction') === 'down') {
 				votingDown = true;
 			}
-			if ($(this).data("awah-content-url") !== "") {
-				contentVotingURL = $(this).data("awah-content-url");
+			if ($(this).data('awah-content-url') !== '') {
+				contentVotingURL = $(this).data('awah-content-url');
 			} else {
 				newStatusMessage('No content URL specified! Voting is impossible! <span class="fa fa-fw fa-exclamation-triangle"></span>');
 				return;
@@ -560,34 +584,34 @@
 		});
 	}
 
-	function showFeaturedContentVotingButtons(sectionType = "Image") {
+	function showFeaturedContentVotingButtons(sectionType = 'Image') {
 		$(`<div class="panel panel-default awah-panel">
 <div class="panel-heading" data-awah-tooltip="by Alienware Arena helper"><h3 class="panel-title"><i class="fa fa-chevron-up"></i> Automatic voting</h3></div>
 <div class="list-group">
 
 <div class="list-group-item">
-<div class="list-group-item-heading" data-awah-tooltip="The ones you see right here">Vote for featured ${sectionType}${sectionType !== "News"  ? "s" : ""}</div>
+<div class="list-group-item-heading" data-awah-tooltip="The ones you see right here">Vote for featured ${sectionType}${sectionType !== 'News'  ? 's' : ''}</div>
 <a class="btn btn-default awah-btn-cons" href="javascript:void(0);" data-awah-voting-direction="up" data-awah-content-url="/esi/featured-tile-data/${sectionType}/">
 <i class="fa fa-arrow-up"></i> <span class="hidden-xs">UP-votes</span></a><a class="btn btn-default awah-btn-cons" href="javascript:void(0);" data-awah-voting-direction="down" data-awah-content-url="/esi/featured-tile-data/${sectionType}/">
 <i class="fa fa-arrow-down"></i> <span class="hidden-xs">DOWN-votes</span></a>
 </div>
 
-<div class="list-group-item"${sectionType === "News" ? 'style="display: none;"' : ""}>
+<div class="list-group-item"${sectionType === 'News' ? 'style="display: none;"' : ''}>
 <div class="list-group-item-heading" data-awah-tooltip="Every ${sectionType} which uploaded to the Alienware Arena.
 Excluding ones that moved to \'featured\' list.
-Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(sectionType !== "News"  ? "s" : "")}</div>
+Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(sectionType !== 'News'  ? 's' : '')}</div>
 <a class="btn btn-default awah-btn-cons" href="javascript:void(0);" data-awah-voting-direction="up" data-awah-content-url="/esi/tile-data/${sectionType}/">
 <i class="fa fa-arrow-up"></i> <span class="hidden-xs">UP-votes</span></a><a class="btn btn-default awah-btn-cons" href="javascript:void(0);" data-awah-voting-direction="down" data-awah-content-url="/esi/tile-data/${sectionType}/">
 <i class="fa fa-arrow-down"></i> <span class="hidden-xs">DOWN-votes</span></a>
 </div>
-</div>`).insertAfter("div:has(.panel-default) > a:last-of-type");
+</div>`).insertAfter('div:has(.panel-default) > a:last-of-type');
 
 		$(`
 <li class="nav-item awah-nav-panel">
 	<a class="nav-link awah-btn-cons" href="javascript:void(0);" data-awah-tooltip="UP-voting" data-awah-voting-direction="up" data-awah-content-url="/esi/featured-tile-data/${sectionType}/"><i aria-hidden="true" class="awicon far fa-caret-square-up"></i></a>
 	<a class="nav-link awah-btn-cons" href="javascript:void(0);" data-awah-tooltip="DOWN-voting" data-awah-voting-direction="down" data-awah-content-url="/esi/featured-tile-data/${sectionType}/"><i aria-hidden="true" class="awicon far fa-caret-square-down"></i></a>
 </li>`)
-			.insertBefore("li#notification-dropdown");
+			.insertBefore('li#notification-dropdown');
 		registerContentVotingButtons();
 	}
 
@@ -597,11 +621,27 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 <i class="fa fa-arrow-up"></i> <span class="hidden-xs">UP-votes</span></a><a class="btn btn-default awah-btn-cons" href="javascript:void(0);" data-awah-tooltip="Automatic voting" data-awah-voting-direction="down" data-awah-content-url="/esi/recent-activity-data/user/${profileData.profile.id}/">
 <i class="fa fa-arrow-down"></i> <span class="hidden-xs">DOWN-votes</span></a>
 </div>
-</li>`).appendTo(".list-profile-actions");
+</li>`).appendTo('.list-profile-actions');
 		registerContentVotingButtons();
 	}
 
 	// Daily Quests
+	async function getBorderIdFromImgSrc(borderImgSrc) {
+		const response = await fetch('/account/personalization', {credentials: 'same-origin'});
+		const personalizationPageText = await response.text();
+		let parser = new DOMParser();
+		let doc = parser.parseFromString(personalizationPageText, 'text/html');
+		let borderImgElement = doc.querySelector(`img.icon.border[src="${borderImgSrc}"]`);
+		return borderImgElement.parentElement.dataset.borderId;
+	}
+
+	async function getSelectedBorderVar() {
+		const response = await fetch('/account/personalization', {credentials: 'same-origin'});
+		const personalizationPageText = await response.text();
+		const found = personalizationPageText.match(/(?:let|var)\s*selectedBorder\s*=\s*(.*?);/);
+		return  parseInt(found[1], 10) || null;
+	}
+
 	async function getCurrentBorderId() {
 		if (user_border.img !== null) {
 			return await getSelectedBorderVar();
@@ -610,20 +650,11 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 		}
 	}
 
-	async function getBorderIdFromImgSrc(borderImgSrc) {
-		const response = await fetch("/account/personalization",{credentials: 'same-origin'});
+	async function getSelectedBadgesVar() {
+		const response = await fetch('/account/personalization', {credentials: 'same-origin'});
 		const personalizationPageText = await response.text();
-		let parser = new DOMParser();
-		let doc = parser.parseFromString(personalizationPageText, "text/html");
-		let borderImgElement = doc.querySelector(`img.icon.border[src="${borderImgSrc}"]`);
-		return borderImgElement.parentElement.dataset.borderId;
-	}
-
-	async function getSelectedBorderVar() {
-		const response = await fetch("/account/personalization",{credentials: 'same-origin'});
-		const personalizationPageText = await response.text();
-		const found = personalizationPageText.match(/(?:let|var)\s*selectedBorder\s*=\s*(.*?);/);
-		return  parseInt(found[1], 10) || null;
+		const found = personalizationPageText.match(/(?:let|var)\s*selectedBadges\s*=\s*(.*?);/);
+		return JSON.parse(found[1]);
 	}
 
 	async function getCurrentBadgesId() {
@@ -632,13 +663,6 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 		} else {
 			return await getSelectedBadgesVar();
 		}
-	}
-
-	async function getSelectedBadgesVar() {
-		const response = await fetch("/account/personalization",{credentials: 'same-origin'});
-		const personalizationPageText = await response.text();
-		const found = personalizationPageText.match(/(?:let|var)\s*selectedBadges\s*=\s*(.*?);/);
-		return JSON.parse(found[1]);
 	}
 
 	function getURL(url) {
@@ -666,7 +690,7 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 	}
 
 	async function dailyQuestDone() {
-		let response = await getURL("/api/v1/users/arp/status");
+		let response = await getURL('/api/v1/users/arp/status');
 		return response.quests[0].completed === true;
 	}
 
@@ -675,13 +699,13 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 			await postURL(url, content1);
 			let questCompleted = await dailyQuestDone();
 			if (questCompleted) {
-				newStatusMessage("Swapped successfully!");
+				newStatusMessage('Swapped successfully!');
 			} else if (content2 !== null) {
 				await postURL(url, content2);
-				newStatusMessage("Swapped successfully!");
+				newStatusMessage('Swapped successfully!');
 			}
 		} catch (e) {
-			newStatusMessage("Swapping failed!");
+			newStatusMessage('Swapping failed!');
 			throw e;
 		}
 	}
@@ -691,15 +715,15 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 			let pagecount = 1;
 			let completed = await dailyQuestDone();
 			while (!completed) {
-				let response = await getURL("/esi/tile-data/News/" + pagecount);
+				let response = await getURL(`/esi/tile-data/News/${pagecount}`);
 				let newscount = 0;
 				while (newscount <= 14) {
 					try {
 						await getURL(response.data[newscount].url);
-						await postURL("/ucf/increment-views/" + response.data[newscount].id);
-						newStatusMessage("Visited news " + response.data[newscount].id + "!");
+						await postURL(`/ucf/increment-views/${response.data[newscount].id}`);
+						newStatusMessage(`Visited news ${response.data[newscount].id}!`);
 					} catch (e) {
-						newStatusMessage("Visiting " + response.data[newscount].id + " failed!");
+						newStatusMessage(`Visiting ${response.data[newscount].id} failed!`);
 					}
 					completed = await dailyQuestDone();
 					if (completed) {
@@ -710,88 +734,91 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 				pagecount++;
 			}
 		} catch (e) {
-			newStatusMessage("Visiting news failed!");
+			newStatusMessage('Visiting news failed!');
 			throw e;
 		}
 	}
 
 	async function shareSocial() {
 		try {
-			let response = await getURL("/esi/tile-data/News/1");
-			await postURL("/arp/quests/share/" + response.data[0].id);
-			newStatusMessage(response.data[0].id + " shared successfully!");
+			let response = await getURL('/esi/tile-data/News/1');
+			await postURL(`/arp/quests/share/${response.data[0].id}`);
+			newStatusMessage(`${response.data[0].id} shared successfully!`);
 		} catch (e) {
-			newStatusMessage("Sharing failed!");
+			newStatusMessage('Sharing failed!');
 			throw e;
 		}
 	}
 
 	function registerQuestButtons() {
-		$(".awah-btn-quest").on("click", async function() {
+		$('.awah-btn-quest').on('click', async function() {
 			// Automatic stuff
-			if ($(this).data("awah-quest") === "border") {
+			if ($(this).data('awah-quest') === 'border') {
 				let currentBorderId = await getCurrentBorderId();
 				let tempBorderId = currentBorderId === 1 ? 2 : 1;
-				await alternateSwap("/border/select", JSON.stringify({id: tempBorderId}));
-				await postURL("/border/select", JSON.stringify({id: currentBorderId})); // set previous border back
-			} else if ($(this).data("awah-quest") === "badge") {
+				await alternateSwap('/border/select', JSON.stringify({id: tempBorderId}));
+				await postURL('/border/select', JSON.stringify({id: currentBorderId})); // set previous border back
+			} else if ($(this).data('awah-quest') === 'badge') {
 				let currentBadgesId = await getCurrentBadgesId();
-				let tempBadgesId = currentBadgesId === JSON.parse("[1]") ? "[2]" : "[1]";
+				let tempBadgesId = currentBadgesId === JSON.parse('[1]') ? '[2]' : '[1]';
 				await alternateSwap(`/badges/update/${user_id}`, tempBadgesId);
 				await postURL(`/badges/update/${user_id}`, JSON.stringify(currentBadgesId)); // set previous badge(s) back
-			} else if ($(this).data("awah-quest") === "news") {
+			} else if ($(this).data('awah-quest') === 'news') {
 				await visitNews();
-			} else if ($(this).data("awah-quest") === "social") {
+			} else if ($(this).data('awah-quest') === 'social') {
 				await shareSocial();
 			// Non automatic stuff
-			} else if ($(this).data("awah-quest") === "avatar") {
-				document.location.href = "/account/personalization";
-			} else if ($(this).data("awah-quest") === "forum") {
-				document.location.href = "/forums/board/113/awa-on-topic";
+			} else if ($(this).data('awah-quest') === 'avatar') {
+				document.location.href = '/account/personalization';
+			} else if ($(this).data('awah-quest') === 'forum') {
+				document.location.href = '/forums/board/113/awa-on-topic';
 			}
 
 			let questCompleted = await dailyQuestDone();
 			if (questCompleted) {
-				$(".awah-btn-quest").addClass("disabled");
-				newStatusMessage("Daily Quest completed!");
+				$('.awah-btn-quest').addClass('disabled');
+				// TODO: update site interface in part where it says 'Incomplete'
+				// span.quest-item-progress
+				// fetch new DOM elements through api and replace them
+				newStatusMessage('Daily Quest completed!');
 			}
 		});
 	}
 
 	async function showDailyQuestButton() {
-		while(!document.querySelector(".quest-title")) {
+		while(!document.querySelector('.quest-title')) {
 			await new Promise((r) => setTimeout(r, 500));
 		}
 
 		try {
-			let response = await getURL("/api/v1/users/arp/status");
+			let response = await getURL('/api/v1/users/arp/status');
 			console.log(`👽 QUEST: ${response.quests[0].title} (${response.quests[0].type})`);
 			switch (response.quests[0].type) {
-				case "change_border":
+				case 'change_border':
 					$(`<a class="btn btn-default awah-btn-quest" href="javascript:void(0);" data-awah-tooltip="Automatic border swap" data-awah-quest="border">
 						<span class="more-link right"></span></a>`).appendTo(".quest-item > .col-2");
 					break;
-				case "change_badge":
+				case 'change_badge':
 					$(`<a class="btn btn-default awah-btn-quest" href="javascript:void(0);" data-awah-tooltip="Automatic badge swap" data-awah-quest="badge">
 						<span class="more-link right"></span></a>`).appendTo(".quest-item > .col-2");
 					break;
-				case "share_page":
+				case 'share_page':
 					$(`<a class="btn btn-default awah-btn-quest" href="javascript:void(0);" data-awah-tooltip="Automatic sharing" data-awah-quest="social">
 						<span class="more-link right"></span></a>`).appendTo(".quest-item > .col-2");
 					break;
-				case "read_articles":
+				case 'read_articles':
 					$(`<a class="btn btn-default awah-btn-quest" href="javascript:void(0);" data-awah-tooltip="Automatic news visiting" data-awah-quest="news">
 						<span class="more-link right"></span></a>`).appendTo(".quest-item > .col-2");
 					break;
-				case "change_avatar_placeholder":
+				case 'change_avatar_placeholder':
 					$(`<a class="btn btn-default awah-btn-quest" href="javascript:void(0);" data-awah-tooltip="Visit personalization page" data-awah-quest="avatar">
 						<span class="more-link right"></span></a>`).appendTo(".quest-item > .col-2");
 					break;
-				case "visit_page":
+				case 'visit_page':
 					$(`<a class="btn btn-default awah-btn-quest" href="javascript:void(0);" data-awah-tooltip="Visit forum" data-awah-quest="forum">
 						<span class="more-link right"></span></a>`).appendTo(".quest-item > .col-2");
 					break;
-				case "post_replies":
+				case 'post_replies':
 					$(`<a class="btn btn-default awah-btn-quest" href="javascript:void(0);" data-awah-tooltip="Visit forum" data-awah-quest="forum">
 						<span class="more-link right"></span></a>`).appendTo(".quest-item > .col-2");
 					break;
@@ -802,13 +829,13 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 			}
 
 			if(response.quests[0].completed === true) {
-				$(".awah-btn-quest").addClass("disabled");
+				$('.awah-btn-quest').addClass('disabled');
 			}
 		} catch (e) {
-			console.log("👽 QUEST: " + e);
-			newStatusMessage("Unable to get daily quest!");
+			console.log(`👽 QUEST: ${e}`);
+			newStatusMessage('Unable to get daily quest!');
 			$(`<a class="btn btn-default awah-btn-quest" href="javascript:void(0);" data-awah-tooltip="Visit forum" data-awah-quest="forum">
-				<span class="more-link right"></span></a>`).appendTo(".quest-item > .col-2");
+				<span class="more-link right"></span></a>`).appendTo('.quest-item > .col-2');
 		}
 
 		registerQuestButtons();
@@ -819,38 +846,38 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 	function showUserSteamProfileLink() {
 		if (profileData.profile.steamId) {
 			$(`<a href="//steamcommunity.com/profiles/${profileData.profile.steamId}" target="_blank" data-steam-enabled="true" data-is-current-user="false" class="hexagon btn-social btn-steamfriend" data-toggle="tooltip" data-placement="top" title="" data-original-title="Open user\'s Steam profile in new tab"><i class="fab fa-steam" aria-hidden="true"></i></a>`)
-				.appendTo("section.um-profile__friends");
+				.appendTo('section.um-profile__friends');
 		}
 	}
 
 	function showUserRecentActivityTotal() {
-		$(`<div class="awah-sub-recent-activity awah-grey">Total: ${recentActivityData.total}</div>`).insertAfter(".show-hdr__txt:contains('Recent Activity')");
+		$(`<div class="awah-sub-recent-activity awah-grey">Total: ${recentActivityData.total}</div>`).insertAfter('.show-hdr__txt:contains("Recent Activity")');
 	}
 
 	// GIVEAWAY functions
 	function showAvailableKeys() {
-		//output prependTo(".content-container");
+		//output prependTo('.content-container');
 		//div#get-key-actions span.key-count
-		if (typeof countryKeys !== "undefined") {
+		if (typeof countryKeys !== 'undefined') {
 			let keysLeft = 0;
-			let keysOutput = "";
+			let keysOutput = '';
 			let userCountryKeys = countryKeys[user_country];
-			if (typeof userCountryKeys === "number") {
+			if (typeof userCountryKeys === 'number') {
 				keysLeft = userCountryKeys;
-			} else if (typeof userCountryKeys === "object") {
-				for (var level in userCountryKeys["normal"]) {
-					if (userCountryKeys["normal"][level] > 0) {
-						keysLeft += userCountryKeys["normal"][level];
-						keysOutput += `<b>${userCountryKeys["normal"][level]}</b> keys for <b>${level}</b>+ level<br>\n`;
+			} else if (typeof userCountryKeys === 'object') {
+				for (let level in userCountryKeys['normal']) {
+					if (userCountryKeys['normal'][level] > 0) {
+						keysLeft += userCountryKeys['normal'][level];
+						keysOutput += `<b>${userCountryKeys['normal'][level]}</b> keys for <b>${level}</b>+ level<br>\n`;
 					}
 				}
-				for (var level in userCountryKeys["prestige"]) {
-					if (userCountryKeys["prestige"][level] > 0) {
-						keysOutput += `<b>${userCountryKeys["prestige"][level]}</b> keys for <b>master${(userCountryKeys["prestige"].length > 1  ? ` ${level}</b>+ level` : "</b> levels")} <span class="awah-info-btn" data-awah-tooltip="Prestige key pool"><span class="fa fa-fw fa-info-circle"></span></span><br>\n`;
+				for (let level in userCountryKeys['prestige']) {
+					if (userCountryKeys['prestige'][level] > 0) {
+						keysOutput += `<b>${userCountryKeys['prestige'][level]}</b> keys for <b>master${(userCountryKeys['prestige'].length > 1  ? ` ${level}</b>+ level` : '</b> levels')} <span class="awah-info-btn" data-awah-tooltip="Prestige key pool"><span class="fa fa-fw fa-info-circle"></span></span><br>\n`;
 					}
 				}
 			}
-			$("#giveaway-flash-message").after(`<div class="well well-sm">
+			$('#giveaway-flash-message').after(`<div class="well well-sm">
 <span class="awah-grey" style="float: right;" data-awah-tooltip="by Alienware Arena helper"><span class="fa fa-fw fa-key"></span> Available keys info</span>
 User country: <b>${user_country}</b> <span class="awah-info-btn" data-awah-tooltip="Can affect the keys availability.
 Site determines it automatically, based on your IP."><span class="fa fa-fw fa-info-circle"></span></span><br>
@@ -862,29 +889,29 @@ ${(keysOutput ? `${keysOutput}` : `<b>${keysLeft}</b> keys left`)}</div>`);
 		function injectActivateSteamKeyButton() {
 			// https://store.steampowered.com/account/registerkey?key=XXXXX-XXXXX-XXXXX
 			// /([A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5})/
-			let message = $("#giveaway-flash-message").html();
+			let message = $('#giveaway-flash-message').html();
 			message = message.replace(/<p>Key: (.*)([\s]{1}<a[\s]{1}.*<\/a>)<\/p>/m, `<p>Key: $1</p>`);
-			$("#giveaway-flash-message").html(message.replace(/<p>Key:[\s]{1}([A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5})<\/p>/m, `<p>Key: $1 <a target="_blank" href="https://store.steampowered.com/account/registerkey?key=$1" class="btn btn-share awah-activate-steam-key-btn" data-awah-tooltip="Activate key on Steam site"><i class="fa fa-steam"></i> Activate</a></p>`));
+			$('#giveaway-flash-message').html(message.replace(/<p>Key:[\s]{1}([A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5})<\/p>/m, '<p>Key: $1 <a target="_blank" href="https://store.steampowered.com/account/registerkey?key=$1" class="btn btn-share awah-activate-steam-key-btn" data-awah-tooltip="Activate key on Steam site"><i class="fa fa-steam"></i> Activate</a></p>'));
 		}
 		injectActivateSteamKeyButton();
-		document.addEventListener("animationstart", function(event) {
-			if (event.animationName === "awah-element-appears-hook") {
+		document.addEventListener('animationstart', function(event) {
+			if (event.animationName === 'awah-element-appears-hook') {
 				setTimeout(() => injectActivateSteamKeyButton(), 1);
 			}
 		}, false);
 	}
 
 	function markTakenGiveaways(giveawayKeysByID) {
-		$(".giveaways__listing .giveaways__listing-post").each(function() {
-			let giveawayID = /\/ucf\/show\/([\d]+)/.exec($(this).data("url-link"));
+		$('.giveaways__listing .giveaways__listing-post').each(function() {
+			let giveawayID = /\/ucf\/show\/([\d]+)/.exec($(this).data('url-link'));
 			giveawayID = giveawayID[1];
-			if (typeof giveawayKeysByID[giveawayID] === "object") {
-				$(this).addClass("awah-giveaway-taken");
-				let awahlabel = '✔\nTAKEN AT: ' + giveawayKeysByID[giveawayID].assigned_at;
-				if (showKeyOnMarkedGiveaways) {
-					awahlabel += '\n            KEY: ' + giveawayKeysByID[giveawayID].value;
+			if (typeof giveawayKeysByID[giveawayID] === 'object') {
+				$(this).addClass('awah-giveaway-taken');
+				let awahLabel = `✔\nTAKEN AT: ${giveawayKeysByID[giveawayID].assigned_at}`;
+				if (options.showKeyOnMarkedGiveaways) {
+					awahLabel += `\n            KEY: ${giveawayKeysByID[giveawayID].value}`;
 				}
-				$(this).attr("awahlabel", awahlabel);
+				$(this).attr('awahlabel', awahLabel);
 			}
 		});
 	}
@@ -892,67 +919,68 @@ ${(keysOutput ? `${keysOutput}` : `<b>${keysLeft}</b> keys left`)}</div>`);
 	function getTakenGiveaways() {
 		let statusMessage = $('<div>Getting your giveaways info <span class="fa fa-fw fa-circle-o-notch fa-spin"></span></div>');
 		statusMessage.delay(2000).queue(function() {
-			$(this).appendTo(".awah-arp-status").dequeue();
+			$(this).appendTo('.awah-arp-status').dequeue();
 		});
 
-		$.getJSON("/giveaways/keys", function(data) {
+		$.getJSON('/giveaways/keys', function(data) {
 			statusMessage.clearQueue()
 				.html('<div>Getting your giveaways info <span class="fa fa-fw fa-check-circle"></span></div>')
-				.delay(statusMessageDelay).queue(function() {
-					$(this).addClass("awah-casper-out");
+				.delay(options.statusMessageDelay).queue(function() {
+					$(this).addClass('awah-casper-out');
 			});
 			let awahGiveawayKeys = {};
 			$.each(data, function(index, value) {
 				awahGiveawayKeys[value.giveaway_id] = value;
 			});
-			console.log("👽 awahGiveawayKeys", awahGiveawayKeys);
+			console.log('👽 awahGiveawayKeys', awahGiveawayKeys);
 			markTakenGiveaways(awahGiveawayKeys); // sometimes first giveaways page loaded before event registered
-			document.addEventListener("animationstart", function(event) {
-				if (event.animationName === "awah-element-appears-hook") {
+			document.addEventListener('animationstart', function(event) {
+				if (event.animationName === 'awah-element-appears-hook') {
 					markTakenGiveaways(awahGiveawayKeys);
 				}
 			}, false);
 		}).fail(function() {
 			statusMessage.html('<div>Getting your giveaways info <span class="fa fa-fw fa-exclamation-triangle"></span></div>')
-				.delay(statusMessageDelay).queue(function() {
-				$(this).addClass("awah-casper-out").dequeue();
+				.delay(options.statusMessageDelay).queue(function() {
+				$(this).addClass('awah-casper-out').dequeue();
 			});
 		});
 	}
 
 	function closeRecentKeyPopup() {
-		document.querySelector("div.alert-info button.close").click();
+		let popup = document.querySelector("div.alert-info button.close");
+		if (popup) popup.click();
 	}
 
 	function showUserLevelAtInsignias() {
 		function parseUserLevelData() {
-			$("div.user-profile-small").each(function(i) {
-				$(this).parent().next().find(".insignia-label").attr("data-arp-level", $(this).attr("data-arp-level"));
+			$('div.user-profile-small').each(function(i) {
+				$(this).parent().next().find('.insignia-label').attr('data-arp-level', $(this).attr('data-arp-level'));
 			});
 
 			// master insignias size fix
-			$(".prestige-label").prevAll(".insignia-label").children("img").css({
-				"position": "relative",
-				"left": "2px",
-				"top": "2px"
+			$('.prestige-label').prevAll('.insignia-label').children('img').css({
+				'position': 'relative',
+				'left': '2px',
+				'top': '2px'
 			});
 
 			// master insignias size fix - alternative variant with using big images
-			/* $(".username.text-prestiged").prev(".insignia-label").children("img").each(function(i) {
-				$(this).css("width", "35px");
-				$(this).attr("src", $(this).attr("src").replace(/\/sm/, '/lg'));
+			/* $('.username.text-prestiged').prev('.insignia-label').children('img').each(function(i) {
+				$(this).css('width', '35px');
+				$(this).attr('src', $(this).attr('src').replace(/\/sm/, '/lg'));
 			}); */
 		}
 		parseUserLevelData();
 		$.ajaxPrefilter(function(options, originalOptions, jqXHR) {
-			if (options.url.indexOf("ucf/comments/") >= 0) {
+			if (options.url.indexOf('ucf/comments/') >= 0) {
 				let originalSuccess = options.success;
 				options.success = function(data) {
 					/* ajaxBeforeSuccess functionality */
-					let contentId = parseInt(this.url.replace(/\/ucf\/comments\/(\d*)/g, "$1"), 10);
+					let contentId = parseInt(this.url.replace(/\/ucf\/comments\/(\d*)/g, '$1'), 10);
 					setTimeout(() => parseUserLevelData(), 1);
 					/* ajaxBeforeSuccess functionality END */
-					if (typeof originalSuccess === "function") {
+					if (typeof originalSuccess === 'function') {
 						originalSuccess(data);
 					}
 				};
@@ -960,20 +988,24 @@ ${(keysOutput ? `${keysOutput}` : `<b>${keysLeft}</b> keys left`)}</div>`);
 		});
 	}
 
+	let path = window.location.pathname;
+	path = path.replace(/\/+/g, '/');
+
 	switch (true) {
 		case /.*\/ucf\/show\/.*/.test(path):
-			console.log("👽 SWITCH: Content");
+			console.log('👽 SWITCH: Content');
 			// <meta property="og:url" content="https://eu.alienwarearena.com/ucf/show/1592462/boards/contest-and-giveaways-global/Giveaway/rising-storm-2-vietnam-closed-beta-key-giveaway" />
-			let og_url = $('meta[property="og:url"]').attr("content");
+			let ogUrl = $('meta[property="og:url"]').attr('content');
 			switch (true) {
 				case /.*\/boards\/this-or-that\/.*/.test(path):
-				case /.*\/boards\/this-or-that\/.*/.test(og_url):
-					console.log("👽 SWITCH: This or That");
+				case /.*\/boards\/this-or-that\/.*/.test(ogUrl):
+					console.log('👽 SWITCH: This or That');
 					// this_or_that_btn();
 					break;
 				case /^\/ucf\/show\/.*\/Giveaway\//.test(path):
-				case /\/ucf\/show\/.*\/Giveaway\//.test(og_url):
-					console.log("👽 SWITCH: Giveaway");
+				case /\/ucf\/show\/.*\/Giveaway\//.test(ogUrl):
+					console.log('👽 SWITCH: Giveaway');
+					getTakenGiveaways();
 					showAvailableKeys();
 					showActivateSteamKeyButton();
 					break;
@@ -981,30 +1013,30 @@ ${(keysOutput ? `${keysOutput}` : `<b>${keysLeft}</b> keys left`)}</div>`);
 			//showUserLevelAtInsignias();
 			break;
 		case /^\/ucf\/Giveaway$/.test(path):
-			console.log("👽 SWITCH: Giveaways list");
+			console.log('👽 SWITCH: Giveaways list');
 			getTakenGiveaways();
 			closeRecentKeyPopup();
 			break;
 		case /^\/ucf\/Image$/.test(path):
-			console.log("👽 SWITCH: Featured images page");
-			//showFeaturedContentVotingButtons("Image");
+			console.log('👽 SWITCH: Featured images page');
+			//showFeaturedContentVotingButtons('Image');
 			break;
 		case /^\/ucf\/Video$/.test(path):
-			console.log("👽 SWITCH: Featured videos page");
-			showFeaturedContentVotingButtons("Video");
+			console.log('👽 SWITCH: Featured videos page');
+			showFeaturedContentVotingButtons('Video');
 			break;
 		case /^\/ucf\/News$/.test(path):
-			console.log("👽 SWITCH: Featured news page");
-			showFeaturedContentVotingButtons("News");
+			console.log('👽 SWITCH: Featured news page');
+			showFeaturedContentVotingButtons('News');
 			break;
 		case /^\/member\/.*$/.test(path):
-			console.log("👽 SWITCH: user profile page");
+			console.log('👽 SWITCH: user profile page');
 			//showProfileContentVotingButtons();
 			showUserSteamProfileLink();
 			//showUserRecentActivityTotal();
 			break;
-		case /\/$/.test(url):
-			console.log("👽 SWITCH: main page");
+		case /\/$/.test(window.location.href):
+			console.log('👽 SWITCH: main page');
 			break;
 	}
 }(window));
