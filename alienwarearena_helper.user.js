@@ -13,32 +13,15 @@
 // ==/UserScript==
 
 (function() {
+    fetch('/api/v1/users/arp/status', {credentials: 'same-origin'}).then(function(response){
+        return response.json()
+    }).then (function(arpstatus){
+	// ARP points initial readings
+	currentContentVotes = parseInt(arpstatus.daily_arp[1].status.split(" ")[0], 10);
+
 	// You can configure options through the user interface or localStorage in browser. It is not recommended to edit the script for these purposes.
 	const version = '1.1.4';
 
-	let dailyVotingStats = JSON.parse(localStorage.getItem('awahDailyVotingStat'));
-	// default dailyVotingStats object
-	if (dailyVotingStats == null) {
-		dailyVotingStats = {
-			lastVoteTime: 0,
-			currentContentVotes: 0,
-		};
-	}
-
-	function checkDailyVotingStats() {
-		let startOfCurrentDay = new Date();
-		startOfCurrentDay.setUTCHours(0, 0, 0, 0);
-		let lastVoteTime = new Date(dailyVotingStats.lastVoteTime);
-		if (lastVoteTime < startOfCurrentDay) {
-			dailyVotingStats.currentContentVotes = 0;
-		}
-	}
-
-	checkDailyVotingStats();
-
-	// ARP points initial readings
-	//let readPoints = /Vote on Content(?:.|\n)*>(\d+) of (\d+)<\/td>/.exec($('head').html());
-	let currentContentVotes = parseInt(dailyVotingStats.currentContentVotes, 10);
 	let maximumContentVotes = 20;
 	let contentVotingInAction = false;
 	let contentVotingURL = '';
@@ -359,16 +342,6 @@
 		}
 	}
 
-	function saveDailyVotingStats() {
-		dailyVotingStats.lastVoteTime = new Date().getTime();
-		dailyVotingStats.currentContentVotes = currentContentVotes;
-		try {
-			localStorage.setItem('awahDailyVotingStat', JSON.stringify(dailyVotingStats));
-		} catch (e) {
-			console.warn(e);
-			ui.newStatusMessage('localStorage quota exceeded! <span class="fa fa-fw fa-exclamation-triangle"></span>');
-		}
-	}
 
 	function showDailyResetTimer() {
 		let awahDateNow = new Date();
@@ -424,7 +397,6 @@
 						ui.newStatusMessage(`up: ${data.upVotes} | down: ${data.downVotes}${typeof data.voteTotal !== 'undefined' ? ` | total: ${data.voteTotal}` : ''}`);
 					}
 				}
-				saveDailyVotingStats();
 				saveVotedContentCache();
 				pointsStatusUpdate();
 				/* ajaxBeforeSuccess functionality END */
@@ -1049,4 +1021,5 @@ ${(keysOutput ? `${keysOutput}` : `<b>${keysLeft}</b> keys left`)}</div>`);
 			console.log('👽 SWITCH: main page');
 			break;
 	}
+    });
 }(window));
