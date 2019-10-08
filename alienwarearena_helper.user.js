@@ -75,7 +75,7 @@
 		/* script GUI */
 		#arp-toast {overflow: visible !important;}
 		#arp-toast .toast-header {overflow: visible !important;}
-		.awah-ui-overlay {color: white; clear: both; font-size: smaller !important; pointer-events: none; position: fixed; bottom: 0; right: 0; max-width: 40%; min-width: 20%; padding: 1rem 0.5rem 0 0; text-shadow: 2px 2px 2px rgb(0, 0, 0), -1px -1px 2px rgb(0, 0, 0), 2px 2px 5px rgb(0, 0, 0), -1px -1px 5px rgb(0, 0, 0), 0px 0px 10px rgb(0, 0, 0); text-align: right; background: rgba(0, 0, 0, 0) linear-gradient(to right bottom, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0) 50%, rgba(0, 0, 0, 0.85) 85%, rgba(0, 0, 0, 0.85) 100%) no-repeat scroll 0 0; z-index: 9000;}
+		.awah-ui-overlay {color: white; clear: both; font-size: smaller !important; pointer-events: none; position: fixed; bottom: 0; right: 0; max-width: 40%; min-width: 20%; padding: 1rem 0.5rem 0 0; text-shadow: 2px 2px 2px rgb(0, 0, 0), -1px -1px 2px rgb(0, 0, 0), 2px 2px 5px rgb(0, 0, 0), -1px -1px 5px rgb(0, 0, 0), 0px 0px 10px rgb(0, 0, 0); text-align: right; background: rgba(0, 0, 0, 0) linear-gradient(to right bottom, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0) 50%, rgba(0, 0, 0, 0.85) 85%, rgba(0, 0, 0, 0.85) 100%) no-repeat scroll 0 0; z-index: 9001;}
 		.awah-arp-status {float: right; clear: both; white-space: nowrap; border-bottom: 1px solid #1c1e22;}
 		.awah-arp-status > div {clear: both; position: relative; animation: awah-slide-from-bottom 0.25s ease-out 1 forwards;}
 		.awah-arp-pts {clear: both; width: 100%}
@@ -94,11 +94,11 @@
 		/* script options */
 		.awah-options-btn {float: left; padding-left: 16px; cursor: pointer; transition: text-shadow 0.25s ease-in-out;}
 		.awah-options-btn:hover {text-shadow: 0px 0px 3px rgba(75, 201, 239, 1), 0px 0px 12px rgba(75, 201, 239, 1); /* animation: awah-breathing-text-neon 2s ease 0s infinite alternate; */}
-		.awah-options-overlay {overflow: auto; float: left; clear: both; position: absolute; bottom: 0; right: calc(100% + 1px); height: 100%; width: 100%; padding: 0 11px; text-shadow: 2px 2px 2px rgb(0, 0, 0), -1px -1px 2px rgb(0, 0, 0); text-align: right; background: rgba(0, 0, 0, 0.85) repeat scroll 0 0; box-shadow: 0px 0px 3px 0px #54bbdb;}
+		#awah-options {overflow: auto; float: left; clear: both; position: fixed; height: calc(100vh - 58px); width: 30vw; right: calc(-5px - 30vw); margin-top: 58px; padding: 0 11px 2rem 11px; text-shadow: 2px 2px 2px rgb(0, 0, 0), -1px -1px 2px rgb(0, 0, 0); text-align: right; background: rgba(0, 0, 0, 0.85) repeat scroll 0 0; box-shadow: 0px 0px 3px 0px #54bbdb; transition: right 0.3s; z-index: 9000;}
 		.awah-options-title {font-size: 16px; padding: 11px 0;}
 		.awah-option {border-bottom: 1px solid #1c1e22; margin: 11px 0;}
 		.awah-option::after {content: ""; display: block; height: 0; clear: both;}
-		.awah-option label {width: 100%; margin: 0; position: relative;}
+		.awah-option label {width: 100%; margin: 0; position: relative; color: whitesmoke;}
 		.awah-option > * {clear: both;}
 		.awah-opt-title {float: left; /* line-height: 38px; */}
 		.awah-opt-input {float: right; width: 24%; text-align: right; padding: 0 5px; height: auto; background: transparent; color: white; border-width: 0px 1px 1px 0px;}
@@ -142,7 +142,7 @@
 		}
 		.giveaways__listing .row > div {animation-duration: 0.001s; animation-name: awah-element-appears-hook;}
 		#giveaway-flash-message {animation-duration: 0.001s; animation-name: awah-element-appears-hook;}
-		
+
 		/* Fix for Alienware Arena design bug */
 		.overlay {position: fixed !important;}
 		`;
@@ -182,17 +182,17 @@
 			// trick to apply options.showKeyOnMarkedGiveaways on the fly
 			// if (path === '/ucf/Giveaway') {
 			// 	let awahTemp = $('<div class="tile-chunk"></div>');
-			// 	awahTemp.appendTo('.awah-options-overlay').delay(250).queue(function() {
+			// 	awahTemp.appendTo('#awah-options').delay(250).queue(function() {
 			// 		$(this).remove().dequeue();
 			// 	});
 			// }
 
 			try {
 				localStorage.setItem('AlienwareArenaHelperOptions', JSON.stringify(this));
-				newStatusMessage('Settings saved! <span class="fa fa-fw fa-floppy-o"></span>');
+				ui.newStatusMessage('Settings saved! <span class="fa fa-fw fa-floppy-o"></span>');
 			} catch (e) {
 				console.warn(e);
-				newStatusMessage('localStorage quota exceeded! <span class="fa fa-fw fa-exclamation-triangle"></span>');
+				ui.newStatusMessage('localStorage quota exceeded! <span class="fa fa-fw fa-exclamation-triangle"></span>');
 			}
 		}
 
@@ -214,6 +214,118 @@
 	}
 
 	let options = new Options();
+
+	class UI {
+		constructor() {
+			let anchor = document.querySelector('li#notification-dropdown');
+			this.navPanel = document.createElement('li');
+			this.navPanel.classList.add("nav-item", "awah-nav-panel");
+			anchor.insertAdjacentElement('beforebegin', this.navPanel);
+
+			this.initStatusOverlay();
+			pointsStatusUpdate();
+			this.initOptionsUI();
+			showDailyResetTimer();
+
+			document.addEventListener('animationend', function(event) {
+				if (event.animationName === 'awah-casper-out') {
+					$(event.target).remove();
+				}
+			}, false);
+
+			this.newStatusMessage(`Alienware Arena helper v<b>${version}</b></span>`);
+		}
+
+		initStatusOverlay() {
+			$('div#content').append('<div class="awah-ui-overlay"><div class="awah-arp-status"></div><div class="awah-arp-pts"><div class="awah-arp-pts-con"></div></div></div>');
+			if (currentContentVotes < maximumContentVotes) {
+				$(`<div class="awah-con-check-queue" style="display: none;">content to check: <span class="awah-con-check-queue-length">${contentToCheck.length}</span> <span class="fa fa-fw fa-search"></span></div>`)
+					.appendTo('.awah-arp-status');
+				$(`<div class="awah-con-votes-queue" style="display: none;">content to vote: <span class="awah-con-votes-queue-length">${contentToVote.length}</span> <span class="fa fa-fw fa-upload"></span></div>`)
+					.appendTo('.awah-arp-status');
+			}
+		}
+
+		initOptionsUI()	{
+			this.navPanel.insertAdjacentHTML('beforeend', '<a class="nav-link awah-options-btn" data-awah-tooltip="AWA Helper options"><i aria-hidden="true" class="fa fa-fw fa-cog"></i></a>');
+
+			document.querySelector('div.wrapper').insertAdjacentHTML('beforeend', `<div id="awah-options" style="visibility: hidden;">
+				<div class="awah-option"><span class="awah-opt-desc awah-grey">AWA helper v<b>${version}</b></span></div>
+				<div class="awah-option">
+				<label><span class="awah-opt-title">actionsDelayMin</span><input id="awah-actions-delay-min" class="form-control awah-opt-input" type="text" value="${options.actionsDelayMin}"></label>
+				<label><span class="awah-opt-title">actionsDelayMax</span><input id="awah-actions-delay-max" class="form-control awah-opt-input" type="text" value="${options.actionsDelayMax}"></label>
+				<span class="awah-opt-desc awah-grey">Minimum and maximum random delay time between network actions. (milliseconds)<br>Default minimum: ${options.default().actionsDelayMin} || Default maximum: ${options.default().actionsDelayMax}</span></div>
+
+				<div class="awah-option">
+				<label><span class="awah-opt-title">showKeyOnMarkedGiveaways</span><input id="awah-show-key-on-marked-giveaways" class="form-control awah-opt-input" type="checkbox" ${options.showKeyOnMarkedGiveaways ? 'checked' : ''}><div class="form-control awah-opt-input"><div>&nbsp;</div>&nbsp;</div></label>
+				<span class="awah-opt-desc awah-grey">At Giveaways page. Default: ${options.default().showKeyOnMarkedGiveaways ? 'ON' : 'OFF'}</span></div>
+
+				<div class="awah-option">
+				<label><span class="awah-opt-title">statusMessageDelay</span><input id="awah-status-message-delay" class="form-control awah-opt-input" type="text" value="${options.statusMessageDelay}"></label>
+				<span class="awah-opt-desc awah-grey">How long the status messages will be displayed before they disappear. (milliseconds)<br>Default: ${options.default().statusMessageDelay}</span></div>
+
+				<div class="awah-option">
+				<button id="awah_restore_default" class="btn btn-danger"><span class="fa fa-exclamation-triangle"></span> Restore default</button>
+				<span class="awah-opt-desc awah-grey">Restore default settings.</span></div>
+
+				<div class="awah-option">
+				<label><span class="awah-opt-title">Voted content cached</span><span id="awah_voted_content_cache_size" class="form-control awah-opt-input">${votedContentCache.size}</span></label>
+				<button id="awah_clear_voted_content_cache" class="btn btn-danger"><span class="fa fa-exclamation-triangle"></span> Clear voted content cache</button>
+				<span class="awah-opt-desc awah-grey">Use only in case of emergency.</span></div>
+				</div>`);
+
+			$('input.awah-opt-input[type="text"]').on('input', function() {
+				this.value = this.value.replace(/[^\d]/, '');
+				this.value = this.value.slice(0, 5);
+			});
+
+			$('input.awah-opt-input').on('change', function() {
+				clearTimeout(saveOptionsTimer);
+				saveOptionsTimer = setTimeout(function() {
+					options.save();
+				}, 400);
+			});
+
+			$('#awah_restore_default').on('click', function() {
+				if (!confirm("Are you damn sure about this?!")) return;
+				$('#awah-actions-delay-min').val(options.default().actionsDelayMin);
+				$('#awah-actions-delay-max').val(options.default().actionsDelayMax);
+				$('#awah-show-key-on-marked-giveaways').prop('checked', (options.default().showKeyOnMarkedGiveaways === true));
+				$('#awah-status-message-delay').val(options.default().statusMessageDelay);
+				ui.newStatusMessage('Default options settings restored!');
+				options.save();
+			});
+
+			$('#awah_clear_voted_content_cache').on('click', function() {
+				if (!confirm("Are you damn sure about this?!")) return;
+				votedContentCache.clear();
+				saveVotedContentCache();
+				ui.newStatusMessage('Voted content cache cleared!');
+			});
+
+			document.querySelector('.awah-options-btn').addEventListener('click', function() {
+				let awahOptions = document.getElementById('awah-options');
+				if(awahOptions.style.visibility === 'hidden') {
+					awahOptions.style.visibility = 'visible';
+					awahOptions.style.right = '0';
+				} else {
+					setTimeout(() => {awahOptions.style.visibility = 'hidden'}, 300);
+					awahOptions.style.right = '';
+				}
+			}, false);
+		}
+
+		newStatusMessage(text) {
+			let statusMessageObj = $(`<div>${text}</div>`);
+			statusMessageObj.appendTo('.awah-arp-status')
+				.delay(options.statusMessageDelay).queue(function() {
+				$(this).addClass('awah-casper-out').dequeue();
+			});
+			return statusMessageObj;
+		}
+	}
+
+	let ui = new UI();
 
 	function pointsStatusUpdate() {
 		$('.awah-arp-pts-con').html(`CON: ${currentContentVotes} / ${maximumContentVotes}`);
@@ -237,22 +349,13 @@
 		}
 	}
 
-	function newStatusMessage(statusMessageText) {
-		let statusMessageObj = $(`<div>${statusMessageText}</div>`);
-		statusMessageObj.appendTo('.awah-arp-status')
-			.delay(options.statusMessageDelay).queue(function() {
-			$(this).addClass('awah-casper-out').dequeue();
-		});
-		return statusMessageObj;
-	}
-
 	function saveVotedContentCache() {
 		try {
 			localStorage.setItem('awahVotedContentCache', JSON.stringify([...votedContentCache]));
 			$('#awah_voted_content_cache_size').text(votedContentCache.size);
 		} catch (e) {
 			console.warn(e);
-			newStatusMessage('localStorage quota exceeded! <span class="fa fa-fw fa-exclamation-triangle"></span>');
+			ui.newStatusMessage('localStorage quota exceeded! <span class="fa fa-fw fa-exclamation-triangle"></span>');
 		}
 	}
 
@@ -263,7 +366,7 @@
 			localStorage.setItem('awahDailyVotingStat', JSON.stringify(dailyVotingStats));
 		} catch (e) {
 			console.warn(e);
-			newStatusMessage('localStorage quota exceeded! <span class="fa fa-fw fa-exclamation-triangle"></span>');
+			ui.newStatusMessage('localStorage quota exceeded! <span class="fa fa-fw fa-exclamation-triangle"></span>');
 		}
 	}
 
@@ -299,95 +402,6 @@
 		}, 1000);
 	}
 
-	// initialize UI
-	function initUI() {
-		setTimeout(() => {
-			$('div#content').append('<div class="awah-ui-overlay"><div class="awah-arp-status"></div><div class="awah-arp-pts"><div class="awah-arp-pts-con"></div></div></div>');
-			if (currentContentVotes < maximumContentVotes) {
-				$(`<div class="awah-con-check-queue" style="display: none;">content to check: <span class="awah-con-check-queue-length">${contentToCheck.length}</span> <span class="fa fa-fw fa-search"></span></div>`)
-                    .appendTo('.awah-arp-status');
-				$(`<div class="awah-con-votes-queue" style="display: none;">content to vote: <span class="awah-con-votes-queue-length">${contentToVote.length}</span> <span class="fa fa-fw fa-upload"></span></div>`)
-                    .appendTo('.awah-arp-status');
-			}
-			pointsStatusUpdate();
-			$('div.toast-body > p.text-center').css({'float': 'right', 'padding-right': '16px'});
-			$('div.toast-body').append('<p class="awah-options-btn"><span class="fa fa-fw fa-cog"></span> HELPER OPTIONS</p>');
-			$('div.toast-body').prepend(`<div class="awah-options-overlay" style="display: none; bottom: -102%;">
-<div class="awah-option"><span class="awah-opt-desc awah-grey">AWA helper v<b>${version}</b></span></div>
-<div class="awah-option">
-<label><span class="awah-opt-title">actionsDelayMin</span><input id="awah-actions-delay-min" class="form-control awah-opt-input" type="text" value="${options.actionsDelayMin}"></label>
-<label><span class="awah-opt-title">actionsDelayMax</span><input id="awah-actions-delay-max" class="form-control awah-opt-input" type="text" value="${options.actionsDelayMax}"></label>
-<span class="awah-opt-desc awah-grey">Minimum and maximum random delay time between net actions. (in milliseconds)<br>Default minimum: ${options.default().actionsDelayMin} || Default maximum: ${options.default().actionsDelayMax}</span></div>
-
-<div class="awah-option">
-<label><span class="awah-opt-title">showKeyOnMarkedGiveaways</span><input id="awah-show-key-on-marked-giveaways" class="form-control awah-opt-input" type="checkbox" ${options.showKeyOnMarkedGiveaways ? 'checked' : ''}><div class="form-control awah-opt-input"><div>&nbsp;</div>&nbsp;</div></label>
-<span class="awah-opt-desc awah-grey">At Giveaways page. Default: ${options.default().showKeyOnMarkedGiveaways === 'true' ? 'ON' : 'OFF'}</span></div>
-
-<div class="awah-option">
-<label><span class="awah-opt-title">statusMessageDelay</span><input id="awah-status-message-delay" class="form-control awah-opt-input" type="text" value="${options.statusMessageDelay}"></label>
-<span class="awah-opt-desc awah-grey">How long the status messages will be displayed before they disappear. (in milliseconds, 1000 = 1 second)<br>Default: ${options.default().statusMessageDelay}</span></div>
-
-<div class="awah-option">
-<button id="awah_restore_default" class="btn btn-danger"><span class="fa fa-exclamation-triangle"></span> Restore default</button>
-<span class="awah-opt-desc awah-grey">Restore default settings.</span></div>
-
-<div class="awah-option">
-<label><span class="awah-opt-title">Voted content cahed</span><span id="awah_voted_content_cache_size" class="form-control awah-opt-input">${votedContentCache.size}</span></label>
-<button id="awah_clear_voted_content_cache" class="btn btn-danger"><span class="fa fa-exclamation-triangle"></span> Clear voted content cache</button>
-<span class="awah-opt-desc awah-grey">Use only in case of emergency.</span></div>
-</div>`);
-			showDailyResetTimer();
-
-			document.addEventListener('animationend', function(event) {
-				if (event.animationName === 'awah-casper-out') {
-					$(event.target).remove();
-				}
-			}, false);
-
-			$('input.awah-opt-input[type="text"]').on('input', function() {
-				this.value = this.value.replace(/[^\d]/, '');
-				this.value = this.value.slice(0, 5);
-			});
-
-			$('input.awah-opt-input').on('change', function() {
-				clearTimeout(saveOptionsTimer);
-				saveOptionsTimer = setTimeout(function() {
-					options.save();
-				}, 400);
-			});
-
-			$('#awah_restore_default').on('click', function() {
-				$('#awah-actions-delay-min').val(options.default().actionsDelayMin);
-				$('#awah-actions-delay-max').val(options.default().actionsDelayMax);
-				$('#awah-show-key-on-marked-giveaways').prop('checked', (options.default().showKeyOnMarkedGiveaways === 'true'));
-				$('#awah-status-message-delay').val(options.default().statusMessageDelay);
-				newStatusMessage('Default options settings restored!');
-				options.save();
-			});
-
-			$('#awah_clear_voted_content_cache').on('click', function() {
-				votedContentCache.clear();
-				saveVotedContentCache();
-				newStatusMessage('Voted content cache cleared!');
-			});
-
-			$('.awah-options-btn').on('click', function() {
-				let awahOptions = $('.awah-options-overlay');
-				if(awahOptions.css('display') === 'none') {
-					awahOptions.show();
-					awahOptions.stop().animate({bottom: '0%'}, 250);
-				} else {
-					awahOptions.stop().animate({bottom: '-102%'}, 250, function() {
-						$(this).hide();
-					});
-				}
-			});
-
-			newStatusMessage(`Alienware Arena helper v<b>${version}</b></span>`);
-		}, 1);
-	}
-	initUI();
-
 	// ARP points watchdog
 	$.ajaxPrefilter(function(options, originalOptions, jqXHR) {
 		if (options.url.indexOf('vote') >= 0) {
@@ -405,9 +419,9 @@
 					votedContentCache.add(contentId);
 				}
 				if (!contentVotingInAction) {
-					newStatusMessage(data.message);
+					ui.newStatusMessage(data.message);
 					if (typeof data.upVotes !== 'undefined') {
-						newStatusMessage(`up: ${data.upVotes} | down: ${data.downVotes}${typeof data.voteTotal !== 'undefined' ? ` | total: ${data.voteTotal}` : ''}`);
+						ui.newStatusMessage(`up: ${data.upVotes} | down: ${data.downVotes}${typeof data.voteTotal !== 'undefined' ? ` | total: ${data.voteTotal}` : ''}`);
 					}
 				}
 				saveDailyVotingStats();
@@ -440,7 +454,7 @@
 				}
 			})
 			.fail(function(data) {
-				newStatusMessage('Vote apply failed! <span class="fa fa-fw fa-exclamation-triangle"></span>');
+				ui.newStatusMessage('Vote apply failed! <span class="fa fa-fw fa-exclamation-triangle"></span>');
 			})
 			.always(function() {
 				pointsStatusUpdate();
@@ -451,7 +465,7 @@
 						if (contentToCheck.length > 0) {
 							setTimeout(() => checkVotingContent(), getRandomInt(options.actionsDelayMin, options.actionsDelayMax)); // to the check!
 						} else {
-							newStatusMessage('Going to look for more content <span class="fa fa-fw fa-eye"></span>');
+							ui.newStatusMessage('Going to look for more content <span class="fa fa-fw fa-eye"></span>');
 							setTimeout(() => getVotingContentPage(), getRandomInt(options.actionsDelayMin, options.actionsDelayMax)); // to the beginning!
 						}
 					}
@@ -483,20 +497,20 @@
 						saveVotedContentCache();
 					}
 				} else {
-					newStatusMessage(`Failed to parse status of ${contentId}! <span class="fa fa-fw fa-exclamation-triangle"></span>`);
+					ui.newStatusMessage(`Failed to parse status of ${contentId}! <span class="fa fa-fw fa-exclamation-triangle"></span>`);
 				}
 			})
 			.fail(function() {
-				newStatusMessage(`Failed to get status of ${contentId}! <span class="fa fa-fw fa-exclamation-triangle"></span>`);
+				ui.newStatusMessage(`Failed to get status of ${contentId}! <span class="fa fa-fw fa-exclamation-triangle"></span>`);
 			})
 			.always(function() {
 				pointsStatusUpdate();
 				if (contentToCheck.length === 0 && contentToVote.length === 0) {
-					newStatusMessage('Going to look for more content <span class="fa fa-fw fa-eye"></span>');
+					ui.newStatusMessage('Going to look for more content <span class="fa fa-fw fa-eye"></span>');
 					setTimeout(() => getVotingContentPage(), getRandomInt(options.actionsDelayMin, options.actionsDelayMax)); // to the beginning!
 				} else if (contentToVote.length >= (maximumContentVotes - currentContentVotes) ||
 					(contentToVote.length > 0 && contentToCheck.length === 0)) {
-					newStatusMessage('Going to vote <span class="fa fa-fw fa-forward"></span>');
+					ui.newStatusMessage('Going to vote <span class="fa fa-fw fa-forward"></span>');
 					setTimeout(() => applyContentVoting(), getRandomInt(options.actionsDelayMin, options.actionsDelayMax)); // go to the next block!
 				} else if (contentToCheck.length > 0) {
 					setTimeout(() => checkVotingContent(), getRandomInt(options.actionsDelayMin, options.actionsDelayMax)); // recursion!
@@ -505,7 +519,7 @@
 	}
 
 	function getVotingContentPage(failCounter = 0) {
-		let statusMessage = newStatusMessage(`Getting page ${contentGettingPage} <span class="fa fa-fw fa-circle-o-notch fa-spin"></span>`);
+		let statusMessage = ui.newStatusMessage(`Getting page ${contentGettingPage} <span class="fa fa-fw fa-circle-o-notch fa-spin"></span>`);
 		statusMessage.clearQueue();
 		$.get(`${contentVotingURL}${contentGettingPage}`)
 			.done(function(response) {
@@ -515,7 +529,7 @@
 					$(this).addClass('awah-casper-out');
 				});
 				if (response.data.length === 0) {
-					newStatusMessage('No more content pages left in this section <span class="fa fa-fw fa-times-circle"></span>');
+					ui.newStatusMessage('No more content pages left in this section <span class="fa fa-fw fa-times-circle"></span>');
 				} else {
 					contentGettingPage++;
 					contentToCheck.push(...response.data);
@@ -533,21 +547,21 @@
 				pointsStatusUpdate();
 				// .fail
 				if (failCounter > 0 && failCounter < 5) {
-					newStatusMessage(`Failed to get content page! Trying again${failCounter > 1 ? ` (${failCounter})` : '...'} <span class="fa fa-fw fa-exclamation-triangle"></span>`);
+					ui.newStatusMessage(`Failed to get content page! Trying again${failCounter > 1 ? ` (${failCounter})` : '...'} <span class="fa fa-fw fa-exclamation-triangle"></span>`);
 					setTimeout(() => getVotingContentPage(failCounter), getRandomInt(options.actionsDelayMin, options.actionsDelayMax)); // recursion!
 				} else {
 					if (failCounter > 0) {
-						newStatusMessage(`Failed to get content page after ${failCounter} tries! <span class="fa fa-fw fa-exclamation-triangle"></span>`);
+						ui.newStatusMessage(`Failed to get content page after ${failCounter} tries! <span class="fa fa-fw fa-exclamation-triangle"></span>`);
 					}
 					// .done
 					if (contentToCheck.length >= (maximumContentVotes - currentContentVotes) ||
 						((textStatus === 'error' ? true : response.data.length === 0) && contentToCheck.length > 0)) {
-						newStatusMessage('Going to check content <span class="fa fa-fw fa-forward"></span>');
+						ui.newStatusMessage('Going to check content <span class="fa fa-fw fa-forward"></span>');
 						setTimeout(() => checkVotingContent(), getRandomInt(options.actionsDelayMin, options.actionsDelayMax)); // go to the next block!
 					} else if (failCounter === 0 && (textStatus === 'error' ? true : response.data.length > 0)) {
 						setTimeout(() => getVotingContentPage(), getRandomInt(options.actionsDelayMin, options.actionsDelayMax)); // recursion!
 					} else {
-						newStatusMessage('Voting stopped!');
+						ui.newStatusMessage('Voting stopped!');
 						contentVotingInAction = false;
 					}
 				}
@@ -577,7 +591,7 @@
 			if ($(this).data('awah-content-url') !== '') {
 				contentVotingURL = $(this).data('awah-content-url');
 			} else {
-				newStatusMessage('No content URL specified! Voting is impossible! <span class="fa fa-fw fa-exclamation-triangle"></span>');
+				ui.newStatusMessage('No content URL specified! Voting is impossible! <span class="fa fa-fw fa-exclamation-triangle"></span>');
 				return;
 			}
 			startContentVotingAlgorithm();
@@ -606,12 +620,8 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 </div>
 </div>`).insertAfter('div:has(.panel-default) > a:last-of-type');
 
-		$(`
-<li class="nav-item awah-nav-panel">
-	<a class="nav-link awah-btn-cons" href="javascript:void(0);" data-awah-tooltip="UP-voting" data-awah-voting-direction="up" data-awah-content-url="/esi/featured-tile-data/${sectionType}/"><i aria-hidden="true" class="awicon far fa-caret-square-up"></i></a>
-	<a class="nav-link awah-btn-cons" href="javascript:void(0);" data-awah-tooltip="DOWN-voting" data-awah-voting-direction="down" data-awah-content-url="/esi/featured-tile-data/${sectionType}/"><i aria-hidden="true" class="awicon far fa-caret-square-down"></i></a>
-</li>`)
-			.insertBefore('li#notification-dropdown');
+		ui.navPanel.insertAdjacentHTML('afterbegin', `<a class="nav-link awah-btn-cons" href="javascript:void(0);" data-awah-tooltip="UP-voting" data-awah-voting-direction="up" data-awah-content-url="/esi/featured-tile-data/${sectionType}/"><i aria-hidden="true" class="awicon far fa-caret-square-up"></i></a>
+			<a class="nav-link awah-btn-cons" href="javascript:void(0);" data-awah-tooltip="DOWN-voting" data-awah-voting-direction="down" data-awah-content-url="/esi/featured-tile-data/${sectionType}/"><i aria-hidden="true" class="awicon far fa-caret-square-down"></i></a>`);
 		registerContentVotingButtons();
 	}
 
@@ -699,13 +709,13 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 			await postURL(url, content1);
 			let questCompleted = await dailyQuestDone();
 			if (questCompleted) {
-				newStatusMessage('Swapped successfully!');
+				ui.newStatusMessage('Swapped successfully!');
 			} else if (content2 !== null) {
 				await postURL(url, content2);
-				newStatusMessage('Swapped successfully!');
+				ui.newStatusMessage('Swapped successfully!');
 			}
 		} catch (e) {
-			newStatusMessage('Swapping failed!');
+			ui.newStatusMessage('Swapping failed!');
 			throw e;
 		}
 	}
@@ -721,9 +731,9 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 					try {
 						await getURL(response.data[newscount].url);
 						await postURL(`/ucf/increment-views/${response.data[newscount].id}`);
-						newStatusMessage(`Visited news ${response.data[newscount].id}!`);
+						ui.newStatusMessage(`Visited news ${response.data[newscount].id}!`);
 					} catch (e) {
-						newStatusMessage(`Visiting ${response.data[newscount].id} failed!`);
+						ui.newStatusMessage(`Visiting ${response.data[newscount].id} failed!`);
 					}
 					completed = await dailyQuestDone();
 					if (completed) {
@@ -734,7 +744,7 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 				pagecount++;
 			}
 		} catch (e) {
-			newStatusMessage('Visiting news failed!');
+			ui.newStatusMessage('Visiting news failed!');
 			throw e;
 		}
 	}
@@ -743,9 +753,9 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 		try {
 			let response = await getURL('/esi/tile-data/News/1');
 			await postURL(`/arp/quests/share/${response.data[0].id}`);
-			newStatusMessage(`${response.data[0].id} shared successfully!`);
+			ui.newStatusMessage(`${response.data[0].id} shared successfully!`);
 		} catch (e) {
-			newStatusMessage('Sharing failed!');
+			ui.newStatusMessage('Sharing failed!');
 			throw e;
 		}
 	}
@@ -780,7 +790,7 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 				// TODO: update site interface in part where it says 'Incomplete'
 				// span.quest-item-progress
 				// fetch new DOM elements through api and replace them
-				newStatusMessage('Daily Quest completed!');
+				ui.newStatusMessage('Daily Quest completed!');
 			}
 		});
 	}
@@ -833,7 +843,7 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 			}
 		} catch (e) {
 			console.log(`👽 QUEST: ${e}`);
-			newStatusMessage('Unable to get daily quest!');
+			ui.newStatusMessage('Unable to get daily quest!');
 			$(`<a class="btn btn-default awah-btn-quest" href="javascript:void(0);" data-awah-tooltip="Visit forum" data-awah-quest="forum">
 				<span class="more-link right"></span></a>`).appendTo('.quest-item > .col-2');
 		}
@@ -948,7 +958,7 @@ ${(keysOutput ? `${keysOutput}` : `<b>${keysLeft}</b> keys left`)}</div>`);
 	}
 
 	function closeRecentKeyPopup() {
-		let popup = document.querySelector("div.alert-info button.close");
+		let popup = document.querySelector('div.alert-info button.close');
 		if (popup) popup.click();
 	}
 
