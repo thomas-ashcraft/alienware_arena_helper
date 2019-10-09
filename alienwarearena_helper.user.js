@@ -217,6 +217,8 @@
 
 	class UI {
 		constructor() {
+			this.fixNavBarBackgroundOnPageLoad(); // yet another site bug fix
+
 			let anchor = document.querySelector('li#notification-dropdown');
 			this.navPanel = document.createElement('li');
 			this.navPanel.classList.add("nav-item", "awah-nav-panel");
@@ -322,6 +324,13 @@
 				$(this).addClass('awah-casper-out').dequeue();
 			});
 			return statusMessageObj;
+		}
+
+		fixNavBarBackgroundOnPageLoad() {
+			let nav = document.querySelector('.navbar-top');
+			if (nav !== null && window.scrollY > nav.clientHeight) {
+				nav.classList.add('scrolled');
+			}
 		}
 	}
 
