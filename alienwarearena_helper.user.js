@@ -189,10 +189,10 @@
 
 			try {
 				localStorage.setItem('AlienwareArenaHelperOptions', JSON.stringify(this));
-				ui.newStatusMessage('Settings saved! <span class="fa fa-fw fa-floppy-o"></span>');
+                return true;
 			} catch (e) {
 				console.warn(e);
-				ui.newStatusMessage('localStorage quota exceeded! <span class="fa fa-fw fa-exclamation-triangle"></span>');
+                return false;
 			}
 		}
 
@@ -221,7 +221,7 @@
 
 			let anchor = document.querySelector('li#notification-dropdown');
 			this.navPanel = document.createElement('li');
-			this.navPanel.classList.add("nav-item", "awah-nav-panel");
+			this.navPanel.classList.add('nav-item', 'awah-nav-panel');
 			anchor.insertAdjacentElement('beforebegin', this.navPanel);
 
 			this.initStatusOverlay();
@@ -231,7 +231,7 @@
 
 			document.addEventListener('animationend', function(event) {
 				if (event.animationName === 'awah-casper-out') {
-					$(event.target).remove();
+					event.target.remove();
 				}
 			}, false);
 
@@ -239,13 +239,15 @@
 		}
 
 		initStatusOverlay() {
-			$('div#content').append('<div class="awah-ui-overlay"><div class="awah-arp-status"></div><div class="awah-arp-pts"><div class="awah-arp-pts-con"></div></div></div>');
+			let statusOverlayElement = document.createElement('div');
+			statusOverlayElement.id = 'awah-status-overlay';
+			statusOverlayElement.classList.add('awah-ui-overlay');
+			statusOverlayElement.insertAdjacentHTML('afterbegin', '<div class="awah-arp-status"></div><div class="awah-arp-pts"><div class="awah-arp-pts-con"></div></div>');
 			if (currentContentVotes < maximumContentVotes) {
-				$(`<div class="awah-con-check-queue" style="display: none;">content to check: <span class="awah-con-check-queue-length">${contentToCheck.length}</span> <span class="fa fa-fw fa-search"></span></div>`)
-					.appendTo('.awah-arp-status');
-				$(`<div class="awah-con-votes-queue" style="display: none;">content to vote: <span class="awah-con-votes-queue-length">${contentToVote.length}</span> <span class="fa fa-fw fa-upload"></span></div>`)
-					.appendTo('.awah-arp-status');
+				statusOverlayElement.querySelector('.awah-arp-status').insertAdjacentHTML('beforeend', `<div class="awah-con-check-queue" style="display: none;">content to check: <span class="awah-con-check-queue-length">${contentToCheck.length}</span> <span class="fa fa-fw fa-search"></span></div>
+					<div class="awah-con-votes-queue" style="display: none;">content to vote: <span class="awah-con-votes-queue-length">${contentToVote.length}</span> <span class="fa fa-fw fa-upload"></span></div>`);
 			}
+			document.getElementById('content').appendChild(statusOverlayElement);
 		}
 
 		initOptionsUI()	{
@@ -284,7 +286,11 @@
 			$('input.awah-opt-input').on('change', function() {
 				clearTimeout(saveOptionsTimer);
 				saveOptionsTimer = setTimeout(function() {
-					options.save();
+					if (options.save()) {
+                        ui.newStatusMessage('Settings saved! <span class="fa fa-fw fa-floppy-o"></span>');
+                    } else {
+                        ui.newStatusMessage('Error! See console for details. <span class="fa fa-fw fa-exclamation-triangle"></span>');
+                    }
 				}, 400);
 			});
 
