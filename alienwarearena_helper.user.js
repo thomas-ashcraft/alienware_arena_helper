@@ -69,7 +69,7 @@
 		.awah-info-btn {cursor: pointer; opacity: 0.4; transition: opacity 0.25s ease-in-out;}
 		.awah-info-btn:hover {opacity: 1;}
 		[data-awah-tooltip] {position: relative;}
-		[data-awah-tooltip]:after {content: attr(data-awah-tooltip); pointer-events: none; padding: 4px 8px; color: white; position: absolute; left: 0; bottom: 100%; opacity: 0; font-weight: normal; text-transform: none; font-size: smaller; white-space: pre; box-shadow: 0px 0px 3px 0px #54bbdb; background-color: #0e0e0e; transition: opacity 0.25s ease-out, bottom 0.25s ease-out; z-index: 1000;}
+		[data-awah-tooltip]:after {content: attr(data-awah-tooltip); pointer-events: none; padding: 4px 8px; color: white; position: absolute; left: 0; bottom: 100%; opacity: 0; font-weight: normal; text-transform: none; font-size: 0.9rem; white-space: pre; box-shadow: 0px 0px 3px 0px #54bbdb; background-color: #0e0e0e; transition: opacity 0.25s ease-out, bottom 0.25s ease-out; z-index: 1000;}
 		[data-awah-tooltip]:hover:after {bottom: -100%; opacity: 1;}
 
 		/* script GUI */
@@ -94,20 +94,19 @@
 		/* script options */
 		.awah-options-btn {float: left; padding-left: 16px; cursor: pointer; transition: text-shadow 0.25s ease-in-out;}
 		.awah-options-btn:hover {text-shadow: 0px 0px 3px rgba(75, 201, 239, 1), 0px 0px 12px rgba(75, 201, 239, 1); /* animation: awah-breathing-text-neon 2s ease 0s infinite alternate; */}
-		#awah-options {overflow: auto; float: left; clear: both; position: fixed; height: calc(100vh - 58px); width: 30vw; right: calc(-5px - 30vw); margin-top: 58px; padding: 0 11px 2rem 11px; text-shadow: 2px 2px 2px rgb(0, 0, 0), -1px -1px 2px rgb(0, 0, 0); text-align: right; background: rgba(0, 0, 0, 0.85) repeat scroll 0 0; box-shadow: 0px 0px 3px 0px #54bbdb; transition: right 0.3s; z-index: 9000;}
-		.awah-options-title {font-size: 16px; padding: 11px 0;}
-		.awah-option {border-bottom: 1px solid #1c1e22; margin: 11px 0;}
-		.awah-option::after {content: ""; display: block; height: 0; clear: both;}
-		.awah-option label {width: 100%; margin: 0; position: relative; color: whitesmoke;}
-		.awah-option > * {clear: both;}
-		.awah-opt-title {float: left; /* line-height: 38px; */}
-		.awah-opt-input {float: right; width: 24%; text-align: right; padding: 0 5px; height: auto; background: transparent; color: white; border-width: 0px 1px 1px 0px;}
-		.awah-opt-desc {float: right; font-size: smaller;}
+		#awah-options {display: flex; flex-flow: column nowrap; overflow: auto; position: fixed; height: 100vh; width: 30vw; right: calc(-5px - 30vw); padding: 0 11px 2rem 11px; text-shadow: 2px 2px 2px rgb(0, 0, 0), -1px -1px 2px rgb(0, 0, 0); text-align: right; background: rgba(0, 0, 0, 0.85) repeat scroll 0 0; box-shadow: 0px 0px 3px 0px #54bbdb; transition: right 0.3s; z-index: 9000;}
+		.awah-option {border-bottom: 1px solid #1c1e22; margin-bottom: 11px;}
+		.awah-option label {display: flex; flex-flow: row nowrap; justify-content: space-between; align-items: baseline; color: whitesmoke;}
+		#awah-options > :first-child {display: flex; flex-flow: row nowrap; justify-content: space-between; align-items: baseline;}
+		.awah-opt-input {width: 24%; text-align: right; padding: 0 5px; height: auto; background: transparent; color: white; border-width: 0px 1px 1px 0px;}
+		.awah-opt-desc {font-size: smaller;}
 		.awah-option > .btn-danger {width: 100%;}
-		input.awah-opt-input[type="checkbox"] {/* display: none; */ position: absolute; right: 0; opacity: 0;}
+		#awah-options .dismiss-menu {font-size: 32px;}
+
+		input.awah-opt-input[type="checkbox"] {position: absolute; right: 0; opacity: 0;}
 		input.awah-opt-input[type="checkbox"]:focus + div {border-color: #66afe9; outline: 0; -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(102, 175, 233, 0.6); box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(102, 175, 233, 0.6);}
 		.awah-opt-input[type="checkbox"] + div {transition: 0.25s all ease; position: relative; overflow: hidden;}
-		.awah-opt-input[type="checkbox"] + div > div {transition: 0.25s all ease; background-color: #428bca; width: 50%; position: absolute; left: 0;}
+		.awah-opt-input[type="checkbox"] + div > div {transition: 0.25s all ease; background-color: #428bca; width: 50%; height: 100%; position: absolute; left: 0;}
 		input.awah-opt-input[type="checkbox"]:checked + div {background-color: rgb(66, 139, 202, 0.4);}
 		input.awah-opt-input[type="checkbox"]:checked + div > div {left: calc(100% - 50%);}
 		.awah-opt-input[type="checkbox"] + div > div::before {content: 'ON'; position: absolute; right: 120%;}
@@ -254,7 +253,11 @@
 			this.navPanel.insertAdjacentHTML('beforeend', '<a class="nav-link awah-options-btn" data-awah-tooltip="AWA Helper options"><i aria-hidden="true" class="fa fa-fw fa-cog"></i></a>');
 
 			document.querySelector('div.wrapper').insertAdjacentHTML('beforeend', `<div id="awah-options" style="visibility: hidden;">
-				<div class="awah-option"><span class="awah-opt-desc awah-grey">AWA helper v<b>${version}</b></span></div>
+				<div class="awah-option">
+				<a class="dismiss-menu" data-awah-tooltip="Close options"><i aria-hidden="true" class="fas fa-times"></i></a>
+				<span class="awah-opt-desc awah-grey">AWA helper v<b>${version}</b></span>
+				</div>
+
 				<div class="awah-option">
 				<label><span class="awah-opt-title">actionsDelayMin</span><input id="awah-actions-delay-min" class="form-control awah-opt-input" type="text" value="${options.actionsDelayMin}"></label>
 				<label><span class="awah-opt-title">actionsDelayMax</span><input id="awah-actions-delay-max" class="form-control awah-opt-input" type="text" value="${options.actionsDelayMax}"></label>
@@ -311,16 +314,30 @@
 				ui.newStatusMessage('Voted content cache cleared!');
 			});
 
-			document.querySelector('.awah-options-btn').addEventListener('click', function() {
+			document.querySelector('.awah-options-btn').addEventListener('click', this.toggleOptionsDisplay, false);
+
+			// hideOverlay() hook
+			if (typeof hideOverlay === 'function') {
+				let originalHideOverlay = hideOverlay;
 				let awahOptions = document.getElementById('awah-options');
-				if(awahOptions.style.visibility === 'hidden') {
-					awahOptions.style.visibility = 'visible';
-					awahOptions.style.right = '0';
-				} else {
+				hideOverlay = function() {
 					setTimeout(() => {awahOptions.style.visibility = 'hidden'}, 300);
 					awahOptions.style.right = '';
-				}
-			}, false);
+					originalHideOverlay();
+				};
+			}
+		}
+
+		toggleOptionsDisplay() {
+			let overlayElement = document.querySelector('.overlay');
+			let awahOptions = document.getElementById('awah-options');
+			if(awahOptions.style.visibility === 'hidden') {
+				overlayElement.classList.add('active');
+				awahOptions.style.visibility = 'visible';
+				awahOptions.style.right = '0';
+			} else {
+				hideOverlay();
+			}
 		}
 
 		newStatusMessage(text) {
