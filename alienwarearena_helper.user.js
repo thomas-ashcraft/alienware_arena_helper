@@ -780,6 +780,8 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 			// Non automatic stuff
 			} else if ($(this).data('awah-quest') === 'avatar') {
 				document.location.href = '/account/personalization';
+			} else if ($(this).data('awah-quest') === 'video') {
+				document.location.href = '/ucf/Video/new?boardId=464';
 			} else if ($(this).data('awah-quest') === 'forum') {
 				document.location.href = '/forums/board/113/awa-on-topic';
 			}
@@ -822,6 +824,10 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 					break;
 				case 'change_avatar_placeholder':
 					$(`<a class="btn btn-default awah-btn-quest" href="javascript:void(0);" data-awah-tooltip="Visit personalization page" data-awah-quest="avatar">
+						<span class="more-link right"></span></a>`).appendTo(".quest-item > .col-2");
+					break;
+				case 'add_video':
+					$(`<a class="btn btn-default awah-btn-quest" href="javascript:void(0);" data-awah-tooltip="Add video" data-awah-quest="video">
 						<span class="more-link right"></span></a>`).appendTo(".quest-item > .col-2");
 					break;
 				case 'visit_page':
