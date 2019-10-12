@@ -16,30 +16,6 @@
 	// You can configure options through the user interface or localStorage in browser. It is not recommended to edit the script for these purposes.
 	const version = '1.1.4';
 
-	let dailyVotingStats = JSON.parse(localStorage.getItem('awahDailyVotingStat'));
-	// default dailyVotingStats object
-	if (dailyVotingStats == null) {
-		dailyVotingStats = {
-			lastVoteTime: 0,
-			currentContentVotes: 0,
-		};
-	}
-
-	function checkDailyVotingStats() {
-		let startOfCurrentDay = new Date();
-		startOfCurrentDay.setUTCHours(0, 0, 0, 0);
-		let lastVoteTime = new Date(dailyVotingStats.lastVoteTime);
-		if (lastVoteTime < startOfCurrentDay) {
-			dailyVotingStats.currentContentVotes = 0;
-		}
-	}
-
-	checkDailyVotingStats();
-
-	// ARP points initial readings
-	//let readPoints = /Vote on Content(?:.|\n)*>(\d+) of (\d+)<\/td>/.exec($('head').html());
-	let currentContentVotes = parseInt(dailyVotingStats.currentContentVotes, 10);
-	let maximumContentVotes = 20;
 	let contentVotingInAction = false;
 	let contentVotingURL = '';
 	let contentToVote = [];
@@ -73,8 +49,6 @@
 		[data-awah-tooltip]:hover:after {bottom: -100%; opacity: 1;}
 
 		/* script GUI */
-		#arp-toast {overflow: visible !important;}
-		#arp-toast .toast-header {overflow: visible !important;}
 		.awah-ui-overlay {color: white; clear: both; font-size: smaller !important; pointer-events: none; position: fixed; bottom: 0; right: 0; max-width: 40%; min-width: 20%; padding: 1rem 0.5rem 0 0; text-shadow: 2px 2px 2px rgb(0, 0, 0), -1px -1px 2px rgb(0, 0, 0), 2px 2px 5px rgb(0, 0, 0), -1px -1px 5px rgb(0, 0, 0), 0px 0px 10px rgb(0, 0, 0); text-align: right; background: rgba(0, 0, 0, 0) linear-gradient(to right bottom, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0) 50%, rgba(0, 0, 0, 0.85) 85%, rgba(0, 0, 0, 0.85) 100%) no-repeat scroll 0 0; z-index: 9001;}
 		.awah-arp-status {float: right; clear: both; white-space: nowrap; border-bottom: 1px solid #1c1e22;}
 		.awah-arp-status > div {clear: both; position: relative; animation: awah-slide-from-bottom 0.25s ease-out 1 forwards;}
@@ -83,6 +57,7 @@
 		.awah-arp-pts > div::after {content: ""; display: block; height: 0; clear: both;}
 		.awah-grey {color: #767676;}
 		.awah-casper-out {overflow: hidden !important; animation: awah-casper-out 0.6s ease-in !important;}
+		.awah-rotating {animation: awah-rotating 2s linear infinite;}
 
 		li.awah-nav-panel {}
 		li.awah-nav-panel > a.nav-link {width: 2.5rem; height: 2.5rem; float: left; cursor: pointer;}
@@ -103,6 +78,7 @@
 		.awah-option > .btn-danger {width: 100%;}
 		#awah-options .dismiss-menu {font-size: 32px;}
 
+		/* custom checkbox */
 		input.awah-opt-input[type="checkbox"] {position: absolute; right: 0; opacity: 0;}
 		input.awah-opt-input[type="checkbox"]:focus + div {border-color: #66afe9; outline: 0; -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(102, 175, 233, 0.6); box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(102, 175, 233, 0.6);}
 		.awah-opt-input[type="checkbox"] + div {transition: 0.25s all ease; position: relative; overflow: hidden;}
@@ -135,16 +111,51 @@
 			from {text-shadow: 0px 0px 3px rgba(75, 201, 239, 0.25), 0px 0px 12px rgba(75, 201, 239, 0.25);}
 			to {text-shadow: 0px 0px 3px rgba(75, 201, 239, 1), 0px 0px 12px rgba(75, 201, 239, 1);}
 		}
+		@keyframes awah-rotating {
+			from {transform: rotate(0deg);}
+			to {transform: rotate(360deg);}
+		}
 		@keyframes awah-element-appears-hook {
 			from {opacity: 0.99;}
 			to {opacity: 1;}
 		}
 		.giveaways__listing .row > div {animation-duration: 0.001s; animation-name: awah-element-appears-hook;}
 		#giveaway-flash-message {animation-duration: 0.001s; animation-name: awah-element-appears-hook;}
+		
+		/* Dot Falling */
+		.dot-falling {position: relative; display: inline-block; margin: 0 16px; text-align: left; left: -100px; width: 10px; height: 10px; border-radius: 5px; background-color: rgba(0,0,0,0); color: rgba(0,0,0,0); box-shadow: 99px 0 0 0 #00f0f0; animation: dotFalling 1s infinite linear; animation-delay: .1s;}
+		.dot-falling::before,
+		.dot-falling::after { content: ''; display: inline-block; position: absolute; top: 0;}
+		.dot-falling::before { width: 10px; height: 10px; border-radius: 5px; animation: dotFallingBefore 1s infinite linear; animation-delay: 0s;}
+		.dot-falling::after { width: 10px; height: 10px; border-radius: 5px; animation: dotFallingAfter 1s infinite linear; animation-delay: .2s;}
+
+		@keyframes dotFalling {
+		  0% {box-shadow: 100px -15px 0 0 rgba( 0, 240, 240, 0);}
+		  25%,
+		  50%,
+		  75% {box-shadow: 100px 0 0 0 #00f0f0;}
+		  100% {box-shadow: 100px 15px 0 0 rgba( 0, 240, 240, 0);}
+		}
+		
+		@keyframes dotFallingBefore {
+		  0% {box-shadow: 85px -15px 0 0 rgba( 0, 240, 240, 0);}
+		  25%,
+		  50%,
+		  75% {box-shadow: 85px 0 0 0 #00f0f0;}
+		  100% {box-shadow: 85px 15px 0 0 rgba( 0, 240, 240, 0);}
+		}
+		
+		@keyframes dotFallingAfter {
+		  0% {box-shadow: 115px -15px 0 0 rgba( 0, 240, 240, 0);}
+		  25%,
+		  50%,
+		  75% {box-shadow: 115px 0 0 0 #00f0f0;}
+		  100% {box-shadow: 115px 15px 0 0 rgba( 0, 240, 240, 0);}
+		}
 
 		/* Fix for Alienware Arena design bugs */
 		.overlay {position: fixed !important;} /* without it .overlay sticks to top of the site and can be skipped by scrolling */
-		.videos__listing-post img {max-height: 299px;} /* videos without thumbnail have bigger height and stretching out of the general row */
+		.videos__listing .videos__listing-post img {max-height: 299px;} /* videos without thumbnail have bigger height and stretching out of the general row */
 		`;
 
 	class Options {
@@ -215,6 +226,75 @@
 
 	let options = new Options();
 
+	class ARPStatus {
+		constructor() {
+			this.startOfCurrentDay = new Date();
+			this.startOfCurrentDay.setUTCHours(0, 0, 0, 0);
+
+			this.initARPWatchdog();
+
+			this.updateFromServer();
+		}
+
+		initARPWatchdog() {
+			// TODO: remake to fetch and XMLHttpRequest hooks instead of jQuery
+			$.ajaxPrefilter(function(options, originalOptions, jqXHR) {
+				if (options.url.indexOf('vote') >= 0) {
+					let originalSuccess = options.success;
+					options.success = function(data) {
+						/* ajaxBeforeSuccess functionality */
+						let contentId = parseInt(this.url.replace(/\/ucf\/vote\/(?:up|down)\/(\d*)/g, '$1'), 10);
+						if (data.votedForContent === true) {
+							arpStatus.currentContentVotes++;
+							votedContentCache.add(contentId);
+						} else if (data.votedForContent === false) {
+							arpStatus.currentContentVotes--;
+							votedContentCache.delete(contentId);
+						} else if (data.message.indexOf('already voted') >= 0) {
+							votedContentCache.add(contentId);
+						}
+						if (!contentVotingInAction) {
+							ui.newStatusMessage(data.message);
+							if (typeof data.upVotes !== 'undefined') {
+								ui.newStatusMessage(`up: ${data.upVotes} | down: ${data.downVotes}${typeof data.voteTotal !== 'undefined' ? ` | total: ${data.voteTotal}` : ''}`);
+							}
+						}
+						saveVotedContentCache();
+						ui.pointsStatusUpdate();
+						/* ajaxBeforeSuccess functionality END */
+						if (typeof originalSuccess === 'function') {
+							originalSuccess(data);
+						}
+					};
+				}
+			});
+		}
+
+		async updateFromServer() {
+			const response = await fetch('/api/v1/users/arp/status', {credentials: 'same-origin'})
+				.catch((error) => console.error('ARP status update error!', error));
+			const status = await response.json();
+			console.log('👽 updated status', status);
+			if (status.error) {
+				console.error('ARP status update error!', status);
+				return;
+			}
+
+			this.status = status;
+
+			const contentVotes = status.daily_arp[1].status.split(' ');
+			this.currentContentVotes = parseInt(contentVotes[0], 10);
+			this.maximumContentVotes = parseInt(contentVotes[2], 10);
+			if (typeof ui === 'object') {
+				ui.pointsStatusUpdate();
+			}
+
+			this.dailyQuestEnd = new Date(status.quests[0].end);
+		}
+	}
+
+	let arpStatus = new ARPStatus();
+
 	class UI {
 		constructor() {
 			this.fixNavBarBackgroundOnPageLoad(); // yet another site bug fix
@@ -225,7 +305,7 @@
 			anchor.insertAdjacentElement('beforebegin', this.navPanel);
 
 			this.initStatusOverlay();
-			pointsStatusUpdate();
+			this.pointsStatusUpdate();
 			this.initOptionsUI();
 			showDailyResetTimer();
 
@@ -242,11 +322,9 @@
 			let statusOverlayElement = document.createElement('div');
 			statusOverlayElement.id = 'awah-status-overlay';
 			statusOverlayElement.classList.add('awah-ui-overlay');
-			statusOverlayElement.insertAdjacentHTML('afterbegin', '<div class="awah-arp-status"></div><div class="awah-arp-pts"><div class="awah-arp-pts-con"></div></div>');
-			if (currentContentVotes < maximumContentVotes) {
-				statusOverlayElement.querySelector('.awah-arp-status').insertAdjacentHTML('beforeend', `<div class="awah-con-check-queue" style="display: none;">content to check: <span class="awah-con-check-queue-length">${contentToCheck.length}</span> <span class="fa fa-fw fa-search"></span></div>
-					<div class="awah-con-votes-queue" style="display: none;">content to vote: <span class="awah-con-votes-queue-length">${contentToVote.length}</span> <span class="fa fa-fw fa-upload"></span></div>`);
-			}
+			statusOverlayElement.insertAdjacentHTML('afterbegin', '<div class="awah-arp-status"></div><div class="awah-arp-pts"><div class="awah-arp-pts-con">CON: <div class="dot-falling"></div></div></div>');
+			statusOverlayElement.querySelector('.awah-arp-status').insertAdjacentHTML('beforeend', `<div class="awah-con-check-queue" style="display: none;">content to check: <span class="awah-con-check-queue-length">${contentToCheck.length}</span> <span class="fa fa-fw fa-search"></span></div>
+				<div class="awah-con-votes-queue" style="display: none;">content to vote: <span class="awah-con-votes-queue-length">${contentToVote.length}</span> <span class="fa fa-fw fa-upload"></span></div>`);
 			document.getElementById('content').appendChild(statusOverlayElement);
 		}
 
@@ -262,24 +340,29 @@
 				<div class="awah-option">
 				<label><span class="awah-opt-title">actionsDelayMin</span><input id="awah-actions-delay-min" class="form-control awah-opt-input" type="text" value="${options.actionsDelayMin}"></label>
 				<label><span class="awah-opt-title">actionsDelayMax</span><input id="awah-actions-delay-max" class="form-control awah-opt-input" type="text" value="${options.actionsDelayMax}"></label>
-				<span class="awah-opt-desc awah-grey">Minimum and maximum random delay time between network actions. (milliseconds)<br>Default minimum: ${options.default().actionsDelayMin} || Default maximum: ${options.default().actionsDelayMax}</span></div>
+				<span class="awah-opt-desc awah-grey">Minimum and maximum random delay time between network actions. (milliseconds)<br>Default minimum: ${options.default().actionsDelayMin} || Default maximum: ${options.default().actionsDelayMax}</span>
+				</div>
 
 				<div class="awah-option">
 				<label><span class="awah-opt-title">showKeyOnMarkedGiveaways</span><input id="awah-show-key-on-marked-giveaways" class="form-control awah-opt-input" type="checkbox" ${options.showKeyOnMarkedGiveaways ? 'checked' : ''}><div class="form-control awah-opt-input"><div>&nbsp;</div>&nbsp;</div></label>
-				<span class="awah-opt-desc awah-grey">At Giveaways page. Default: ${options.default().showKeyOnMarkedGiveaways ? 'ON' : 'OFF'}</span></div>
+				<span class="awah-opt-desc awah-grey">At Giveaways page. Default: ${options.default().showKeyOnMarkedGiveaways ? 'ON' : 'OFF'}</span>
+				</div>
 
 				<div class="awah-option">
 				<label><span class="awah-opt-title">statusMessageDelay</span><input id="awah-status-message-delay" class="form-control awah-opt-input" type="text" value="${options.statusMessageDelay}"></label>
-				<span class="awah-opt-desc awah-grey">How long the status messages will be displayed before they disappear. (milliseconds)<br>Default: ${options.default().statusMessageDelay}</span></div>
+				<span class="awah-opt-desc awah-grey">How long the status messages will be displayed before they disappear. (milliseconds)<br>Default: ${options.default().statusMessageDelay}</span>
+				</div>
 
 				<div class="awah-option">
 				<button id="awah_restore_default" class="btn btn-danger"><span class="fa fa-exclamation-triangle"></span> Restore default</button>
-				<span class="awah-opt-desc awah-grey">Restore default settings.</span></div>
+				<span class="awah-opt-desc awah-grey">Restore default settings.</span>
+				</div>
 
 				<div class="awah-option">
 				<label><span class="awah-opt-title">Voted content cached</span><span id="awah_voted_content_cache_size" class="form-control awah-opt-input">${votedContentCache.size}</span></label>
 				<button id="awah_clear_voted_content_cache" class="btn btn-danger"><span class="fa fa-exclamation-triangle"></span> Clear voted content cache</button>
-				<span class="awah-opt-desc awah-grey">Use only in case of emergency.</span></div>
+				<span class="awah-opt-desc awah-grey">Use only in case of emergency.</span>
+				</div>
 				</div>`);
 
 			$('input.awah-opt-input[type="text"]').on('input', function() {
@@ -350,6 +433,30 @@
 			return statusMessageObj;
 		}
 
+        pointsStatusUpdate() {
+			if (typeof arpStatus.maximumContentVotes !== 'number') return;
+
+            $('.awah-arp-pts-con').html(`CON: ${arpStatus.currentContentVotes} / ${arpStatus.maximumContentVotes}`);
+            if (arpStatus.currentContentVotes >= arpStatus.maximumContentVotes && !contentVotingInAction) {
+                $('.awah-arp-pts-con').addClass('awah-grey');
+            }
+            if (contentVotingInAction) {
+                $('.awah-con-check-queue-length').text(contentToCheck.length);
+                $('.awah-con-votes-queue-length').text(contentToVote.length);
+                let progressBarBackground = 'linear-gradient(90deg, rgb(0, 240, 240) ' +
+                    ((arpStatus.currentContentVotes / arpStatus.maximumContentVotes) * 100) +
+                    '%, rgba(0, 160, 240, 0.8) 0%, rgba(0, 160, 240, 0.8) ' +
+                    (((arpStatus.currentContentVotes + contentToVote.length) / arpStatus.maximumContentVotes) * 100) +
+                    '%, rgb(255, 255, 255) 0%, rgb(255, 255, 255) ' +
+                    ((((arpStatus.currentContentVotes + contentToVote.length) / arpStatus.maximumContentVotes) * 100) + 1) +
+                    '%, rgba(0, 160, 240, 0.8) 0%, rgba(0, 160, 240, 0.8) ' +
+                    (((arpStatus.currentContentVotes + contentToVote.length + contentToCheck.length) / arpStatus.maximumContentVotes) * 100) +
+                    '%, rgb(40, 37, 36) 0%)';
+                progressBarBackground = progressBarBackground.replace(/(\d{3}|\d{3}\.\d+)%/g, '100%'); // values greater than 100% can cause incorrect rendering
+                $('.awah-arp-pts-con').css('background-image', progressBarBackground);
+            }
+        }
+
 		fixNavBarBackgroundOnPageLoad() {
 			let nav = document.querySelector('.navbar-top');
 			if (nav !== null && window.scrollY > nav.clientHeight) {
@@ -360,43 +467,10 @@
 
 	let ui = new UI();
 
-	function pointsStatusUpdate() {
-		$('.awah-arp-pts-con').html(`CON: ${currentContentVotes} / ${maximumContentVotes}`);
-		if (currentContentVotes >= maximumContentVotes && !contentVotingInAction) {
-			$('.awah-arp-pts-con').addClass('awah-grey');
-		}
-		if (contentVotingInAction) {
-			$('.awah-con-check-queue-length').text(contentToCheck.length);
-			$('.awah-con-votes-queue-length').text(contentToVote.length);
-			let progressBarBackground = 'linear-gradient(90deg, rgb(0, 160, 240) ' +
-				((currentContentVotes / maximumContentVotes) * 100) +
-				'%, rgba(0, 160, 240, 0.8) 0%, rgba(0, 160, 240, 0.8) ' +
-				(((currentContentVotes + contentToVote.length) / maximumContentVotes) * 100) +
-				'%, rgb(255, 255, 255) 0%, rgb(255, 255, 255) ' +
-				((((currentContentVotes + contentToVote.length) / maximumContentVotes) * 100) + 1) +
-				'%, rgba(0, 160, 240, 0.8) 0%, rgba(0, 160, 240, 0.8) ' +
-				(((currentContentVotes + contentToVote.length + contentToCheck.length) / maximumContentVotes) * 100) +
-				'%, rgb(40, 37, 36) 0%)';
-			progressBarBackground = progressBarBackground.replace(/(\d{3}|\d{3}\.\d+)%/g, '100%'); // values greater than 100% can cause incorrect rendering
-			$('.awah-arp-pts-con').css('background-image', progressBarBackground);
-		}
-	}
-
 	function saveVotedContentCache() {
 		try {
 			localStorage.setItem('awahVotedContentCache', JSON.stringify([...votedContentCache]));
 			$('#awah_voted_content_cache_size').text(votedContentCache.size);
-		} catch (e) {
-			console.warn(e);
-			ui.newStatusMessage('localStorage quota exceeded! <span class="fa fa-fw fa-exclamation-triangle"></span>');
-		}
-	}
-
-	function saveDailyVotingStats() {
-		dailyVotingStats.lastVoteTime = new Date().getTime();
-		dailyVotingStats.currentContentVotes = currentContentVotes;
-		try {
-			localStorage.setItem('awahDailyVotingStat', JSON.stringify(dailyVotingStats));
 		} catch (e) {
 			console.warn(e);
 			ui.newStatusMessage('localStorage quota exceeded! <span class="fa fa-fw fa-exclamation-triangle"></span>');
@@ -435,39 +509,6 @@
 		}, 1000);
 	}
 
-	// ARP points watchdog
-	$.ajaxPrefilter(function(options, originalOptions, jqXHR) {
-		if (options.url.indexOf('vote') >= 0) {
-			let originalSuccess = options.success;
-			options.success = function(data) {
-				/* ajaxBeforeSuccess functionality */
-				let contentId = parseInt(this.url.replace(/\/ucf\/vote\/(?:up|down)\/(\d*)/g, '$1'), 10);
-				if (data.votedForContent === true) {
-					currentContentVotes++;
-					votedContentCache.add(contentId);
-				} else if (data.votedForContent === false) {
-					currentContentVotes--;
-					votedContentCache.delete(contentId);
-				} else if (data.message.indexOf('already voted') >= 0) {
-					votedContentCache.add(contentId);
-				}
-				if (!contentVotingInAction) {
-					ui.newStatusMessage(data.message);
-					if (typeof data.upVotes !== 'undefined') {
-						ui.newStatusMessage(`up: ${data.upVotes} | down: ${data.downVotes}${typeof data.voteTotal !== 'undefined' ? ` | total: ${data.voteTotal}` : ''}`);
-					}
-				}
-				saveDailyVotingStats();
-				saveVotedContentCache();
-				pointsStatusUpdate();
-				/* ajaxBeforeSuccess functionality END */
-				if (typeof originalSuccess === 'function') {
-					originalSuccess(data);
-				}
-			};
-		}
-	});
-
 	function getRandomInt(min, max) {
 		return Math.floor(Math.random() * (max - min + 1)) + min;
 	}
@@ -490,8 +531,8 @@
 				ui.newStatusMessage('Vote apply failed! <span class="fa fa-fw fa-exclamation-triangle"></span>');
 			})
 			.always(function() {
-				pointsStatusUpdate();
-				if (currentContentVotes < maximumContentVotes) {
+				ui.pointsStatusUpdate();
+				if (arpStatus.currentContentVotes < arpStatus.maximumContentVotes) {
 					if (contentToVote.length > 0) {
 						setTimeout(() => applyContentVoting(), getRandomInt(options.actionsDelayMin, options.actionsDelayMax)); // recursion!
 					} else {
@@ -537,11 +578,11 @@
 				ui.newStatusMessage(`Failed to get status of ${contentId}! <span class="fa fa-fw fa-exclamation-triangle"></span>`);
 			})
 			.always(function() {
-				pointsStatusUpdate();
+				ui.pointsStatusUpdate();
 				if (contentToCheck.length === 0 && contentToVote.length === 0) {
 					ui.newStatusMessage('Going to look for more content <span class="fa fa-fw fa-eye"></span>');
 					setTimeout(() => getVotingContentPage(), getRandomInt(options.actionsDelayMin, options.actionsDelayMax)); // to the beginning!
-				} else if (contentToVote.length >= (maximumContentVotes - currentContentVotes) ||
+				} else if (contentToVote.length >= (arpStatus.maximumContentVotes - arpStatus.currentContentVotes) ||
 					(contentToVote.length > 0 && contentToCheck.length === 0)) {
 					ui.newStatusMessage('Going to vote <span class="fa fa-fw fa-forward"></span>');
 					setTimeout(() => applyContentVoting(), getRandomInt(options.actionsDelayMin, options.actionsDelayMax)); // go to the next block!
@@ -577,7 +618,7 @@
 				});
 			})
 			.always(function(response, textStatus) {
-				pointsStatusUpdate();
+				ui.pointsStatusUpdate();
 				// .fail
 				if (failCounter > 0 && failCounter < 5) {
 					ui.newStatusMessage(`Failed to get content page! Trying again${failCounter > 1 ? ` (${failCounter})` : '...'} <span class="fa fa-fw fa-exclamation-triangle"></span>`);
@@ -587,7 +628,7 @@
 						ui.newStatusMessage(`Failed to get content page after ${failCounter} tries! <span class="fa fa-fw fa-exclamation-triangle"></span>`);
 					}
 					// .done
-					if (contentToCheck.length >= (maximumContentVotes - currentContentVotes) ||
+					if (contentToCheck.length >= (arpStatus.maximumContentVotes - arpStatus.currentContentVotes) ||
 						((textStatus === 'error' ? true : response.data.length === 0) && contentToCheck.length > 0)) {
 						ui.newStatusMessage('Going to check content <span class="fa fa-fw fa-forward"></span>');
 						setTimeout(() => checkVotingContent(), getRandomInt(options.actionsDelayMin, options.actionsDelayMax)); // go to the next block!
@@ -605,12 +646,13 @@
 		$('.awah-con-check-queue').show();
 		$('.awah-con-votes-queue').show();
 		contentVotingInAction = true;
-		pointsStatusUpdate();
+		ui.pointsStatusUpdate();
 		getVotingContentPage();
 	}
 
 	function registerContentVotingButtons() {
-		if (currentContentVotes >= maximumContentVotes) {
+		// TODO: await arpStatus.update ?
+		if (arpStatus.currentContentVotes >= arpStatus.maximumContentVotes) {
 			$('.awah-btn-cons').addClass('disabled');
 			return;
 		}
@@ -733,8 +775,8 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 	}
 
 	async function dailyQuestDone() {
-		let response = await getURL('/api/v1/users/arp/status');
-		return response.quests[0].completed === true;
+		await arpStatus.updateFromServer();
+		return arpStatus.status.quests[0].completed === true;
 	}
 
 	async function alternateSwap(url, content1, content2 = null) {
