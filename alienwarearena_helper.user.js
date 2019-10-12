@@ -142,8 +142,9 @@
 		.giveaways__listing .row > div {animation-duration: 0.001s; animation-name: awah-element-appears-hook;}
 		#giveaway-flash-message {animation-duration: 0.001s; animation-name: awah-element-appears-hook;}
 
-		/* Fix for Alienware Arena design bug */
-		.overlay {position: fixed !important;}
+		/* Fix for Alienware Arena design bugs */
+		.overlay {position: fixed !important;} /* without it .overlay sticks to top of the site and can be skipped by scrolling */
+		.videos__listing-post img {max-height: 299px;} /* videos without thumbnail have bigger height and stretching out of the general row */
 		`;
 
 	class Options {
