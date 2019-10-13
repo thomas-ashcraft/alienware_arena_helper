@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Alienware Arena helper
 // @namespace    https://github.com/thomas-ashcraft
-// @version      1.1.5
+// @version      1.1.6
 // @description  Earn daily ARP easily
 // @author       Thomas Ashcraft
 // @match        *://*.alienwarearena.com/*
@@ -14,7 +14,7 @@
 
 (function() {
 	// You can configure options through the user interface or localStorage in browser. It is not recommended to edit the script for these purposes.
-	const version = '1.1.5';
+	const version = '1.1.6';
 
 	let contentVotingInAction = false;
 	let contentVotingURL = '';
@@ -49,9 +49,13 @@
 		[data-awah-tooltip]:hover:after {bottom: -100%; opacity: 1;}
 
 		/* script GUI */
-		.awah-ui-overlay {color: white; clear: both; font-size: smaller !important; pointer-events: none; position: fixed; bottom: 0; right: 0; max-width: 40%; min-width: 20%; padding: 1rem 0.5rem 0 0; text-shadow: 2px 2px 2px rgb(0, 0, 0), -1px -1px 2px rgb(0, 0, 0), 2px 2px 5px rgb(0, 0, 0), -1px -1px 5px rgb(0, 0, 0), 0px 0px 10px rgb(0, 0, 0); text-align: right; background: rgba(0, 0, 0, 0) linear-gradient(to right bottom, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0) 50%, rgba(0, 0, 0, 0.85) 85%, rgba(0, 0, 0, 0.85) 100%) no-repeat scroll 0 0; z-index: 9001;}
-		.awah-arp-status {float: right; clear: both; white-space: nowrap; border-bottom: 1px solid #1c1e22;}
-		.awah-arp-status > div {clear: both; position: relative; animation: awah-slide-from-bottom 0.25s ease-out 1 forwards;}
+		#awah-status-overlay {display: flex; flex-flow: column nowrap; align-items: flex-end; color: white; font-size: smaller !important; pointer-events: none; position: fixed; bottom: 0; right: 0; max-width: 40%; min-width: 20%; padding: 1rem 0.5rem 0 0; text-shadow: 2px 2px 2px rgb(0, 0, 0), -1px -1px 2px rgb(0, 0, 0), 2px 2px 5px rgb(0, 0, 0), -1px -1px 5px rgb(0, 0, 0), 0px 0px 10px rgb(0, 0, 0); text-align: right; background: rgba(0, 0, 0, 0) linear-gradient(to right bottom, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0) 50%, rgba(0, 0, 0, 0.85) 85%, rgba(0, 0, 0, 0.85) 100%) no-repeat scroll 0 0; z-index: 9001;}
+		#awah-status-overlay .fa-exclamation-triangle {color: red;}
+		#awah-status-overlay a,
+		#awah-status-overlay button {pointer-events: all;}
+		#awah-status-overlay button {background-color: rgba(255, 255, 255, 0.6);}
+		#awah-status-messages {display: flex; flex-flow: column nowrap; align-items: flex-end; white-space: nowrap; border-bottom: 1px solid #1c1e22;}
+		#awah-status-messages > div {clear: both; position: relative; animation: awah-slide-from-bottom 0.3s ease-out 1 forwards;}
 		.awah-arp-pts {clear: both; width: 100%}
 		.awah-arp-pts > div {clear: both; width: 100%; background-position: 50% 50%; background-repeat: no-repeat; background-size: 100% 14px;}
 		.awah-arp-pts > div::after {content: ""; display: block; height: 0; clear: both;}
@@ -101,7 +105,7 @@
 
 		@keyframes awah-slide-from-bottom {
 			from {opacity: 0.5; bottom: -90px; max-height: 0px;}
-			to {opacity: 1; bottom: 0px; max-height: 50px;}
+			to {opacity: 1; bottom: 0px; max-height: 70px;}
 		}
 		@keyframes awah-casper-out {
 			0%		{filter: blur(0px); max-height: 50px;}
@@ -233,7 +237,7 @@
 
 			this.initARPWatchdog();
 
-			this.updateFromServer();
+			this.ready = this.updateFromServer();
 		}
 
 		initARPWatchdog() {
@@ -260,7 +264,7 @@
 							}
 						}
 						saveVotedContentCache();
-						ui.pointsStatusUpdate();
+						ui.pointsStatusRedraw();
 						/* ajaxBeforeSuccess functionality END */
 						if (typeof originalSuccess === 'function') {
 							originalSuccess(data);
@@ -272,22 +276,25 @@
 
 		async updateFromServer() {
 			const response = await fetch('/api/v1/users/arp/status', {credentials: 'same-origin'})
-				.catch((error) => console.error('ARP status update error!', error));
+				.catch((error) => {throw error});
 			const status = await response.json();
-			console.log('👽 updated status', status);
-			if (status.error) {
-				console.error('ARP status update error!', status);
-				return;
-			}
 
 			this.status = status;
 
+			if (status.error) {
+				if (typeof ui === 'object') {
+					ui.pointsStatusRedraw();
+					ui.newStatusMessage('<div>Authentication required! Please...<br><button class="nav-link-login btn btn-primary btn-block">log in</button></div>', true);
+				}
+				console.error('received status', status);
+				throw new Error('Cannot get ARP status from server');
+			}
+
+			console.log('👽 updated status', status);
 			const contentVotes = status.daily_arp[1].status.split(' ');
 			this.currentContentVotes = parseInt(contentVotes[0], 10);
 			this.maximumContentVotes = parseInt(contentVotes[2], 10);
-			if (typeof ui === 'object') {
-				ui.pointsStatusUpdate();
-			}
+			if (typeof ui === 'object') ui.pointsStatusRedraw();
 
 			this.dailyQuestEnd = new Date(status.quests[0].end);
 		}
@@ -299,13 +306,11 @@
 		constructor() {
 			this.fixNavBarBackgroundOnPageLoad(); // yet another site bug fix
 
-			let anchor = document.querySelector('li#notification-dropdown');
-			this.navPanel = document.createElement('li');
-			this.navPanel.classList.add('nav-item', 'awah-nav-panel');
-			anchor.insertAdjacentElement('beforebegin', this.navPanel);
-
+			this.hideOverlayAdditionalFunctions = []; // array of functions triggered by clicking on overlay
+			this.hideOverlayHook();
+			this.initNavPanel();
 			this.initStatusOverlay();
-			this.pointsStatusUpdate();
+			this.pointsStatusRedraw();
 			this.initOptionsUI();
 			showDailyResetTimer();
 
@@ -318,12 +323,19 @@
 			this.newStatusMessage(`Alienware Arena helper v<b>${version}</b></span>`);
 		}
 
+		initNavPanel() {
+			let anchor = document.querySelector('li#notification-dropdown');
+			this.navPanel = document.createElement('li');
+			this.navPanel.classList.add('nav-item', 'awah-nav-panel');
+			anchor.insertAdjacentElement('beforebegin', this.navPanel);
+		}
+
 		initStatusOverlay() {
 			let statusOverlayElement = document.createElement('div');
 			statusOverlayElement.id = 'awah-status-overlay';
-			statusOverlayElement.classList.add('awah-ui-overlay');
-			statusOverlayElement.insertAdjacentHTML('afterbegin', '<div class="awah-arp-status"></div><div class="awah-arp-pts"><div class="awah-arp-pts-con">CON: <div class="dot-falling"></div></div></div>');
-			statusOverlayElement.querySelector('.awah-arp-status').insertAdjacentHTML('beforeend', `<div class="awah-con-check-queue" style="display: none;">content to check: <span class="awah-con-check-queue-length">${contentToCheck.length}</span> <span class="fa fa-fw fa-search"></span></div>
+			statusOverlayElement.insertAdjacentHTML('afterbegin', '<div id="awah-status-messages"></div><div class="awah-arp-pts"><div id="awah-arp-content-votes">CON: <div class="dot-falling"></div></div></div>');
+			this.messagesContainerElement = statusOverlayElement.querySelector('#awah-status-messages');
+			this.messagesContainerElement.insertAdjacentHTML('beforeend', `<div class="awah-con-check-queue" style="display: none;">content to check: <span class="awah-con-check-queue-length">${contentToCheck.length}</span> <span class="fa fa-fw fa-search"></span></div>
 				<div class="awah-con-votes-queue" style="display: none;">content to vote: <span class="awah-con-votes-queue-length">${contentToVote.length}</span> <span class="fa fa-fw fa-upload"></span></div>`);
 			document.getElementById('content').appendChild(statusOverlayElement);
 		}
@@ -400,16 +412,22 @@
 
 			document.querySelector('.awah-options-btn').addEventListener('click', this.toggleOptionsDisplay, false);
 
-			// hideOverlay() hook
-			if (typeof hideOverlay === 'function') {
-				let originalHideOverlay = hideOverlay;
+			this.hideOverlayAdditionalFunctions.push(function() {
 				let awahOptions = document.getElementById('awah-options');
-				hideOverlay = function() {
-					setTimeout(() => {awahOptions.style.visibility = 'hidden'}, 300);
-					awahOptions.style.right = '';
-					originalHideOverlay();
-				};
-			}
+				setTimeout(() => {awahOptions.style.visibility = 'hidden'}, 300);
+				awahOptions.style.right = '';
+			});
+		}
+
+		hideOverlayHook() {
+			hideOverlay = new Proxy(hideOverlay, {
+				apply(target, thisArg, args) {
+					for (const additionalHideFunction of ui.hideOverlayAdditionalFunctions) {
+						additionalHideFunction.apply(thisArg, args);
+					}
+					target.apply(thisArg, args);
+				}
+			});
 		}
 
 		toggleOptionsDisplay() {
@@ -424,22 +442,31 @@
 			}
 		}
 
-		newStatusMessage(text) {
-			let statusMessageObj = $(`<div>${text}</div>`);
-			statusMessageObj.appendTo('.awah-arp-status')
-				.delay(options.statusMessageDelay).queue(function() {
-				$(this).addClass('awah-casper-out').dequeue();
-			});
-			return statusMessageObj;
+		newStatusMessage(text, sticky = false) {
+			let statusMessageElement = document.createElement('div');
+			statusMessageElement.innerHTML = text;
+			this.messagesContainerElement.appendChild(statusMessageElement);
+			if (!sticky) {
+				setTimeout(() => statusMessageElement.classList.add('awah-casper-out'), options.statusMessageDelay);
+			}
+			return statusMessageElement;
 		}
 
-        pointsStatusUpdate() {
-			if (typeof arpStatus.maximumContentVotes !== 'number') return;
+        async pointsStatusRedraw() {
+			let arpContentVotesElement = document.getElementById('awah-arp-content-votes');
 
-            $('.awah-arp-pts-con').html(`CON: ${arpStatus.currentContentVotes} / ${arpStatus.maximumContentVotes}`);
+			await arpStatus.ready.catch(() => {
+				arpContentVotesElement.innerHTML = `CON: <span class="fa fa-fw fa-exclamation-triangle"></span>`;
+			});
+			if (arpStatus.status.error) {
+				return;
+			}
+
+			arpContentVotesElement.textContent = `CON: ${arpStatus.currentContentVotes} / ${arpStatus.maximumContentVotes}`;
             if (arpStatus.currentContentVotes >= arpStatus.maximumContentVotes && !contentVotingInAction) {
-                $('.awah-arp-pts-con').addClass('awah-grey');
+				arpContentVotesElement.classList.add('awah-grey');
             }
+
             if (contentVotingInAction) {
                 $('.awah-con-check-queue-length').text(contentToCheck.length);
                 $('.awah-con-votes-queue-length').text(contentToVote.length);
@@ -453,8 +480,10 @@
                     (((arpStatus.currentContentVotes + contentToVote.length + contentToCheck.length) / arpStatus.maximumContentVotes) * 100) +
                     '%, rgb(40, 37, 36) 0%)';
                 progressBarBackground = progressBarBackground.replace(/(\d{3}|\d{3}\.\d+)%/g, '100%'); // values greater than 100% can cause incorrect rendering
-                $('.awah-arp-pts-con').css('background-image', progressBarBackground);
-            }
+				arpContentVotesElement.style.backgroundImage = progressBarBackground;
+            } else {
+				arpContentVotesElement.style.backgroundImage = '';
+			}
         }
 
 		fixNavBarBackgroundOnPageLoad() {
@@ -531,7 +560,7 @@
 				ui.newStatusMessage('Vote apply failed! <span class="fa fa-fw fa-exclamation-triangle"></span>');
 			})
 			.always(function() {
-				ui.pointsStatusUpdate();
+				ui.pointsStatusRedraw();
 				if (arpStatus.currentContentVotes < arpStatus.maximumContentVotes) {
 					if (contentToVote.length > 0) {
 						setTimeout(() => applyContentVoting(), getRandomInt(options.actionsDelayMin, options.actionsDelayMax)); // recursion!
@@ -548,8 +577,7 @@
 					setTimeout(() => {
 						$('.awah-con-check-queue').addClass('awah-casper-out');
 						$('.awah-con-votes-queue').addClass('awah-casper-out');
-						$('.awah-arp-pts-con').css('background-image', '');
-						$('.awah-arp-pts-con').addClass('awah-grey');
+						ui.pointsStatusRedraw();
 					}, options.statusMessageDelay);
 				}
 			});
@@ -578,7 +606,7 @@
 				ui.newStatusMessage(`Failed to get status of ${contentId}! <span class="fa fa-fw fa-exclamation-triangle"></span>`);
 			})
 			.always(function() {
-				ui.pointsStatusUpdate();
+				ui.pointsStatusRedraw();
 				if (contentToCheck.length === 0 && contentToVote.length === 0) {
 					ui.newStatusMessage('Going to look for more content <span class="fa fa-fw fa-eye"></span>');
 					setTimeout(() => getVotingContentPage(), getRandomInt(options.actionsDelayMin, options.actionsDelayMax)); // to the beginning!
@@ -593,15 +621,12 @@
 	}
 
 	function getVotingContentPage(failCounter = 0) {
-		let statusMessage = ui.newStatusMessage(`Getting page ${contentGettingPage} <span class="fa fa-fw fa-circle-o-notch fa-spin"></span>`);
-		statusMessage.clearQueue();
+		let statusMessage = ui.newStatusMessage(`Getting page ${contentGettingPage} <span class="fa fa-fw fa-circle-o-notch fa-spin"></span>`, true);
+		let statusMessageFAIcon = statusMessage.querySelector('span');
 		$.get(`${contentVotingURL}${contentGettingPage}`)
 			.done(function(response) {
 				failCounter = 0;
-				statusMessage.children('span').attr('class', 'fa fa-fw fa-check-circle');
-				statusMessage.delay(options.statusMessageDelay).queue(function() {
-					$(this).addClass('awah-casper-out');
-				});
+				statusMessageFAIcon.className = 'fa fa-fw fa-check-circle';
 				if (response.data.length === 0) {
 					ui.newStatusMessage('No more content pages left in this section <span class="fa fa-fw fa-times-circle"></span>');
 				} else {
@@ -612,13 +637,11 @@
 			})
 			.fail(function() {
 				failCounter++;
-				statusMessage.children('span').attr('class', 'fa fa-fw fa-exclamation-triangle');
-				statusMessage.delay(options.statusMessageDelay).queue(function() {
-					$(this).addClass('awah-casper-out');
-				});
+				statusMessageFAIcon.className = 'fa fa-fw fa-exclamation-triangle';
 			})
 			.always(function(response, textStatus) {
-				ui.pointsStatusUpdate();
+				setTimeout(() => statusMessage.classList.add('awah-casper-out'), options.statusMessageDelay);
+				ui.pointsStatusRedraw();
 				// .fail
 				if (failCounter > 0 && failCounter < 5) {
 					ui.newStatusMessage(`Failed to get content page! Trying again${failCounter > 1 ? ` (${failCounter})` : '...'} <span class="fa fa-fw fa-exclamation-triangle"></span>`);
@@ -646,12 +669,11 @@
 		$('.awah-con-check-queue').show();
 		$('.awah-con-votes-queue').show();
 		contentVotingInAction = true;
-		ui.pointsStatusUpdate();
+		ui.pointsStatusRedraw();
 		getVotingContentPage();
 	}
 
 	function registerContentVotingButtons() {
-		// TODO: await arpStatus.update ?
 		if (arpStatus.currentContentVotes >= arpStatus.maximumContentVotes) {
 			$('.awah-btn-cons').addClass('disabled');
 			return;
@@ -673,7 +695,7 @@
 		});
 	}
 
-	function showFeaturedContentVotingButtons(sectionType = 'Image') {
+	async function showFeaturedContentVotingButtons(sectionType = 'Image') {
 		$(`<div class="panel panel-default awah-panel">
 <div class="panel-heading" data-awah-tooltip="by Alienware Arena helper"><h3 class="panel-title"><i class="fa fa-chevron-up"></i> Automatic voting</h3></div>
 <div class="list-group">
@@ -695,8 +717,10 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 </div>
 </div>`).insertAfter('div:has(.panel-default) > a:last-of-type');
 
-		ui.navPanel.insertAdjacentHTML('afterbegin', `<a class="nav-link awah-btn-cons" href="javascript:void(0);" data-awah-tooltip="UP-voting" data-awah-voting-direction="up" data-awah-content-url="/esi/featured-tile-data/${sectionType}/"><i aria-hidden="true" class="awicon far fa-caret-square-up"></i></a>
-			<a class="nav-link awah-btn-cons" href="javascript:void(0);" data-awah-tooltip="DOWN-voting" data-awah-voting-direction="down" data-awah-content-url="/esi/featured-tile-data/${sectionType}/"><i aria-hidden="true" class="awicon far fa-caret-square-down"></i></a>`);
+		ui.navPanel.insertAdjacentHTML('afterbegin', `<a class="nav-link awah-btn-cons disabled" href="javascript:void(0);" data-awah-tooltip="UP-voting" data-awah-voting-direction="up" data-awah-content-url="/esi/featured-tile-data/${sectionType}/"><i aria-hidden="true" class="awicon far fa-caret-square-up"></i></a>
+			<a class="nav-link awah-btn-cons disabled" href="javascript:void(0);" data-awah-tooltip="DOWN-voting" data-awah-voting-direction="down" data-awah-content-url="/esi/featured-tile-data/${sectionType}/"><i aria-hidden="true" class="awicon far fa-caret-square-down"></i></a>`);
+		await arpStatus.ready;
+		ui.navPanel.querySelectorAll('.awah-btn-cons').forEach((element) => element.classList.remove('disabled'));
 		registerContentVotingButtons();
 	}
 
@@ -1002,17 +1026,21 @@ ${(keysOutput ? `${keysOutput}` : `<b>${keysLeft}</b> keys left`)}</div>`);
 	}
 
 	function getTakenGiveaways() {
-		let statusMessage = $('<div>Getting your giveaways info <span class="fa fa-fw fa-circle-o-notch fa-spin"></span></div>');
-		statusMessage.delay(2000).queue(function() {
-			$(this).appendTo('.awah-arp-status').dequeue();
-		});
+		let statusMessage = ui.newStatusMessage('Getting your giveaways info <span class="fa fa-fw fa-circle-o-notch fa-spin"></span>', true);
+		statusMessage.style.display = 'none';
+		let statusMessageFAIcon = statusMessage.querySelector('span');
+		let showStatusMessage = setTimeout(() => {statusMessage.style.display = ''}, 2000);
 
+		// TODO: check for empty array response (returns when logged out)
+		// TODO: remake to fetch()
 		$.getJSON('/giveaways/keys', function(data) {
-			statusMessage.clearQueue()
-				.html('<div>Getting your giveaways info <span class="fa fa-fw fa-check-circle"></span></div>')
-				.delay(options.statusMessageDelay).queue(function() {
-					$(this).addClass('awah-casper-out');
-			});
+			clearTimeout(showStatusMessage);
+			statusMessageFAIcon.className = 'fa fa-fw fa-check-circle';
+			setTimeout(() => {
+				statusMessage.classList.add('awah-casper-out');
+				setTimeout(() => {if (statusMessage) statusMessage.remove()}, 700);
+			}, options.statusMessageDelay);
+
 			let awahGiveawayKeys = {};
 			$.each(data, function(index, value) {
 				awahGiveawayKeys[value.giveaway_id] = value;
@@ -1025,10 +1053,8 @@ ${(keysOutput ? `${keysOutput}` : `<b>${keysLeft}</b> keys left`)}</div>`);
 				}
 			}, false);
 		}).fail(function() {
-			statusMessage.html('<div>Getting your giveaways info <span class="fa fa-fw fa-exclamation-triangle"></span></div>')
-				.delay(options.statusMessageDelay).queue(function() {
-				$(this).addClass('awah-casper-out').dequeue();
-			});
+			statusMessageFAIcon.className = 'fa fa-fw fa-exclamation-triangle';
+			setTimeout(() => statusMessage.classList.add('awah-casper-out'), options.statusMessageDelay);
 		});
 	}
 
