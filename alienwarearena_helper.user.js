@@ -859,6 +859,57 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 		}
 	}
 
+	// https://stackoverflow.com/a/47198926
+	// https://stackoverflow.com/a/48969580
+	function postFormData(url, boundary, body) {
+		return new Promise((resolve, reject) => {
+			let xhr = new XMLHttpRequest();
+			xhr.open("POST", url);
+			xhr.setRequestHeader("Content-Type", "multipart/form-data; boundary=" + boundary);
+			xhr.setRequestHeader("Content-Length", body.length);
+			xhr.onload = function () {
+				if (this.status >= 200 && this.status < 300) {
+						resolve(xhr.response);
+				} else {
+					reject({
+						status: this.status,
+						statusText: xhr.statusText
+					});
+				}
+			};
+			xhr.onerror = function () {
+				reject({
+					status: this.status,
+					statusText: xhr.statusText
+				});
+			};
+			xhr.send(body)
+		});
+	}
+
+	async function postReplies() {
+		let questDone = false;
+		let threadId = getDailyThread();
+		let boundary = "---------------------------12345678912345678912345678";
+		let body = "--" + boundary
+							+ '\r\nContent-Disposition: form-data; name="topic_post[content]"'
+							+ "\r\n\r\n" + "<p>Hi</p>" + "\r\n"
+							+ "--" + boundary + "--\r\n";
+		do {
+			response = JSON.parse(await postFormData("https://eu.alienwarearena.com/comments/" + threadId + "/new/0", boundary, body));
+			if (response.success) {
+				let postId = response.postId;
+				let postPage = response.whatPage;
+				await getURL("/forums/post/delete/" + postId + "/" + postPage)
+				ui.newStatusMessage('Successfully posted ' + postId + '!');
+			} else {
+				ui.newStatusMessage('Posting failed!');
+				break;
+			}
+			questDone = await dailyQuestDone();
+		} while (!questDone)
+	}
+
 	function registerQuestButtons() {
 		$('.awah-btn-quest').on('click', async function() {
 			// Automatic stuff
@@ -876,6 +927,8 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 				await visitNews();
 			} else if ($(this).data('awah-quest') === 'social') {
 				await shareSocial();
+			} else if ($(this).data('awah-quest') === 'replies') {
+				await postReplies();
 			// Non automatic stuff
 			} else if ($(this).data('awah-quest') === 'avatar') {
 				document.location.href = '/account/personalization';
@@ -921,6 +974,10 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 					$(`<a class="btn btn-default awah-btn-quest" href="javascript:void(0);" data-awah-tooltip="Automatic news visiting" data-awah-quest="news">
 						<span class="more-link right"></span></a>`).appendTo(".quest-item > .col-2");
 					break;
+				case 'post_replies':
+					$(`<a class="btn btn-default awah-btn-quest" href="javascript:void(0);" data-awah-tooltip="Automatic posting" data-awah-quest="replies">
+						<span class="more-link right"></span></a>`).appendTo(".quest-item > .col-2");
+					break;
 				case 'change_avatar_placeholder':
 					$(`<a class="btn btn-default awah-btn-quest" href="javascript:void(0);" data-awah-tooltip="Visit personalization page" data-awah-quest="avatar">
 						<span class="more-link right"></span></a>`).appendTo(".quest-item > .col-2");
@@ -930,10 +987,6 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 						<span class="more-link right"></span></a>`).appendTo(".quest-item > .col-2");
 					break;
 				case 'visit_page':
-					$(`<a class="btn btn-default awah-btn-quest" href="javascript:void(0);" data-awah-tooltip="Visit forum" data-awah-quest="forum">
-						<span class="more-link right"></span></a>`).appendTo(".quest-item > .col-2");
-					break;
-				case 'post_replies':
 					$(`<a class="btn btn-default awah-btn-quest" href="javascript:void(0);" data-awah-tooltip="Visit forum" data-awah-quest="forum">
 						<span class="more-link right"></span></a>`).appendTo(".quest-item > .col-2");
 					break;
