@@ -891,7 +891,7 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 						ui.newStatusMessage('Deleting post failed!');
 						break;
 					}
-					ui.newStatusMessage('Successfully posted and deleted' + postId + ' to ' + threadId + '!');
+					ui.newStatusMessage('Successfully posted and deleted' + result.postId + ' to ' + threadId + '!');
 				} else {
 					ui.newStatusMessage('Posting failed!');
 					break;
