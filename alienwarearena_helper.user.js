@@ -860,60 +860,48 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 	}
 
 	async function getDailyThread() {
-		const response = await fetch('/forums/board/113/awa-on-topic', {credentials: 'same-origin'});
-		const text = await response.text();
-		const dailyThreads = text.match(/data-topic-id="([0-9]+)" title="\[.*?DAILY QUEST.*?\]/i);
-		return dailyThreads[1];
-	}
-
-	// https://stackoverflow.com/a/47198926
-	// https://stackoverflow.com/a/48969580
-	function postFormData(url, boundary, body) {
-		return new Promise((resolve, reject) => {
-			let xhr = new XMLHttpRequest();
-			xhr.open('POST', url);
-			xhr.setRequestHeader('Content-Type', 'multipart/form-data; boundary=' + boundary);
-			xhr.onload = function () {
-				if (this.status >= 200 && this.status < 300) {
-						resolve(xhr.response);
-				} else {
-					reject({
-						status: this.status,
-						statusText: xhr.statusText
-					});
-				}
-			};
-			xhr.onerror = function () {
-				reject({
-					status: this.status,
-					statusText: xhr.statusText
-				});
-			};
-			xhr.send(body);
-		});
+		try {
+			const response = await fetch('/forums/board/113/awa-on-topic', {credentials: 'same-origin'});
+			const text = await response.text();
+			const dailyThreads = text.match(/data-topic-id="([0-9]+)" title="\[.*?DAILY QUEST.*?\]/i);
+			return dailyThreads[1];
+		} catch (e) {
+			ui.newStatusMessage('Could not find daily thread!');
+			throw e;
+		}
 	}
 
 	async function postReplies() {
-		let questDone = false;
-		let threadId = getDailyThread();
-		let boundary = '---------------------------12345678912345678912345678';
-		let body = '--' + boundary
-							+ '\r\nContent-Disposition: form-data; name="topic_post[content]"'
-							+ '\r\n\r\n' + '<p>Hi</p>' + '\r\n'
-							+ '--' + boundary + '--\r\n';
-		do {
-			let response = JSON.parse(await postFormData('/comments/' + threadId + '/new/0', boundary, body));
-			if (response.success) {
-				let postId = response.postId;
-				let postPage = response.whatPage;
-				await getURL('/forums/post/delete/' + postId + '/' + postPage);
-				ui.newStatusMessage('Successfully posted and deleted' + postId + ' to ' + threadId + '!');
-			} else {
-				ui.newStatusMessage('Posting failed!');
-				break;
-			}
-			questDone = await dailyQuestDone();
-		} while (!questDone);
+		try {
+			let questDone = false;
+			let threadId = await getDailyThread();
+			let formData = new FormData();
+			formData.append('topic_post[content]', '<p>Hi</p>');
+
+			do {
+				let response = await fetch('/comments/' + threadId + '/new/0', {
+					method: 'POST',
+					body: formData
+				});
+				let result = await response.json();
+				if (result.success) {
+					response = await fetch('/forums/post/delete/' + result.postId + '/' + result.whatPage);
+					result = await response.json();
+					if (!result.success) {
+						ui.newStatusMessage('Deleting post failed!');
+						break;
+					}
+					ui.newStatusMessage('Successfully posted and deleted' + postId + ' to ' + threadId + '!');
+				} else {
+					ui.newStatusMessage('Posting failed!');
+					break;
+				}
+				questDone = await dailyQuestDone();
+			} while (!questDone);
+		} catch (e) {
+			ui.newStatusMessage('Posting failed!');
+			throw e;
+		}
 	}
 
 	function registerQuestButtons() {
