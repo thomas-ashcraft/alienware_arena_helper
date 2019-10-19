@@ -929,7 +929,8 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 			} else if ($(this).data('awah-quest') === 'video') {
 				document.location.href = '/ucf/Video/new?boardId=464';
 			} else if ($(this).data('awah-quest') === 'forum') {
-				document.location.href = '/forums/board/113/awa-on-topic';
+				let dailyThreadId = await getDailyThread();
+				document.location.href = '/ucf/show/' + dailyThreadId;
 			}
 
 			let questCompleted = await dailyQuestDone();
