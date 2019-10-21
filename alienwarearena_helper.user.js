@@ -862,10 +862,34 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 
 	async function getDailyThread() {
 		try {
-			const response = await fetch('/forums/board/113/awa-on-topic', {credentials: 'same-origin'});
-			const text = await response.text();
+			let response = await fetch('/forums/board/113/awa-on-topic', {credentials: 'same-origin'});
+			let text = await response.text();
 			const dailyThreads = text.match(/data-topic-id="([0-9]+)" title="\[.*?DAILY QUEST.*?\]/i);
-			return dailyThreads[1];
+
+			// https://stackoverflow.com/a/4929629
+			var today = new Date();
+			var dd = String(today.getDate()).padStart(2, '0');
+			var mm = String(today.getMonth() + 1).padStart(2, '0'); //January is 0!
+			var yyyy = today.getFullYear();
+			today = yyyy + '-' + mm + '-' + dd;
+
+			for(let dailyThread of dailyThreads) {
+				try {
+					response = await fetch('/ucf/show/' + dailyThread, {credentials: 'same-origin'});
+					text = await response.text();
+					let postDate = text.match(/<span class="timeago" title="([0-9]{4}-[0-9]{2}-[0-9]{2}) .*?"><\/span>/);
+
+					// Only first match is relevant
+					if (postDate[1] == today) {
+						return dailyThread;
+					}
+				} catch (err) {
+					continue;
+				}
+			}
+
+			ui.newStatusMessage('Could not find daily thread!');
+			throw 'Could not find daily thread!';
 		} catch (e) {
 			ui.newStatusMessage('Could not find daily thread!');
 			throw e;
@@ -880,19 +904,18 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 			formData.append('topic_post[content]', '<p>Hi</p>');
 
 			do {
-				let response = await fetch('/comments/' + threadId + '/new/0', {
+				let response = await fetch('/comments/' + threadId + '/new', {
 					method: 'POST',
 					body: formData
 				});
 				let result = await response.json();
 				if (result.success) {
-					response = await fetch('/forums/post/delete/' + result.postId + '/' + result.whatPage);
-					result = await response.json();
-					if (!result.success) {
+					response = await fetch('/forums/post/delete/' + result.postId);
+					if (!response.status == 302) {
 						ui.newStatusMessage('Deleting post failed!');
 						break;
 					}
-					ui.newStatusMessage('Successfully posted and deleted' + result.postId + ' to ' + threadId + '!');
+					ui.newStatusMessage('Successfully posted and deleted ' + result.postId + ' to ' + threadId + '!');
 				} else {
 					ui.newStatusMessage('Posting failed!');
 					break;
@@ -902,6 +925,37 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 		} catch (e) {
 			ui.newStatusMessage('Posting failed!');
 			throw e;
+		}
+	}
+
+	async function visitURL() {
+		try {
+			let dailyThreadId = await getDailyThread();
+			let result = await fetch('/ucf/show/' + dailyThread, {credentials: 'same-origin'});
+			let text = await response.text();
+			let postText = text.match(/<div class="discussion__op-content ucf__content">[\s\S]*<\/div>/);
+			let urls = postText.match(/<a href="http.*?alienwarearena\.com(.*?)".*?<\/a>/g);
+			for (let url of urls) {
+				try {
+					await fetch(url, {credentials: 'same-origin'});
+					let questDone = await dailyQuestDone();
+					if (questDone) {
+						ui.newStatusMessage('Successfully visited page!');
+						return;
+					}
+				} catch (err) {
+					continue;
+				}
+			}
+
+			document.location.href = '/ucf/show/' + dailyThreadId;
+		} catch (err) {
+			try {
+				let dailyThreadId = await getDailyThread();
+				document.location.href = '/ucf/show/' + dailyThreadId;
+			} catch (err) {
+				document.location.href = '/forums/board/113/awa-on-topic';
+			}
 		}
 	}
 
@@ -924,14 +978,21 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 				await shareSocial();
 			} else if ($(this).data('awah-quest') === 'replies') {
 				await postReplies();
+			} else if ($(this).data('awah-quest') === 'visit') {
+				await visitURL();
+
 			// Non automatic stuff
 			} else if ($(this).data('awah-quest') === 'avatar') {
 				document.location.href = '/account/personalization';
 			} else if ($(this).data('awah-quest') === 'video') {
 				document.location.href = '/ucf/Video/new?boardId=464';
 			} else if ($(this).data('awah-quest') === 'forum') {
-				let dailyThreadId = await getDailyThread();
-				document.location.href = '/ucf/show/' + dailyThreadId;
+				try {
+					let dailyThreadId = await getDailyThread();
+					document.location.href = '/ucf/show/' + dailyThreadId;
+				} catch (err) {
+					document.location.href = '/forums/board/113/awa-on-topic';
+				}
 			}
 
 			let questCompleted = await dailyQuestDone();
@@ -974,16 +1035,16 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 					$(`<a class="btn btn-default awah-btn-quest" href="javascript:void(0);" data-awah-tooltip="Automatic posting" data-awah-quest="replies">
 						<span class="more-link right"></span></a>`).appendTo(".quest-item > .col-2");
 					break;
+				case 'visit_page':
+					$(`<a class="btn btn-default awah-btn-quest" href="javascript:void(0);" data-awah-tooltip="Visit forum" data-awah-quest="visit">
+						<span class="more-link right"></span></a>`).appendTo(".quest-item > .col-2");
+					break;
 				case 'change_avatar_placeholder':
 					$(`<a class="btn btn-default awah-btn-quest" href="javascript:void(0);" data-awah-tooltip="Visit personalization page" data-awah-quest="avatar">
 						<span class="more-link right"></span></a>`).appendTo(".quest-item > .col-2");
 					break;
 				case 'add_video':
 					$(`<a class="btn btn-default awah-btn-quest" href="javascript:void(0);" data-awah-tooltip="Add video" data-awah-quest="video">
-						<span class="more-link right"></span></a>`).appendTo(".quest-item > .col-2");
-					break;
-				case 'visit_page':
-					$(`<a class="btn btn-default awah-btn-quest" href="javascript:void(0);" data-awah-tooltip="Visit forum" data-awah-quest="forum">
 						<span class="more-link right"></span></a>`).appendTo(".quest-item > .col-2");
 					break;
 				default:
