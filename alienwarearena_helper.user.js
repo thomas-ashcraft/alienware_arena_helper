@@ -899,23 +899,28 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 	async function postReplies() {
 		try {
 			let questDone = false;
-			let threadId = await getDailyThread();
-			let formData = new FormData();
+			const parser = new DOMParser();
+			const threadId = await getDailyThread();
+			const formData = new FormData();
 			formData.append('topic_post[content]', '<p>Hi</p>');
 
 			do {
-				let response = await fetch('/comments/' + threadId + '/new', {
+				let postingResponse = await fetch(`/comments/${threadId}/new`, {
 					method: 'POST',
 					body: formData
 				});
-				let result = await response.json();
-				if (result.success) {
-					response = await fetch('/forums/post/delete/' + result.postId);
-					if (!response.status == 302) {
-						ui.newStatusMessage('Deleting post failed!');
+				let postingResult = await postingResponse.json();
+				if (postingResult.success) {
+					let deleteResponse = await fetch(`/forums/post/delete/${postingResult.postId}/${postingResult.whatPage}`);
+					let threadPage = await deleteResponse.text(); // forum post delete redirects to page where deleted post was
+					// example: /ucf/show/2094593/boards/awa-on-topic/ForumPost/daily-quest-non-us-converse-and-be-merry-5-arp-19?replyPage=105
+					let doc = parser.parseFromString(threadPage, 'text/html');
+					let postElement = doc.querySelector(`article#post-${postingResult.postId}`);
+					if (postElement) {
+						ui.newStatusMessage('Deleting post failed! <span class="fa fa-exclamation-triangle"></span>');
 						break;
 					}
-					ui.newStatusMessage('Successfully posted and deleted ' + result.postId + ' to ' + threadId + '!');
+					ui.newStatusMessage(`Successfully posted and deleted ${postingResult.postId} to ${threadId}!`);
 				} else {
 					ui.newStatusMessage('Posting failed!');
 					break;
