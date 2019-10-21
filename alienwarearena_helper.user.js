@@ -860,6 +860,51 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 		}
 	}
 
+	async function getDailyThread() {
+		try {
+			const response = await fetch('/forums/board/113/awa-on-topic', {credentials: 'same-origin'});
+			const text = await response.text();
+			const dailyThreads = text.match(/data-topic-id="([0-9]+)" title="\[.*?DAILY QUEST.*?\]/i);
+			return dailyThreads[1];
+		} catch (e) {
+			ui.newStatusMessage('Could not find daily thread!');
+			throw e;
+		}
+	}
+
+	async function postReplies() {
+		try {
+			let questDone = false;
+			let threadId = await getDailyThread();
+			let formData = new FormData();
+			formData.append('topic_post[content]', '<p>Hi</p>');
+
+			do {
+				let response = await fetch('/comments/' + threadId + '/new/0', {
+					method: 'POST',
+					body: formData
+				});
+				let result = await response.json();
+				if (result.success) {
+					response = await fetch('/forums/post/delete/' + result.postId + '/' + result.whatPage);
+					result = await response.json();
+					if (!result.success) {
+						ui.newStatusMessage('Deleting post failed!');
+						break;
+					}
+					ui.newStatusMessage('Successfully posted and deleted' + result.postId + ' to ' + threadId + '!');
+				} else {
+					ui.newStatusMessage('Posting failed!');
+					break;
+				}
+				questDone = await dailyQuestDone();
+			} while (!questDone);
+		} catch (e) {
+			ui.newStatusMessage('Posting failed!');
+			throw e;
+		}
+	}
+
 	function registerQuestButtons() {
 		$('.awah-btn-quest').on('click', async function() {
 			// Automatic stuff
@@ -877,13 +922,16 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 				await visitNews();
 			} else if ($(this).data('awah-quest') === 'social') {
 				await shareSocial();
+			} else if ($(this).data('awah-quest') === 'replies') {
+				await postReplies();
 			// Non automatic stuff
 			} else if ($(this).data('awah-quest') === 'avatar') {
 				document.location.href = '/account/personalization';
 			} else if ($(this).data('awah-quest') === 'video') {
 				document.location.href = '/ucf/Video/new?boardId=464';
 			} else if ($(this).data('awah-quest') === 'forum') {
-				document.location.href = '/forums/board/113/awa-on-topic';
+				let dailyThreadId = await getDailyThread();
+				document.location.href = '/ucf/show/' + dailyThreadId;
 			}
 
 			let questCompleted = await dailyQuestDone();
@@ -922,6 +970,10 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 					$(`<a class="btn btn-default awah-btn-quest" href="javascript:void(0);" data-awah-tooltip="Automatic news visiting" data-awah-quest="news">
 						<span class="more-link right"></span></a>`).appendTo(".quest-item > .col-2");
 					break;
+				case 'post_replies':
+					$(`<a class="btn btn-default awah-btn-quest" href="javascript:void(0);" data-awah-tooltip="Automatic posting" data-awah-quest="replies">
+						<span class="more-link right"></span></a>`).appendTo(".quest-item > .col-2");
+					break;
 				case 'change_avatar_placeholder':
 					$(`<a class="btn btn-default awah-btn-quest" href="javascript:void(0);" data-awah-tooltip="Visit personalization page" data-awah-quest="avatar">
 						<span class="more-link right"></span></a>`).appendTo(".quest-item > .col-2");
@@ -931,10 +983,6 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 						<span class="more-link right"></span></a>`).appendTo(".quest-item > .col-2");
 					break;
 				case 'visit_page':
-					$(`<a class="btn btn-default awah-btn-quest" href="javascript:void(0);" data-awah-tooltip="Visit forum" data-awah-quest="forum">
-						<span class="more-link right"></span></a>`).appendTo(".quest-item > .col-2");
-					break;
-				case 'post_replies':
 					$(`<a class="btn btn-default awah-btn-quest" href="javascript:void(0);" data-awah-tooltip="Visit forum" data-awah-quest="forum">
 						<span class="more-link right"></span></a>`).appendTo(".quest-item > .col-2");
 					break;
