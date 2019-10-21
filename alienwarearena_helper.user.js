@@ -77,7 +77,7 @@
 		.awah-option {border-bottom: 1px solid #1c1e22; margin-bottom: 11px;}
 		.awah-option label {display: flex; flex-flow: row nowrap; justify-content: space-between; align-items: baseline; color: whitesmoke;}
 		#awah-options > :first-child {display: flex; flex-flow: row nowrap; justify-content: space-between; align-items: baseline;}
-		.awah-opt-input {width: 24%; text-align: right; padding: 0 5px; height: auto; background: transparent; color: white; border-width: 0px 1px 1px 0px;}
+		.awah-opt-input {width: 24%; text-align: right; padding: 0 5px; height: auto; background: transparent; color: white; border-width: 0px 0px 1px 0px;}
 		.awah-opt-desc {font-size: smaller;}
 		.awah-option > .btn-danger {width: 100%;}
 		#awah-options .dismiss-menu {font-size: 32px;}
@@ -85,7 +85,7 @@
 		/* custom checkbox */
 		input.awah-opt-input[type="checkbox"] {position: absolute; right: 0; opacity: 0;}
 		input.awah-opt-input[type="checkbox"]:focus + div {border-color: #66afe9; outline: 0; -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(102, 175, 233, 0.6); box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(102, 175, 233, 0.6);}
-		.awah-opt-input[type="checkbox"] + div {transition: 0.25s all ease; position: relative; overflow: hidden;}
+		.awah-opt-input[type="checkbox"] + div {transition: 0.25s all ease; position: relative; overflow: hidden; cursor: pointer;}
 		.awah-opt-input[type="checkbox"] + div > div {transition: 0.25s all ease; background-color: #428bca; width: 50%; height: 100%; position: absolute; left: 0;}
 		input.awah-opt-input[type="checkbox"]:checked + div {background-color: rgb(66, 139, 202, 0.4);}
 		input.awah-opt-input[type="checkbox"]:checked + div > div {left: calc(100% - 50%);}
@@ -204,10 +204,10 @@
 
 			try {
 				localStorage.setItem('AlienwareArenaHelperOptions', JSON.stringify(this));
-                return true;
+				return true;
 			} catch (e) {
 				console.warn(e);
-                return false;
+				return false;
 			}
 		}
 
@@ -371,7 +371,8 @@
 				</div>
 
 				<div class="awah-option">
-				<label><span class="awah-opt-title">Voted content cached</span><span id="awah_voted_content_cache_size" class="form-control awah-opt-input">${votedContentCache.size}</span></label>
+				<label><span class="awah-opt-title">Voted content cache size</span><span id="awah_voted_content_cache_size" class="form-control awah-opt-input">${votedContentCache.size}</span></label>
+				<span class="awah-opt-desc awah-grey">This cache contains the IDs of each content you voted for while having "AWA helper" script. It is greatly speeds up auto-voting, by skipping those things you are already voted for.</span>
 				<button id="awah_clear_voted_content_cache" class="btn btn-danger"><span class="fa fa-exclamation-triangle"></span> Clear voted content cache</button>
 				<span class="awah-opt-desc awah-grey">Use only in case of emergency.</span>
 				</div>
@@ -386,10 +387,10 @@
 				clearTimeout(saveOptionsTimer);
 				saveOptionsTimer = setTimeout(function() {
 					if (options.save()) {
-                        ui.newStatusMessage('Settings saved! <span class="fa fa-fw fa-floppy-o"></span>');
-                    } else {
-                        ui.newStatusMessage('Error! See console for details. <span class="fa fa-fw fa-exclamation-triangle"></span>');
-                    }
+						ui.newStatusMessage('Settings saved! <span class="fa fa-fw fa-floppy-o"></span>');
+					} else {
+						ui.newStatusMessage('Error! See console for details. <span class="fa fa-fw fa-exclamation-triangle"></span>');
+					}
 				}, 400);
 			});
 
@@ -452,7 +453,7 @@
 			return statusMessageElement;
 		}
 
-        async pointsStatusRedraw() {
+		async pointsStatusRedraw() {
 			let arpContentVotesElement = document.getElementById('awah-arp-content-votes');
 
 			await arpStatus.ready.catch(() => {
@@ -463,28 +464,28 @@
 			}
 
 			arpContentVotesElement.textContent = `CON: ${arpStatus.currentContentVotes} / ${arpStatus.maximumContentVotes}`;
-            if (arpStatus.currentContentVotes >= arpStatus.maximumContentVotes && !contentVotingInAction) {
+			if (arpStatus.currentContentVotes >= arpStatus.maximumContentVotes && !contentVotingInAction) {
 				arpContentVotesElement.classList.add('awah-grey');
-            }
+			}
 
-            if (contentVotingInAction) {
-                $('.awah-con-check-queue-length').text(contentToCheck.length);
-                $('.awah-con-votes-queue-length').text(contentToVote.length);
-                let progressBarBackground = 'linear-gradient(90deg, rgb(0, 240, 240) ' +
-                    ((arpStatus.currentContentVotes / arpStatus.maximumContentVotes) * 100) +
-                    '%, rgba(0, 160, 240, 0.8) 0%, rgba(0, 160, 240, 0.8) ' +
-                    (((arpStatus.currentContentVotes + contentToVote.length) / arpStatus.maximumContentVotes) * 100) +
-                    '%, rgb(255, 255, 255) 0%, rgb(255, 255, 255) ' +
-                    ((((arpStatus.currentContentVotes + contentToVote.length) / arpStatus.maximumContentVotes) * 100) + 1) +
-                    '%, rgba(0, 160, 240, 0.8) 0%, rgba(0, 160, 240, 0.8) ' +
-                    (((arpStatus.currentContentVotes + contentToVote.length + contentToCheck.length) / arpStatus.maximumContentVotes) * 100) +
-                    '%, rgb(40, 37, 36) 0%)';
-                progressBarBackground = progressBarBackground.replace(/(\d{3}|\d{3}\.\d+)%/g, '100%'); // values greater than 100% can cause incorrect rendering
+			if (contentVotingInAction) {
+				$('.awah-con-check-queue-length').text(contentToCheck.length);
+				$('.awah-con-votes-queue-length').text(contentToVote.length);
+				let progressBarBackground = 'linear-gradient(90deg, rgb(0, 240, 240) ' +
+					((arpStatus.currentContentVotes / arpStatus.maximumContentVotes) * 100) +
+					'%, rgba(0, 160, 240, 0.8) 0%, rgba(0, 160, 240, 0.8) ' +
+					(((arpStatus.currentContentVotes + contentToVote.length) / arpStatus.maximumContentVotes) * 100) +
+					'%, rgb(255, 255, 255) 0%, rgb(255, 255, 255) ' +
+					((((arpStatus.currentContentVotes + contentToVote.length) / arpStatus.maximumContentVotes) * 100) + 1) +
+					'%, rgba(0, 160, 240, 0.8) 0%, rgba(0, 160, 240, 0.8) ' +
+					(((arpStatus.currentContentVotes + contentToVote.length + contentToCheck.length) / arpStatus.maximumContentVotes) * 100) +
+					'%, rgb(40, 37, 36) 0%)';
+				progressBarBackground = progressBarBackground.replace(/(\d{3}|\d{3}\.\d+)%/g, '100%'); // values greater than 100% can cause incorrect rendering
 				arpContentVotesElement.style.backgroundImage = progressBarBackground;
-            } else {
+			} else {
 				arpContentVotesElement.style.backgroundImage = '';
 			}
-        }
+		}
 
 		fixNavBarBackgroundOnPageLoad() {
 			let nav = document.querySelector('.navbar-top');
