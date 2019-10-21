@@ -906,12 +906,13 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 
 			do {
 				let postingResponse = await fetch(`/comments/${threadId}/new`, {
+					credentials: 'same-origin',
 					method: 'POST',
 					body: formData
 				});
 				let postingResult = await postingResponse.json();
 				if (postingResult.success) {
-					let deleteResponse = await fetch(`/forums/post/delete/${postingResult.postId}/${postingResult.whatPage}`);
+					let deleteResponse = await fetch(`/forums/post/delete/${postingResult.postId}/${postingResult.whatPage}`, {credentials: 'same-origin'});
 					let threadPage = await deleteResponse.text(); // forum post delete redirects to page where deleted post was
 					// example: /ucf/show/2094593/boards/awa-on-topic/ForumPost/daily-quest-non-us-converse-and-be-merry-5-arp-19?replyPage=105
 					let doc = parser.parseFromString(threadPage, 'text/html');
