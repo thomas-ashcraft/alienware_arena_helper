@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Alienware Arena helper
 // @namespace    https://github.com/thomas-ashcraft
-// @version      1.1.6
+// @version      1.1.7
 // @description  Earn daily ARP easily
 // @author       Thomas Ashcraft
 // @match        *://*.alienwarearena.com/*
@@ -14,7 +14,7 @@
 
 (function() {
 	// You can configure options through the user interface or localStorage in browser. It is not recommended to edit the script for these purposes.
-	const version = '1.1.6';
+	const version = '1.1.7';
 
 	let contentVotingInAction = false;
 	let contentVotingURL = '';
