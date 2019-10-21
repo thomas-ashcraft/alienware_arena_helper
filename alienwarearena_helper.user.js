@@ -928,6 +928,37 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 		}
 	}
 
+	async function visitURL() {
+		try {
+			let dailyThreadId = await getDailyThread();
+			let result = await fetch('/ucf/show/' + dailyThread, {credentials: 'same-origin'});
+			let text = await response.text();
+			let postText = text.match(/<div class="discussion__op-content ucf__content">[\s\S]*<\/div>/);
+			let urls = postText.match(/<a href="http.*?alienwarearena\.com(.*?)".*?<\/a>/g);
+			for (let url of urls) {
+				try {
+					await fetch(url, {credentials: 'same-origin'});
+					let questDone = await dailyQuestDone();
+					if (questDone) {
+						ui.newStatusMessage('Successfully visited page!');
+						return;
+					}
+				} catch (err) {
+					continue;
+				}
+			}
+
+			document.location.href = '/ucf/show/' + dailyThreadId;
+		} catch (err) {
+			try {
+				let dailyThreadId = await getDailyThread();
+				document.location.href = '/ucf/show/' + dailyThreadId;
+			} catch (err) {
+				document.location.href = '/forums/board/113/awa-on-topic';
+			}
+		}
+	}
+
 	function registerQuestButtons() {
 		$('.awah-btn-quest').on('click', async function() {
 			// Automatic stuff
@@ -947,6 +978,9 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 				await shareSocial();
 			} else if ($(this).data('awah-quest') === 'replies') {
 				await postReplies();
+			} else if ($(this).data('awah-quest') === 'visit') {
+				await visitURL();
+
 			// Non automatic stuff
 			} else if ($(this).data('awah-quest') === 'avatar') {
 				document.location.href = '/account/personalization';
@@ -1001,16 +1035,16 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 					$(`<a class="btn btn-default awah-btn-quest" href="javascript:void(0);" data-awah-tooltip="Automatic posting" data-awah-quest="replies">
 						<span class="more-link right"></span></a>`).appendTo(".quest-item > .col-2");
 					break;
+				case 'visit_page':
+					$(`<a class="btn btn-default awah-btn-quest" href="javascript:void(0);" data-awah-tooltip="Visit forum" data-awah-quest="visit">
+						<span class="more-link right"></span></a>`).appendTo(".quest-item > .col-2");
+					break;
 				case 'change_avatar_placeholder':
 					$(`<a class="btn btn-default awah-btn-quest" href="javascript:void(0);" data-awah-tooltip="Visit personalization page" data-awah-quest="avatar">
 						<span class="more-link right"></span></a>`).appendTo(".quest-item > .col-2");
 					break;
 				case 'add_video':
 					$(`<a class="btn btn-default awah-btn-quest" href="javascript:void(0);" data-awah-tooltip="Add video" data-awah-quest="video">
-						<span class="more-link right"></span></a>`).appendTo(".quest-item > .col-2");
-					break;
-				case 'visit_page':
-					$(`<a class="btn btn-default awah-btn-quest" href="javascript:void(0);" data-awah-tooltip="Visit forum" data-awah-quest="forum">
 						<span class="more-link right"></span></a>`).appendTo(".quest-item > .col-2");
 					break;
 				default:
