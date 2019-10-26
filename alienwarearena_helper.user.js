@@ -936,29 +936,42 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 
 	async function visitURL() {
 		try {
+			const parser = new DOMParser();
 			let dailyThreadId = await getDailyThread();
-			let result = await fetch('/ucf/show/' + dailyThread, {credentials: 'same-origin'});
-			let text = await response.text();
-			let postText = text.match(/<div class="discussion__op-content ucf__content">[\s\S]*<\/div>/);
-			let urls = postText.match(/<a href="http.*?alienwarearena\.com(.*?)".*?<\/a>/g);
+			let result = await fetch(`/ucf/show/${dailyThreadId}`, {credentials: 'same-origin'});
+			let text = await result.text();
+			let doc = parser.parseFromString(text, 'text/html');
+			let opText = doc.querySelector(`div.discussion__op-content.ucf__content`);
+			let urls = opText.querySelectorAll(`a`);
 			for (let url of urls) {
 				try {
-					await fetch(url, {credentials: 'same-origin'});
-					let questDone = await dailyQuestDone();
-					if (questDone) {
-						ui.newStatusMessage('Successfully visited page!');
-						return;
+					let link = new URL(url.href);
+					let ids = link.pathname.match(/([0-9]+)/);
+					for (let id of ids) {
+						await fetch(link.pathname, {credentials: 'same-origin'});
+						await fetch(`/ucf/increment-views/${id}`, {
+							credentials: 'same-origin',
+							method: 'POST',
+							headers: {
+								'X-Requested-With': 'XMLHttpRequest'
+							}
+						});
+						let questDone = await dailyQuestDone();
+						if (questDone) {
+							ui.newStatusMessage('Successfully visited page!');
+							return;
+						}
 					}
 				} catch (err) {
 					continue;
 				}
 			}
 
-			document.location.href = '/ucf/show/' + dailyThreadId;
+			document.location.href = `/ucf/show/${dailyThreadId}`;
 		} catch (err) {
 			try {
 				let dailyThreadId = await getDailyThread();
-				document.location.href = '/ucf/show/' + dailyThreadId;
+				document.location.href = `/ucf/show/${dailyThreadId}`;
 			} catch (err) {
 				document.location.href = '/forums/board/113/awa-on-topic';
 			}
@@ -1042,7 +1055,7 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 						<span class="more-link right"></span></a>`).appendTo(".quest-item > .col-2");
 					break;
 				case 'visit_page':
-					$(`<a class="btn btn-default awah-btn-quest" href="javascript:void(0);" data-awah-tooltip="Visit forum" data-awah-quest="visit">
+					$(`<a class="btn btn-default awah-btn-quest" href="javascript:void(0);" data-awah-tooltip="Automatic link visiting" data-awah-quest="visit">
 						<span class="more-link right"></span></a>`).appendTo(".quest-item > .col-2");
 					break;
 				case 'change_avatar_placeholder':
