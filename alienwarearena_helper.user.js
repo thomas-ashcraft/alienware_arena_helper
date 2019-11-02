@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Alienware Arena helper
 // @namespace    https://github.com/thomas-ashcraft
-// @version      1.1.7
+// @version      1.1.8
 // @description  Earn daily ARP easily
 // @author       Thomas Ashcraft
 // @match        *://*.alienwarearena.com/*
@@ -14,7 +14,7 @@
 
 (function() {
 	// You can configure options through the user interface or localStorage in browser. It is not recommended to edit the script for these purposes.
-	const version = '1.1.7';
+	const version = '1.1.8';
 
 	let contentVotingInAction = false;
 	let contentVotingURL = '';
@@ -865,22 +865,26 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 			let response = await fetch('/forums/board/113/awa-on-topic', {credentials: 'same-origin'});
 			let text = await response.text();
 			const dailyThreads = text.match(/data-topic-id="([0-9]+)" title="\[.*?DAILY QUEST.*?\]/i);
+			dailyThreads.shift();
 
-			// https://stackoverflow.com/a/4929629
-			var today = new Date();
-			var dd = String(today.getDate()).padStart(2, '0');
-			var mm = String(today.getMonth() + 1).padStart(2, '0'); //January is 0!
-			var yyyy = today.getFullYear();
-			today = yyyy + '-' + mm + '-' + dd;
+			let rightNow = new Date();
+
+			let currentQuestDayStart = new Date();
+			currentQuestDayStart.setUTCHours(4, 0, 0, 0); // Daily quest updated at 4 a.m. UTC
+			// In some cases (after midnight in several timezones) the date of the quest may rewind into the future. We'll set the date a day earlier.
+			if (rightNow < currentQuestDayStart) {
+				currentQuestDayStart.setUTCDate(currentQuestDayStart.getUTCDate()-1);
+			}
 
 			for(let dailyThread of dailyThreads) {
 				try {
 					response = await fetch('/ucf/show/' + dailyThread, {credentials: 'same-origin'});
 					text = await response.text();
-					let postDate = text.match(/<span class="timeago" title="([0-9]{4}-[0-9]{2}-[0-9]{2}) .*?"><\/span>/);
+					let postDate = text.match(/\$\('\.common__op-meta .*?\.timeago'\)\.attr\('title', '(.*?)'\)\.timeago\(\);/);
+					let threadTimestamp = new Date(postDate[1]);
 
-					// Only first match is relevant
-					if (postDate[1] == today) {
+					// If thread created after current quest-day //(maybe we should target a little earlier for some hurrying guys who can create thread before new quest appear?)
+					if (threadTimestamp > currentQuestDayStart) {
 						return dailyThread;
 					}
 				} catch (err) {
@@ -888,7 +892,6 @@ Sorting from fresh ones to old ones.">Vote for newly uploaded ${sectionType}${(s
 				}
 			}
 
-			ui.newStatusMessage('Could not find daily thread!');
 			throw 'Could not find daily thread!';
 		} catch (e) {
 			ui.newStatusMessage('Could not find daily thread!');
